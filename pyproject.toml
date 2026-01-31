@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "molbuilder"
+version = "1.0.0"
+description = "Professional-grade molecular engineering tool"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+]
+
+[project.scripts]
+molbuilder = "molbuilder.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["molbuilder*"]

@@ -1,0 +1,409 @@
+"""Safety assessment for synthesis routes.
+
+Performs GHS hazard lookup for every reagent in every step, determines
+PPE requirements, engineering controls, emergency procedures, and
+produces a per-step :class:`SafetyAssessment`.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, List
+
+from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
+from molbuilder.reactions.reagent_data import REAGENT_DB, get_reagent, Reagent
+
+
+# =====================================================================
+#  GHS reference tables
+# =====================================================================
+
+GHS_PICTOGRAMS: dict[str, str] = {
+    "GHS01": "Exploding bomb -- Explosives, self-reactive, organic peroxides",
+    "GHS02": "Flame -- Flammable gases/liquids/solids, pyrophoric, self-heating, "
+             "emits flammable gas on water contact",
+    "GHS03": "Flame over circle -- Oxidizers",
+    "GHS04": "Gas cylinder -- Compressed, liquefied, or dissolved gases",
+    "GHS05": "Corrosion -- Corrosive to metals, skin corrosion, serious eye damage",
+    "GHS06": "Skull and crossbones -- Acute toxicity (fatal or toxic)",
+    "GHS07": "Exclamation mark -- Irritant, narcotic, acute toxicity (harmful), "
+             "skin sensitizer",
+    "GHS08": "Health hazard -- Carcinogenicity, mutagenicity, reproductive toxicity, "
+             "respiratory sensitizer, organ toxicity, aspiration hazard",
+    "GHS09": "Environment -- Aquatic toxicity",
+}
+
+GHS_HAZARD_STATEMENTS: dict[str, str] = {
+    # Physical hazards
+    "H200": "Unstable explosive",
+    "H201": "Explosive; mass explosion hazard",
+    "H202": "Explosive; severe projection hazard",
+    "H203": "Explosive; fire, blast or projection hazard",
+    "H204": "Fire or projection hazard",
+    "H205": "May mass explode in fire",
+    "H220": "Extremely flammable gas",
+    "H221": "Flammable gas",
+    "H222": "Extremely flammable aerosol",
+    "H223": "Flammable aerosol",
+    "H224": "Extremely flammable liquid and vapour",
+    "H225": "Highly flammable liquid and vapour",
+    "H226": "Flammable liquid and vapour",
+    "H227": "Combustible liquid",
+    "H228": "Flammable solid",
+    "H240": "Heating may cause an explosion",
+    "H241": "Heating may cause a fire or explosion",
+    "H242": "Heating may cause a fire",
+    "H250": "Catches fire spontaneously if exposed to air",
+    "H251": "Self-heating; may catch fire",
+    "H252": "Self-heating in large quantities; may catch fire",
+    "H260": "In contact with water releases flammable gases which may ignite spontaneously",
+    "H261": "In contact with water releases flammable gas",
+    "H270": "May cause or intensify fire; oxidizer",
+    "H271": "May cause fire or explosion; strong oxidizer",
+    "H272": "May intensify fire; oxidizer",
+    "H280": "Contains gas under pressure; may explode if heated",
+    "H281": "Contains refrigerated gas; may cause cryogenic burns or injury",
+    "H290": "May be corrosive to metals",
+    # Health hazards
+    "H300": "Fatal if swallowed",
+    "H301": "Toxic if swallowed",
+    "H302": "Harmful if swallowed",
+    "H304": "May be fatal if swallowed and enters airways",
+    "H310": "Fatal in contact with skin",
+    "H311": "Toxic in contact with skin",
+    "H312": "Harmful in contact with skin",
+    "H314": "Causes severe skin burns and eye damage",
+    "H315": "Causes skin irritation",
+    "H317": "May cause an allergic skin reaction",
+    "H318": "Causes serious eye damage",
+    "H319": "Causes serious eye irritation",
+    "H330": "Fatal if inhaled",
+    "H331": "Toxic if inhaled",
+    "H332": "Harmful if inhaled",
+    "H334": "May cause allergy or asthma symptoms or breathing difficulties if inhaled",
+    "H335": "May cause respiratory irritation",
+    "H336": "May cause drowsiness or dizziness",
+    "H340": "May cause genetic defects",
+    "H341": "Suspected of causing genetic defects",
+    "H350": "May cause cancer",
+    "H351": "Suspected of causing cancer",
+    "H360": "May damage fertility or the unborn child",
+    "H361": "Suspected of damaging fertility or the unborn child",
+    "H370": "Causes damage to organs",
+    "H371": "May cause damage to organs",
+    "H372": "Causes damage to organs through prolonged or repeated exposure",
+    "H373": "May cause damage to organs through prolonged or repeated exposure",
+    # Environmental hazards
+    "H400": "Very toxic to aquatic life",
+    "H410": "Very toxic to aquatic life with long lasting effects",
+    "H411": "Toxic to aquatic life with long lasting effects",
+    "H412": "Harmful to aquatic life with long lasting effects",
+    "H413": "May cause long lasting harmful effects to aquatic life",
+    "H420": "Harms public health and the environment by destroying ozone in the upper atmosphere",
+}
+
+
+# =====================================================================
+#  Data classes
+# =====================================================================
+
+@dataclass
+class HazardInfo:
+    """GHS hazard information for a single reagent."""
+
+    reagent_name: str
+    ghs_hazards: list[str]
+    ghs_pictograms: list[str]
+    hazard_descriptions: list[str]
+    pictogram_descriptions: list[str]
+
+
+@dataclass
+class SafetyAssessment:
+    """Complete safety assessment for one synthesis step."""
+
+    step_number: int
+    step_name: str
+    hazards: list[HazardInfo]
+    ppe_required: list[str]
+    engineering_controls: list[str]
+    emergency_procedures: list[str]
+    incompatible_materials: list[str]
+    waste_classification: str
+    risk_level: str             # "low", "medium", "high"
+
+
+# =====================================================================
+#  Internal helpers
+# =====================================================================
+
+def _build_hazard_info(reagent_name: str) -> HazardInfo:
+    """Look up a reagent and compile its hazard information."""
+    reagent = get_reagent(reagent_name)
+    if reagent is None:
+        return HazardInfo(
+            reagent_name=reagent_name,
+            ghs_hazards=[],
+            ghs_pictograms=[],
+            hazard_descriptions=["Hazard data not available in database"],
+            pictogram_descriptions=[],
+        )
+    haz_descs = [
+        GHS_HAZARD_STATEMENTS.get(h, f"Unknown hazard code {h}")
+        for h in reagent.ghs_hazards
+    ]
+    pic_descs = [
+        GHS_PICTOGRAMS.get(p, f"Unknown pictogram {p}")
+        for p in reagent.ghs_pictograms
+    ]
+    return HazardInfo(
+        reagent_name=reagent.name,
+        ghs_hazards=list(reagent.ghs_hazards),
+        ghs_pictograms=list(reagent.ghs_pictograms),
+        hazard_descriptions=haz_descs,
+        pictogram_descriptions=pic_descs,
+    )
+
+
+def _determine_ppe(all_hazards: set[str], all_pictograms: set[str]) -> list[str]:
+    """Determine required PPE from the union of hazard codes."""
+    ppe: list[str] = []
+    # Always require baseline
+    ppe.append("Safety goggles (splash-proof)")
+    ppe.append("Lab coat")
+    ppe.append("Closed-toe shoes")
+
+    if "GHS05" in all_pictograms or "H314" in all_hazards:
+        ppe.append("Chemical-resistant gloves (e.g. butyl rubber or nitrile)")
+        ppe.append("Face shield")
+        ppe.append("Chemical-resistant apron")
+    else:
+        ppe.append("Nitrile gloves (double-gloving recommended)")
+
+    if any(h in all_hazards for h in ("H330", "H331", "H332", "H335")):
+        ppe.append("Respiratory protection (fume hood minimum; respirator if outside hood)")
+
+    if "GHS06" in all_pictograms or "H300" in all_hazards or "H310" in all_hazards:
+        ppe.append("Emergency eyewash and safety shower must be accessible within 10 seconds")
+
+    if "GHS02" in all_pictograms or "H250" in all_hazards or "H260" in all_hazards:
+        ppe.append("Fire-resistant lab coat or Nomex coveralls for pyrophoric work")
+
+    return ppe
+
+
+def _determine_engineering_controls(
+    all_hazards: set[str],
+    all_pictograms: set[str],
+    template: ReactionTemplate,
+) -> list[str]:
+    """Determine engineering controls."""
+    controls: list[str] = []
+
+    # Fume hood is baseline for organic chemistry
+    controls.append("Perform all operations in a well-ventilated fume hood")
+
+    if "GHS02" in all_pictograms:
+        controls.append("Remove all ignition sources; use non-sparking tools")
+        controls.append("Ground and bond all containers to prevent static discharge")
+
+    if "H250" in all_hazards or "H260" in all_hazards:
+        controls.append("Schlenk line or glovebox required for air/moisture-sensitive reagents")
+
+    if "GHS03" in all_pictograms:
+        controls.append("Keep oxidizers separated from fuels and organic materials")
+        controls.append("Fire suppression system accessible")
+
+    if any(h in all_hazards for h in ("H340", "H350", "H360")):
+        controls.append("Designated area for CMR (carcinogenic/mutagenic/reprotoxic) substances")
+        controls.append("HEPA-filtered ventilation for solid handling")
+
+    if "GHS09" in all_pictograms:
+        controls.append("Secondary containment to prevent environmental release")
+        controls.append("Do not dispose of via drain; collect all waste")
+
+    mean_t = (template.temperature_range[0] + template.temperature_range[1]) / 2.0
+    if mean_t < -40:
+        controls.append("Cryogenic cooling equipment; ensure adequate ventilation for cryogen vapours")
+    if mean_t > 150:
+        controls.append("High-temperature operation; thermal insulation and burn protection required")
+
+    return controls
+
+
+def _determine_emergency_procedures(
+    all_hazards: set[str],
+    all_pictograms: set[str],
+) -> list[str]:
+    """Emergency response procedures based on hazard profile."""
+    procedures: list[str] = []
+
+    procedures.append(
+        "In case of spill: evacuate area, ventilate, absorb with "
+        "inert material (vermiculite), dispose as hazardous waste."
+    )
+
+    if "GHS06" in all_pictograms or "H300" in all_hazards:
+        procedures.append(
+            "Ingestion: Do NOT induce vomiting.  Call Poison Control / "
+            "emergency services immediately.  Rinse mouth with water."
+        )
+
+    if "H310" in all_hazards or "H311" in all_hazards:
+        procedures.append(
+            "Skin contact: Remove contaminated clothing immediately.  "
+            "Wash skin with copious water for at least 15 minutes.  "
+            "Seek medical attention."
+        )
+
+    if "H330" in all_hazards:
+        procedures.append(
+            "Inhalation: Move victim to fresh air.  If not breathing, "
+            "administer artificial respiration.  Call emergency services."
+        )
+
+    if "H314" in all_hazards or "H318" in all_hazards:
+        procedures.append(
+            "Eye contact: Flush eyes with water for at least 15 minutes, "
+            "lifting upper and lower eyelids.  Seek ophthalmological evaluation."
+        )
+
+    if "GHS02" in all_pictograms or "H250" in all_hazards:
+        procedures.append(
+            "Fire: Use dry chemical, CO2, or sand extinguisher.  "
+            "Do NOT use water on pyrophoric / water-reactive materials.  "
+            "Evacuate if fire cannot be controlled immediately."
+        )
+
+    if "H260" in all_hazards:
+        procedures.append(
+            "Water-reactive material: In case of spill, cover with dry "
+            "sand or vermiculite.  Do NOT use water."
+        )
+
+    return procedures
+
+
+def _determine_incompatibilities(template: ReactionTemplate) -> list[str]:
+    """List known incompatible material pairs in the step."""
+    incompatibilities: list[str] = []
+
+    reagent_keys = {r.lower().replace(" ", "_").replace("-", "_")
+                    for r in template.reagents}
+
+    # Oxidizer + organic / reducer
+    oxidizers = {"kmno4", "cro3", "h2o2", "naocl", "mcpba", "hno3", "naio4"}
+    reducers = {"nabh4", "lialh4", "dibal_h", "na_nh3", "red_al", "nah"}
+    if reagent_keys & oxidizers and reagent_keys & reducers:
+        incompatibilities.append("CRITICAL: Oxidizer and reducer present -- do NOT mix directly")
+
+    # Acid + cyanide
+    acids = {"hcl", "h2so4", "hno3", "tfa", "acoh", "bf3_oet2"}
+    cyanides = {"nacn"}
+    if reagent_keys & acids and reagent_keys & cyanides:
+        incompatibilities.append("CRITICAL: Acid + cyanide can liberate HCN gas (fatal)")
+
+    # Acid + azide
+    azides = {"nan3"}
+    if reagent_keys & acids and reagent_keys & azides:
+        incompatibilities.append("CRITICAL: Acid + azide can liberate HN3 (explosive/toxic)")
+
+    # Water-reactive + aqueous
+    water_reactive = {"lialh4", "nah", "n_buli", "memgbr", "etmgbr", "phmgbr",
+                      "meli", "phli", "socl2", "accl", "ticl4", "pcl5"}
+    if reagent_keys & water_reactive:
+        incompatibilities.append(
+            "Water-reactive reagent(s) present: ensure strictly anhydrous conditions"
+        )
+
+    # Peroxides + metals
+    peroxides = {"h2o2", "mcpba"}
+    metals = {"ticl4", "alcl3", "zncl2", "cui"}
+    if reagent_keys & peroxides and reagent_keys & metals:
+        incompatibilities.append("Peroxide + metal salt: risk of uncontrolled decomposition")
+
+    return incompatibilities
+
+
+def _classify_waste(all_hazards: set[str]) -> str:
+    """Classify waste stream based on worst hazard codes."""
+    if any(h in all_hazards for h in ("H300", "H310", "H330", "H340", "H350", "H360")):
+        return "Hazardous waste -- Category 1 (acute/CMR): requires licensed disposal contractor"
+    if any(h in all_hazards for h in ("H301", "H311", "H314", "H331", "H400", "H410")):
+        return "Hazardous waste -- Category 2 (toxic/corrosive/ecotoxic): segregated collection"
+    if any(h in all_hazards for h in ("H225", "H224", "H220", "H228")):
+        return "Hazardous waste -- flammable: store in approved flammable-waste containers"
+    return "Non-hazardous chemical waste: collect in appropriate waste stream"
+
+
+def _calculate_risk_level(all_hazards: set[str], all_pictograms: set[str]) -> str:
+    """Assign overall risk level for the step."""
+    # High risk: acutely fatal, CMR, pyrophoric, explosive
+    high_codes = {"H200", "H201", "H240", "H250", "H300", "H310", "H330",
+                  "H340", "H350", "H360"}
+    if all_hazards & high_codes:
+        return "high"
+
+    # Medium risk: toxic, corrosive, flammable, sensitizer
+    medium_codes = {"H301", "H311", "H314", "H331", "H225", "H224",
+                    "H260", "H334", "H317", "H370", "H372"}
+    if all_hazards & medium_codes:
+        return "medium"
+
+    return "low"
+
+
+# =====================================================================
+#  Public API
+# =====================================================================
+
+def assess_safety(steps: list[Any]) -> list[SafetyAssessment]:
+    """Produce a :class:`SafetyAssessment` for every step in *steps*.
+
+    Parameters
+    ----------
+    steps : list
+        Each element must have a ``.template`` attribute
+        (:class:`ReactionTemplate`) and a ``.precursors`` attribute.
+        Duck typing is used.
+
+    Returns
+    -------
+    list[SafetyAssessment]
+        One assessment per step, in order.
+    """
+    assessments: list[SafetyAssessment] = []
+
+    for idx, step in enumerate(steps):
+        template: ReactionTemplate = step.template
+
+        # Collect hazard info for all reagents + catalysts
+        all_reagent_names = list(template.reagents) + list(template.catalysts)
+        hazard_infos: list[HazardInfo] = [
+            _build_hazard_info(rname) for rname in all_reagent_names
+        ]
+
+        # Aggregate hazard codes and pictograms across all reagents in this step
+        all_hazards: set[str] = set()
+        all_pictograms: set[str] = set()
+        for hi in hazard_infos:
+            all_hazards.update(hi.ghs_hazards)
+            all_pictograms.update(hi.ghs_pictograms)
+
+        assessments.append(SafetyAssessment(
+            step_number=idx + 1,
+            step_name=template.name,
+            hazards=hazard_infos,
+            ppe_required=_determine_ppe(all_hazards, all_pictograms),
+            engineering_controls=_determine_engineering_controls(
+                all_hazards, all_pictograms, template,
+            ),
+            emergency_procedures=_determine_emergency_procedures(
+                all_hazards, all_pictograms,
+            ),
+            incompatible_materials=_determine_incompatibilities(template),
+            waste_classification=_classify_waste(all_hazards),
+            risk_level=_calculate_risk_level(all_hazards, all_pictograms),
+        ))
+
+    return assessments
