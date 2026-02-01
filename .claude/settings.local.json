@@ -6,7 +6,8 @@
       "Bash(for:*)",
       "Bash(do touch \"$dir/__init__.py\")",
       "Bash(done)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(echo:*)"
     ]
   }
 }
