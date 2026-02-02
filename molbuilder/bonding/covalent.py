@@ -227,17 +227,21 @@ class CovalentBond:
 
     @property
     def dipole_moment_debye(self) -> float:
-        """Rough dipole moment estimate in Debye.
+        """Estimate bond dipole moment in Debye using the point-charge model.
 
-        mu = delta_EN * bond_length(A) * 4.8032 * (percent_ionic / 100)
+        mu = q * d * 4.8032
 
-        This is a simplified point-charge model.  Real dipole moments
-        depend on the full 3D electron distribution.
+        where q is the partial charge in electron units (percent_ionic / 100)
+        and d is the bond length in Angstroms.  The constant 4.8032 converts
+        electron-Angstroms to Debye (1 D = 3.336e-30 C*m).
+
+        This is a simplified model.  Real dipole moments depend on the full
+        3D electron distribution.
         """
         if self.delta_en == 0.0:
             return 0.0
-        frac_ionic = self.percent_ionic_character / 100.0
-        return self.delta_en * self.bond_length_angstrom * DEBYE_PER_E_ANGSTROM * frac_ionic
+        partial_charge_e = self.percent_ionic_character / 100.0
+        return partial_charge_e * self.bond_length_angstrom * DEBYE_PER_E_ANGSTROM
 
     # --- Display ---
 

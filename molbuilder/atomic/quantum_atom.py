@@ -66,13 +66,11 @@ def slater_zeff(Z: int, n: int, l: int,
                 sigma += same_count * s_each
         elif g < target_group:
             if is_sp:
-                # For s/p electron: (n-1) group shields 0.85, lower shields 1.0
-                g_n = g[0] if g[1] == 0 else g[0]  # principal quantum number of group
-                target_n = n
-                if g_n == target_n - 1 and g[1] <= 1:
-                    sigma += count * 0.85
-                elif g_n == target_n and g[1] > 1:
-                    # Same n, but d/f group (below s/p in Slater ordering)
+                # For s/p electron: (n-1) shell shields 0.85, lower shields 1.0
+                # The (n-1) shell includes ALL groups whose principal quantum
+                # number equals n-1, regardless of angular momentum (s/p/d/f).
+                g_n = g[0]  # principal quantum number of the inner group
+                if g_n == n - 1:
                     sigma += count * 0.85
                 else:
                     sigma += count * 1.00

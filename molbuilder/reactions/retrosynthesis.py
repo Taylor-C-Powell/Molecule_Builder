@@ -752,20 +752,49 @@ def _modify_fg_smiles(
     return None
 
 
-def _replace_oh_with_carbonyl(smiles: str) -> str:
-    """Very rough: replace first 'O' in the SMILES with '=O' pattern."""
-    # This is a heuristic simplification for the retrosynthetic planner.
-    # We try to find an -OH and convert it conceptually to C=O.
+def _validate_smiles_transform(original: str, transformed: str) -> str | None:
+    """Validate that a string-based SMILES transform produced a parseable result.
+
+    Returns the transformed SMILES if it:
+      1. Is different from the original
+      2. Parses without error
+      3. Produces at least one heavy atom
+
+    Returns None if validation fails, preventing corrupt SMILES from
+    propagating through the retrosynthesis tree.
+    """
+    if transformed == original:
+        return None
+    try:
+        mol = parse(transformed)
+        if _count_heavy_atoms(mol) < 1:
+            return None
+        return transformed
+    except Exception:
+        return None
+
+
+def _replace_oh_with_carbonyl(smiles: str) -> str | None:
+    """Replace first C-OH with C=O (alcohol -> carbonyl).
+
+    Uses validation to prevent corrupt results from substring
+    collisions (e.g. 'COCO' should not become 'C=OCO').
+    """
     if "CO" in smiles and "C=O" not in smiles:
-        return smiles.replace("CO", "C=O", 1)
-    return smiles
+        candidate = smiles.replace("CO", "C=O", 1)
+        return _validate_smiles_transform(smiles, candidate)
+    return None
 
 
-def _replace_carbonyl_with_oh(smiles: str) -> str:
-    """Rough: replace C=O with C-OH (alcohol form)."""
+def _replace_carbonyl_with_oh(smiles: str) -> str | None:
+    """Replace first C=O with C-OH (carbonyl -> alcohol).
+
+    Uses validation to prevent corrupt results.
+    """
     if "C=O" in smiles:
-        return smiles.replace("C=O", "CO", 1)
-    return smiles
+        candidate = smiles.replace("C=O", "CO", 1)
+        return _validate_smiles_transform(smiles, candidate)
+    return None
 
 
 def _split_at_fg(
@@ -914,11 +943,15 @@ def _substitute_fg(
         if key in swap_map:
             old_frag, new_frag = swap_map[key]
             if old_frag in target_smiles:
-                return target_smiles.replace(old_frag, new_frag, 1)
+                candidate = target_smiles.replace(old_frag, new_frag, 1)
+                validated = _validate_smiles_transform(target_smiles, candidate)
+                if validated is not None:
+                    return validated
 
     # Generic fallback: just return the target with a halide substitution
     if fg_name == "alcohol" and "O" in target_smiles:
-        return target_smiles.replace("O", "Br", 1)
+        candidate = target_smiles.replace("O", "Br", 1)
+        return _validate_smiles_transform(target_smiles, candidate)
     return None
 
 
@@ -932,7 +965,8 @@ def _add_across_double_bond(
     # If the target has an alkene, the precursor is an alkyl halide/alcohol.
     if fg.name == "alkene" and "C=C" in target_smiles:
         # Add H and Br across the double bond
-        return target_smiles.replace("C=C", "CC(Br)", 1)
+        candidate = target_smiles.replace("C=C", "CC(Br)", 1)
+        return _validate_smiles_transform(target_smiles, candidate)
     return None
 
 
@@ -949,13 +983,22 @@ def _remove_addition(
     if "alkene" in template.functional_group_required:
         # Restore the alkene by removing the added functionality
         if fg_name == "alcohol" and "CO" in target_smiles:
-            return target_smiles.replace("CO", "C=C", 1)
+            candidate = target_smiles.replace("CO", "C=C", 1)
+            result = _validate_smiles_transform(target_smiles, candidate)
+            if result is not None:
+                return result
         if fg_name.startswith("alkyl_halide"):
             for hal in ("Br", "Cl", "I"):
                 if f"C{hal}" in target_smiles:
-                    return target_smiles.replace(f"C{hal}", "C=C", 1)
+                    candidate = target_smiles.replace(f"C{hal}", "C=C", 1)
+                    result = _validate_smiles_transform(target_smiles, candidate)
+                    if result is not None:
+                        return result
         if fg_name == "epoxide" and "C1OC1" in target_smiles:
-            return target_smiles.replace("C1OC1", "C=C", 1)
+            candidate = target_smiles.replace("C1OC1", "C=C", 1)
+            result = _validate_smiles_transform(target_smiles, candidate)
+            if result is not None:
+                return result
     return None
 
 
@@ -1164,10 +1207,10 @@ def _build_retro_node(
     if depth >= max_depth:
         return node
 
-    # Prevent infinite loops
+    # Prevent infinite loops (mutable set with backtracking for efficiency)
     if smiles in visited_smiles:
         return node
-    visited_smiles = visited_smiles | {smiles}
+    visited_smiles.add(smiles)
 
     # Collect all FG names for compatibility check
     all_fg_names = [fg.name for fg in fgs]

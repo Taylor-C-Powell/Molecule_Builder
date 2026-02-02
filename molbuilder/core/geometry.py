@@ -9,6 +9,10 @@ coordinate conversions from quantum_wavefunctions.py.
 import math
 import numpy as np
 
+# Tolerance constants for near-zero comparisons
+_ZERO_VECTOR_TOL = 1e-12     # For zero-length vector detection
+_COLLINEAR_TOL = 1e-10       # For collinear atom detection
+
 
 # ===================================================================
 # Vector utilities
@@ -17,7 +21,7 @@ import numpy as np
 def normalize(v: np.ndarray) -> np.ndarray:
     """Return unit vector, or zero vector if input is near-zero."""
     n = np.linalg.norm(v)
-    if n < 1e-12:
+    if n < _ZERO_VECTOR_TOL:
         return np.zeros(3)
     return v / n
 
@@ -64,7 +68,7 @@ def place_atom_zmatrix(pos_ref: np.ndarray,
 
     # Plane normal
     n = np.cross(v_ki, v_ij)
-    if np.linalg.norm(n) < 1e-10:
+    if np.linalg.norm(n) < _COLLINEAR_TOL:
         # Collinear fallback
         perp = np.array([1.0, 0.0, 0.0])
         if abs(np.dot(v_ij, perp)) > 0.9:
@@ -134,7 +138,7 @@ def available_tetrahedral_dirs(
         out_of_plane = normalize(np.cross(v0, v1))
 
         bv0 = float(np.dot(bisector, v0))
-        if abs(bv0) > 1e-10:
+        if abs(bv0) > _COLLINEAR_TOL:
             cb = (1.0 / 3.0) / bv0
         else:
             cb = 0.0

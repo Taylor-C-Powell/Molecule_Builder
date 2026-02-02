@@ -69,6 +69,10 @@ def from_xyz_string(content: str) -> Molecule:
     atom_count = int(lines[0].strip())
     comment = lines[1].strip()
 
+    if len(lines) < atom_count + 2:
+        raise ValueError(f"XYZ file declares {atom_count} atoms but has only "
+                         f"{len(lines) - 2} atom lines")
+
     mol = Molecule(name=comment)
 
     for i in range(atom_count):

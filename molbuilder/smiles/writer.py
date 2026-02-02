@@ -10,6 +10,7 @@ from collections import deque
 
 from molbuilder.molecule.graph import Molecule
 from molbuilder.core.elements import SYMBOL_TO_Z
+from molbuilder.smiles.tokenizer import ORGANIC_SUBSET, DEFAULT_VALENCE
 
 
 # ===================================================================
@@ -184,13 +185,51 @@ def _dfs_smiles(mol: Molecule, order: dict[int, int],
         return nbs
 
     def _atom_str(idx: int) -> str:
-        """Return the SMILES atom token for atom *idx*."""
-        sym = mol.atoms[idx].symbol
-        # Common organic subset atoms can be written without brackets
-        if sym in ("B", "C", "N", "O", "P", "S", "F", "Cl", "Br", "I"):
+        """Return the SMILES atom token for atom *idx*.
+
+        Outputs bracket notation ``[<isotope><symbol><chirality><hcount><charge>]``
+        when the atom has non-default properties (chirality, isotope, charge,
+        or is not in the organic subset).  Organic subset atoms without
+        special properties are written without brackets.
+        """
+        atom = mol.atoms[idx]
+        sym = atom.symbol
+        has_chirality = atom.chirality is not None
+        has_isotope = atom.isotope is not None
+        has_charge = atom.formal_charge != 0
+        needs_bracket = has_chirality or has_isotope or has_charge or sym not in ORGANIC_SUBSET
+
+        if not needs_bracket:
             return sym
-        # Everything else needs brackets
-        return f"[{sym}]"
+
+        # Build bracket atom string: [<isotope><symbol><chirality><Hn><charge>]
+        parts: list[str] = []
+        if has_isotope:
+            parts.append(str(atom.isotope))
+        parts.append(sym)
+        if has_chirality:
+            parts.append(atom.chirality)
+
+        # Compute implicit H count: count explicit H neighbours
+        h_count = sum(1 for nb in mol.neighbors(idx)
+                      if mol.atoms[nb].symbol == "H")
+        if h_count == 1:
+            parts.append("H")
+        elif h_count > 1:
+            parts.append(f"H{h_count}")
+
+        if has_charge:
+            ch = atom.formal_charge
+            if ch == 1:
+                parts.append("+")
+            elif ch == -1:
+                parts.append("-")
+            elif ch > 0:
+                parts.append(f"+{ch}")
+            else:
+                parts.append(str(ch))
+
+        return f"[{''.join(parts)}]"
 
     def _emit_ring_closure(idx: int, nb: int) -> None:
         """Register and emit a ring closure digit between idx and nb."""

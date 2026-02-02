@@ -210,6 +210,12 @@ def recommend_purification(
     * Catalytic reactions always start with filtration
     * Large scale avoids chromatography
     """
+    if not hasattr(template, 'category'):
+        raise TypeError(
+            f"template must have a 'category' attribute, "
+            f"got {type(template).__name__}"
+        )
+
     steps: list[PurificationStep] = []
     cat = template.category
     has_catalyst = len(template.catalysts) > 0

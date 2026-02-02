@@ -81,6 +81,9 @@ class Atom:
     position: np.ndarray
     index: int
     hybridization: Hybridization | None = None
+    chirality: str | None = None
+    isotope: int | None = None
+    formal_charge: int = 0
 
     def __repr__(self):
         x, y, z = self.position
@@ -186,7 +189,10 @@ class Molecule:
     # ---- building ----
 
     def add_atom(self, symbol: str, position,
-                 hybridization: Hybridization | None = None) -> int:
+                 hybridization: Hybridization | None = None,
+                 chirality: str | None = None,
+                 isotope: int | None = None,
+                 formal_charge: int = 0) -> int:
         """Add an atom at an explicit 3D position.  Returns new index."""
         idx = len(self.atoms)
         self.atoms.append(Atom(
@@ -194,6 +200,9 @@ class Molecule:
             position=np.array(position, dtype=float),
             index=idx,
             hybridization=hybridization,
+            chirality=chirality,
+            isotope=isotope,
+            formal_charge=formal_charge,
         ))
         self._adj[idx] = []
         return idx
@@ -608,6 +617,42 @@ class Molecule:
         if abs(dih) < 90.0:
             return Stereodescriptor.Z
         return Stereodescriptor.E
+
+    # ---- steric clash detection ----
+
+    def check_steric_clashes(
+            self, min_distance: float = 0.5) -> list[tuple[int, int]]:
+        """Return pairs of non-bonded atoms closer than *min_distance* Angstroms.
+
+        Useful after building molecules to catch placement errors or
+        unreasonable conformations.
+
+        Parameters
+        ----------
+        min_distance : float
+            Threshold distance in Angstroms. Pairs of non-bonded atoms
+            closer than this are reported.
+
+        Returns
+        -------
+        list[tuple[int, int]]
+            List of (atom_i, atom_j) pairs that clash.
+        """
+        bonded_pairs: set[frozenset[int]] = set()
+        for b in self.bonds:
+            bonded_pairs.add(frozenset((b.atom_i, b.atom_j)))
+
+        clashes: list[tuple[int, int]] = []
+        n = len(self.atoms)
+        for i in range(n):
+            for j in range(i + 1, n):
+                if frozenset((i, j)) in bonded_pairs:
+                    continue
+                d = float(np.linalg.norm(
+                    self.atoms[i].position - self.atoms[j].position))
+                if d < min_distance:
+                    clashes.append((i, j))
+        return clashes
 
     # ---- visualisation compatibility ----
 

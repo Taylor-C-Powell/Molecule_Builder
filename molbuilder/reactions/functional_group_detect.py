@@ -10,7 +10,7 @@ the ``molbuilder.molecule.graph`` module.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from molbuilder.molecule.graph import Molecule
+from molbuilder.molecule.graph import Molecule, Hybridization
 
 
 # =====================================================================
@@ -45,6 +45,16 @@ class FunctionalGroup:
 #  Helper utilities
 # =====================================================================
 
+
+# Standard valences for implicit hydrogen inference (same data as
+# smiles.tokenizer.DEFAULT_VALENCE but upper-cased and used here so
+# that FG detection does not depend on the SMILES subpackage).
+_STANDARD_VALENCE: dict[str, list[int]] = {
+    "B": [3], "C": [4], "N": [3, 5], "O": [2], "P": [3, 5],
+    "S": [2, 4, 6], "F": [1], "Cl": [1], "Br": [1], "I": [1],
+}
+
+
 def _element(mol: Molecule, idx: int) -> str:
     """Return the element symbol of atom *idx* (upper-cased first letter)."""
     return mol.atoms[idx].symbol
@@ -66,9 +76,45 @@ def _bond_order(mol: Molecule, i: int, j: int) -> float:
     return bond.order if bond is not None else 0.0
 
 
+def _sum_bond_orders(mol: Molecule, idx: int) -> int:
+    """Sum of bond orders for all bonds on atom *idx*."""
+    total = 0
+    for n in _neighbors(mol, idx):
+        total += int(_bond_order(mol, idx, n))
+    return total
+
+
+def _h_count(mol: Molecule, idx: int) -> int:
+    """Total hydrogen count on atom *idx* (explicit + implicit).
+
+    Explicit H atoms are counted from the neighbour list.  Implicit H
+    atoms are inferred from standard valence rules when the molecule
+    has fewer explicit neighbours than expected.  This makes FG
+    detection work regardless of whether H atoms are represented as
+    explicit nodes in the graph (SMILES-built molecules) or are
+    absent (PDB/XYZ imports without H).
+    """
+    explicit_h = sum(1 for e in _neighbor_elements(mol, idx) if e == "H")
+    if explicit_h > 0:
+        return explicit_h
+
+    # No explicit H found -- infer from valence rules
+    sym = _element(mol, idx)
+    valences = _STANDARD_VALENCE.get(sym)
+    if valences is None:
+        return 0
+    bond_order_sum = _sum_bond_orders(mol, idx)
+    # Pick the smallest standard valence that accommodates current bonds
+    for v in valences:
+        implicit = v - bond_order_sum
+        if implicit >= 0:
+            return implicit
+    return 0
+
+
 def _has_h(mol: Molecule, idx: int) -> bool:
-    """Return True if atom *idx* has at least one hydrogen neighbour."""
-    return "H" in _neighbor_elements(mol, idx)
+    """Return True if atom *idx* has at least one hydrogen (explicit or implicit)."""
+    return _h_count(mol, idx) > 0
 
 
 def _count_element_neighbors(mol: Molecule, idx: int, elem: str) -> int:
@@ -131,6 +177,11 @@ def detect_functional_groups(mol: Molecule) -> list[FunctionalGroup]:
     groups.extend(_detect_nitro(mol))
     groups.extend(_detect_aromatic_rings(mol))
     groups.extend(_detect_epoxides(mol))
+    groups.extend(_detect_acid_chlorides(mol))
+    groups.extend(_detect_anhydrides(mol))
+    groups.extend(_detect_sulfoxides(mol))
+    groups.extend(_detect_sulfones(mol))
+    groups.extend(_detect_imines(mol))
     return groups
 
 
@@ -139,25 +190,42 @@ def detect_functional_groups(mol: Molecule) -> list[FunctionalGroup]:
 # =====================================================================
 
 def _detect_alcohols(mol: Molecule) -> list[FunctionalGroup]:
-    """Alcohol: O bonded to C and H, where the O is NOT double-bonded to C."""
+    """Alcohol: O bonded to C with an H (explicit or implicit).
+
+    The O must be single-bonded to C and not part of a C=O or ester
+    linkage.  Works with both explicit H in the graph and implicit H
+    inferred from valence rules.
+    """
     found: list[FunctionalGroup] = []
     for idx, atom in enumerate(mol.atoms):
         if atom.symbol != "O":
             continue
         nbrs = _neighbors(mol, idx)
-        if len(nbrs) != 2:
-            continue
         elems = [_element(mol, n) for n in nbrs]
-        # O bonded to exactly one C and one H (or implicit H)
-        if "C" in elems and "H" in elems:
-            c_idx = nbrs[elems.index("C")]
-            # Ensure O is single-bonded to C (not part of C=O)
-            if _bond_order(mol, idx, c_idx) == 1.0:
+
+        # Need at least one C neighbour, single-bonded
+        c_indices = [nbrs[i] for i, e in enumerate(elems) if e == "C"]
+        if not c_indices:
+            continue
+
+        for c_idx in c_indices:
+            if _bond_order(mol, idx, c_idx) != 1.0:
+                continue
+            # Check for H: explicit neighbour OR implicit from valence
+            if "H" in elems:
                 h_idx = nbrs[elems.index("H")]
                 found.append(FunctionalGroup(
                     name="alcohol", smarts_like="[C]-[OH]",
                     atoms=[c_idx, idx, h_idx], center=idx,
                 ))
+                break
+            elif _h_count(mol, idx) >= 1:
+                # Implicit H -- no explicit H atom index to record
+                found.append(FunctionalGroup(
+                    name="alcohol", smarts_like="[C]-[OH]",
+                    atoms=[c_idx, idx], center=idx,
+                ))
+                break
     return found
 
 
@@ -280,7 +348,7 @@ def _detect_amines(mol: Molecule) -> list[FunctionalGroup]:
             continue
 
         c_count = _count_element_neighbors(mol, idx, "C")
-        h_count = _count_element_neighbors(mol, idx, "H")
+        h_count = _h_count(mol, idx)
 
         if c_count == 1 and h_count == 2:
             found.append(FunctionalGroup(
@@ -378,15 +446,18 @@ def _detect_ethers(mol: Molecule) -> list[FunctionalGroup]:
 
 
 def _detect_thiols(mol: Molecule) -> list[FunctionalGroup]:
-    """Thiol: S bonded to C and H."""
+    """Thiol: S bonded to C with an H (explicit or implicit)."""
     found: list[FunctionalGroup] = []
     for idx, atom in enumerate(mol.atoms):
         if atom.symbol != "S":
             continue
         nbrs = _neighbors(mol, idx)
         elems = [_element(mol, n) for n in nbrs]
-        if "C" in elems and "H" in elems:
-            c_idx = nbrs[elems.index("C")]
+        c_indices = [nbrs[i] for i, e in enumerate(elems) if e == "C"]
+        if not c_indices:
+            continue
+        if _has_h(mol, idx):
+            c_idx = c_indices[0]
             found.append(FunctionalGroup(
                 name="thiol", smarts_like="[C]-[SH]",
                 atoms=[c_idx, idx], center=idx,
@@ -440,10 +511,12 @@ def _detect_aromatic_rings(mol: Molecule) -> list[FunctionalGroup]:
     seen_rings: set[tuple[int, ...]] = set()
 
     for start in range(n_atoms):
-        if _element(mol, start) not in ("C", "N"):
+        if _element(mol, start) not in ("C", "N", "O", "S"):
             continue
         # BFS / DFS for 6-membered rings from start
         rings = _find_rings_of_size(mol, start, 6)
+        # Also search for 5-membered rings (furan, thiophene, pyrrole, etc.)
+        rings += _find_rings_of_size(mol, start, 5)
         for ring in rings:
             canon = _canonicalise_ring(ring)
             if canon in seen_rings:
@@ -466,7 +539,7 @@ def _find_rings_of_size(mol: Molecule, start: int, size: int) -> list[tuple[int,
     search only proceeds through C and N atoms.
     """
     results: list[tuple[int, ...]] = []
-    allowed = {"C", "N"}
+    allowed = {"C", "N", "O", "S"}
     # stack entries: (current_atom, path_so_far)
     stack: list[tuple[int, list[int]]] = [(start, [start])]
     while stack:
@@ -500,10 +573,13 @@ def _canonicalise_ring(ring: tuple[int, ...]) -> tuple[int, ...]:
 def _ring_is_aromatic(mol: Molecule, ring: tuple[int, ...]) -> bool:
     """Heuristically decide if a ring is aromatic.
 
-    A ring is considered aromatic if:
+    A ring is considered aromatic if any of:
     - All bond orders are >= 1.5 (explicit aromatic annotation), **or**
     - The ring consists of alternating single (1.0) and double (2.0)
-      bonds forming a fully conjugated system.
+      bonds forming a fully conjugated system, **or**
+    - All ring atoms have SP2 hybridization (aromatic SMILES atoms are
+      assigned SP2 by the parser even though bonds are stored as order 1;
+      this catches furan, thiophene, pyrrole and other heteroaromatics).
     """
     n = len(ring)
     orders = []
@@ -520,6 +596,10 @@ def _ring_is_aromatic(mol: Molecule, ring: tuple[int, ...]) -> bool:
         alternating = all(orders[i] != orders[(i + 1) % n] for i in range(n))
         if alternating:
             return True
+
+    # All atoms SP2-hybridized (aromatic SMILES atoms, or conjugated rings)
+    if all(mol.atoms[idx].hybridization == Hybridization.SP2 for idx in ring):
+        return True
 
     return False
 
@@ -548,4 +628,101 @@ def _detect_epoxides(mol: Molecule) -> list[FunctionalGroup]:
                             smarts_like="C1OC1",
                             atoms=[c1, idx, c2], center=idx,
                         ))
+    return found
+
+
+def _detect_acid_chlorides(mol: Molecule) -> list[FunctionalGroup]:
+    """Acid chloride (acyl chloride): C(=O)Cl."""
+    found: list[FunctionalGroup] = []
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "C":
+            continue
+        dbl_o = _double_bonded_to(mol, idx, "O")
+        sgl_cl = _single_bonded_to(mol, idx, "Cl")
+        if dbl_o and sgl_cl:
+            found.append(FunctionalGroup(
+                name="acid_chloride", smarts_like="[CX3](=O)[Cl]",
+                atoms=[idx, dbl_o[0], sgl_cl[0]], center=idx,
+            ))
+    return found
+
+
+def _detect_anhydrides(mol: Molecule) -> list[FunctionalGroup]:
+    """Acid anhydride: C(=O)-O-C(=O)."""
+    found: list[FunctionalGroup] = []
+    seen: set[int] = set()
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "O":
+            continue
+        if idx in seen:
+            continue
+        c_nbrs = _single_bonded_to(mol, idx, "C")
+        if len(c_nbrs) < 2:
+            continue
+        # Both C neighbours must have a C=O
+        carbonyl_cs = [c for c in c_nbrs if _double_bonded_to(mol, c, "O")]
+        if len(carbonyl_cs) >= 2:
+            c1, c2 = carbonyl_cs[0], carbonyl_cs[1]
+            o1 = _double_bonded_to(mol, c1, "O")[0]
+            o2 = _double_bonded_to(mol, c2, "O")[0]
+            seen.add(idx)
+            found.append(FunctionalGroup(
+                name="anhydride", smarts_like="[CX3](=O)[O][CX3](=O)",
+                atoms=[c1, o1, idx, c2, o2], center=idx,
+            ))
+    return found
+
+
+def _detect_sulfoxides(mol: Molecule) -> list[FunctionalGroup]:
+    """Sulfoxide: S(=O) bonded to two carbons (no second O=S)."""
+    found: list[FunctionalGroup] = []
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "S":
+            continue
+        dbl_o = _double_bonded_to(mol, idx, "O")
+        c_nbrs = _single_bonded_to(mol, idx, "C")
+        if len(dbl_o) == 1 and len(c_nbrs) >= 2:
+            found.append(FunctionalGroup(
+                name="sulfoxide", smarts_like="[SX3](=O)([C])[C]",
+                atoms=[idx, dbl_o[0]] + c_nbrs[:2], center=idx,
+            ))
+    return found
+
+
+def _detect_sulfones(mol: Molecule) -> list[FunctionalGroup]:
+    """Sulfone: S(=O)(=O) bonded to two carbons."""
+    found: list[FunctionalGroup] = []
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "S":
+            continue
+        dbl_o = _double_bonded_to(mol, idx, "O")
+        c_nbrs = _single_bonded_to(mol, idx, "C")
+        if len(dbl_o) >= 2 and len(c_nbrs) >= 2:
+            found.append(FunctionalGroup(
+                name="sulfone", smarts_like="[SX4](=O)(=O)([C])[C]",
+                atoms=[idx] + dbl_o[:2] + c_nbrs[:2], center=idx,
+            ))
+    return found
+
+
+def _detect_imines(mol: Molecule) -> list[FunctionalGroup]:
+    """Imine: C=N (not part of nitrile C#N)."""
+    found: list[FunctionalGroup] = []
+    seen: set[tuple[int, int]] = set()
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "C":
+            continue
+        for n in _neighbors(mol, idx):
+            if _element(mol, n) != "N":
+                continue
+            if _bond_order(mol, idx, n) != 2.0:
+                continue
+            pair = (min(idx, n), max(idx, n))
+            if pair in seen:
+                continue
+            seen.add(pair)
+            found.append(FunctionalGroup(
+                name="imine", smarts_like="[C]=[N]",
+                atoms=list(pair), center=idx,
+            ))
     return found

@@ -7,6 +7,8 @@ optionally followed by a molecule name::
     c1ccccc1 benzene
 """
 
+import warnings
+
 from molbuilder.smiles.parser import parse
 from molbuilder.smiles.writer import to_smiles
 from molbuilder.molecule.graph import Molecule
@@ -35,7 +37,11 @@ def read_smiles(filepath: str) -> list[Molecule]:
             parts = line.split(None, 1)
             smi = parts[0]
             name = parts[1] if len(parts) > 1 else smi
-            mol = parse(smi)
+            try:
+                mol = parse(smi)
+            except (ValueError, IndexError) as e:
+                warnings.warn(f"Skipping invalid SMILES '{smi}': {e}")
+                continue
             mol.name = name
             molecules.append(mol)
     return molecules

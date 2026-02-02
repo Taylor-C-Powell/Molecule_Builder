@@ -14,6 +14,7 @@ Physics reference:
 """
 
 import math
+import warnings
 from molbuilder.core.constants import (
     BOHR_RADIUS_M,
     BOHR_RADIUS_PM,
@@ -36,6 +37,11 @@ from molbuilder.core.elements import ELEMENTS, SYMBOL_TO_Z
 # ---------------------------------------------------------------------------
 class BohrAtom:
     """Represents an atom using the Bohr model.
+
+    The Bohr model is only physically valid for hydrogen-like (one-electron)
+    atoms and ions (H, He+, Li2+, etc.). For multi-electron atoms, results
+    are qualitative approximations. Use QuantumAtom from
+    molbuilder.atomic.quantum_atom for multi-electron systems.
 
     Parameters
     ----------
@@ -69,6 +75,14 @@ class BohrAtom:
 
         if self.num_electrons < 0:
             raise ValueError("Charge exceeds number of protons (no electrons left)")
+
+        if self.num_electrons > 1:
+            warnings.warn(
+                f"BohrAtom(Z={atomic_number}): Bohr model is only exact for hydrogen-like "
+                f"(one-electron) systems. Results for Z={atomic_number} are qualitative. "
+                f"Consider using QuantumAtom for multi-electron atoms.",
+                stacklevel=2,
+            )
 
         self.shell_config = self._compute_shell_config()
         self.num_shells = len(self.shell_config)
@@ -123,7 +137,7 @@ class BohrAtom:
             = Z * alpha * c / n
         where alpha ~ 1/137 is the fine-structure constant.
         """
-        alpha = ELECTRON_CHARGE**2 / (4 * math.pi * 8.8541878128e-12 * HBAR * SPEED_OF_LIGHT)
+        alpha = ELECTRON_CHARGE**2 / (4 * math.pi * VACUUM_PERMITTIVITY * HBAR * SPEED_OF_LIGHT)
         return self.atomic_number * alpha * SPEED_OF_LIGHT / n
 
     def orbital_period(self, n: int) -> float:

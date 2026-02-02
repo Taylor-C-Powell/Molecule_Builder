@@ -236,31 +236,32 @@ class LewisStructure:
             remaining -= 2
 
         # Step 5: check if central atom needs more electrons (form multiple bonds)
+        # Promote single bonds to double/triple when the central atom has
+        # fewer electrons than its target.  This applies regardless of whether
+        # the atom can expand its octet -- e.g. SO2 needs S=O double bonds
+        # even though S can expand beyond 8 electrons.
         central_target = target_electrons(self.central_symbol)
         central_electrons = self._electrons_around(self.central_index)
 
-        # Only promote to multiple bonds if central atom is NOT allowed
-        # to have an expanded octet, or if it actually needs more electrons
-        if not can_expand_octet(self.central_symbol):
-            while central_electrons < central_target:
-                promoted = False
-                # Sort bonds by order (ascending) so we promote the
-                # lowest-order bond first -- distributes evenly
-                for bond in sorted(self.bonds, key=lambda b: b.order):
-                    if bond.order >= 3:
-                        continue
-                    # Find the terminal atom of this bond
-                    ti = bond.atom_b if bond.atom_a == self.central_index else bond.atom_a
-                    # Check if terminal has a lone pair we can convert
-                    lp_idx = self._find_lone_pair_on(ti)
-                    if lp_idx is not None:
-                        self.lone_pairs.pop(lp_idx)
-                        bond.order += 1
-                        central_electrons += 2
-                        promoted = True
-                        break
-                if not promoted:
-                    break  # no more promotions possible
+        while central_electrons < central_target:
+            promoted = False
+            # Sort bonds by order (ascending) so we promote the
+            # lowest-order bond first -- distributes evenly
+            for bond in sorted(self.bonds, key=lambda b: b.order):
+                if bond.order >= 3:
+                    continue
+                # Find the terminal atom of this bond
+                ti = bond.atom_b if bond.atom_a == self.central_index else bond.atom_a
+                # Check if terminal has a lone pair we can convert
+                lp_idx = self._find_lone_pair_on(ti)
+                if lp_idx is not None:
+                    self.lone_pairs.pop(lp_idx)
+                    bond.order += 1
+                    central_electrons += 2
+                    promoted = True
+                    break
+            if not promoted:
+                break  # no more promotions possible
 
     def _electrons_around(self, atom_index: int) -> int:
         """Count electrons around a given atom (bonding + lone pairs)."""

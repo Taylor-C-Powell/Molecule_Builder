@@ -65,6 +65,12 @@ def generate_cost_report(estimate) -> str:
         - ``.overhead_usd``
     * ``.notes`` -- list[str], assumptions and caveats
     """
+    if not hasattr(estimate, 'total_usd'):
+        raise TypeError(
+            f"estimate must have a 'total_usd' attribute, "
+            f"got {type(estimate).__name__}"
+        )
+
     lines: list[str] = []
 
     # ------------------------------------------------------------------

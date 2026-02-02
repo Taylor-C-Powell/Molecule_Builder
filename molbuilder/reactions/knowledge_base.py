@@ -76,22 +76,6 @@ _t(
 )
 
 _t(
-    name="SN2 alkoxide on primary alkyl halide",
-    named_reaction="Williamson ether synthesis",
-    category=ReactionCategory.SUBSTITUTION,
-    reagents=["NaOMe", "NaOEt"],
-    solvents=["THF", "DMF"],
-    temperature_range=(25.0, 70.0),
-    typical_yield=(70.0, 90.0),
-    functional_group_required=["alkyl_halide"],
-    functional_group_produced=["ether"],
-    functional_group_incompatible=["carboxylic_acid"],
-    mechanism="Alkoxide nucleophile displaces halide via SN2 pathway to form an ether linkage.",
-    reverse_transform="Disconnect C-O-C bond; one fragment gets OH (or O-), the other gets halide.",
-    safety_notes="NaOMe/NaOEt are corrosive and flammable.",
-)
-
-_t(
     name="SN1 tertiary halide solvolysis",
     named_reaction="SN1",
     category=ReactionCategory.SUBSTITUTION,
@@ -1294,21 +1278,6 @@ _t(
 # -----------------------------------------------------------------
 
 _t(
-    name="Claisen rearrangement (rearrangement section)",
-    named_reaction="Claisen rearrangement",
-    category=ReactionCategory.REARRANGEMENT,
-    reagents=[],
-    solvents=["toluene", "decalin"],
-    temperature_range=(150.0, 250.0),
-    typical_yield=(60.0, 90.0),
-    functional_group_required=["ether", "alkene"],
-    functional_group_produced=["aldehyde", "ketone"],
-    functional_group_incompatible=[],
-    mechanism="[3,3]-Sigmatropic rearrangement of an allyl vinyl ether via a chair-like transition state to a gamma,delta-unsaturated carbonyl.",
-    reverse_transform="Reconnect as allyl vinyl ether.",
-)
-
-_t(
     name="Cope rearrangement",
     named_reaction="Cope rearrangement",
     category=ReactionCategory.REARRANGEMENT,
@@ -1367,21 +1336,6 @@ _t(
     functional_group_incompatible=[],
     mechanism="Bromination of the amide nitrogen, base-induced 1,2-shift with loss of bromide gives an isocyanate, which is hydrolysed to the amine (one fewer carbon).",
     reverse_transform="Amine + CO -> amide (formal).",
-)
-
-_t(
-    name="Beckmann rearrangement (rearrangement section)",
-    named_reaction="Beckmann rearrangement",
-    category=ReactionCategory.REARRANGEMENT,
-    reagents=["hydroxylamine", "H2SO4"],
-    solvents=["AcOH"],
-    temperature_range=(25.0, 130.0),
-    typical_yield=(55.0, 85.0),
-    functional_group_required=["ketone"],
-    functional_group_produced=["amide"],
-    functional_group_incompatible=[],
-    mechanism="Ketoxime undergoes acid-catalysed 1,2-migration anti to the departing hydroxyl, giving a nitrilium ion that is captured by water to yield the amide (or lactam for cyclic substrates).",
-    reverse_transform="Disconnect the amide; reconstruct the ketone.",
 )
 
 
@@ -1469,6 +1423,181 @@ _t(
     ),
     reverse_transform="Open the ring by cross-metathesis; restore two terminal alkenes.",
     safety_notes="Grubbs catalysts are air-sensitive. Ethylene gas is evolved.",
+)
+
+# -----------------------------------------------------------------
+#  METATHESIS / C-H ACTIVATION / ASYMMETRIC  (~5)
+# -----------------------------------------------------------------
+
+_t(
+    name="Cross-metathesis (Grubbs catalyst)",
+    named_reaction="Cross-metathesis",
+    category=ReactionCategory.MISC,
+    reagents=["Grubbs 2nd generation catalyst", "terminal alkene partner"],
+    solvents=["DCM", "toluene"],
+    catalysts=["Grubbs 2nd generation"],
+    temperature_range=(25.0, 45.0),
+    typical_yield=(40.0, 80.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=["thiol", "primary_amine"],
+    mechanism=(
+        "Ruthenium carbene initiates by [2+2] cycloaddition with one "
+        "terminal olefin; metallacyclobutane fragmentation and re-entry "
+        "with the cross-partner olefin produces the hetero-disubstituted "
+        "alkene. Statistical mixtures are minimised by choosing partners "
+        "of different reactivity types (Type I / Type II / Type III)."
+    ),
+    reverse_transform=(
+        "Disconnect the internal alkene; each fragment becomes a "
+        "terminal olefin."
+    ),
+    scale_notes=(
+        "Catalyst loading typically 1-5 mol%. Ethylene removal by "
+        "sparging or reduced pressure shifts equilibrium toward product."
+    ),
+    safety_notes=(
+        "Grubbs catalysts are air-sensitive. Ethylene gas is evolved; "
+        "ensure adequate ventilation."
+    ),
+)
+
+_t(
+    name="Pd-catalysed C-H activation (arene functionalisation)",
+    named_reaction="Pd-catalysed C-H activation",
+    category=ReactionCategory.COUPLING,
+    reagents=["aryl halide (or oxidant)", "PivOH (or AcOH)"],
+    solvents=["DMA", "toluene", "DMF"],
+    catalysts=["Pd(OAc)2"],
+    temperature_range=(80.0, 140.0),
+    typical_yield=(30.0, 75.0),
+    functional_group_required=["aromatic_ring"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=["thiol"],
+    mechanism=(
+        "Pd(II) coordinates to the arene and undergoes concerted "
+        "metalation-deprotonation (CMD) at the least hindered C-H bond, "
+        "assisted by carboxylate base. The resulting aryl-Pd species "
+        "either undergoes oxidative Heck-type coupling or is oxidised "
+        "to Pd(IV) before reductive elimination to form the new C-C bond."
+    ),
+    reverse_transform=(
+        "Disconnect the newly formed aryl-aryl or aryl-R bond; "
+        "one fragment keeps H, the other gets a halide or equivalent."
+    ),
+    scale_notes=(
+        "Regioselectivity is substrate-dependent; directing groups "
+        "(pyridine, amide, oxazoline) greatly improve selectivity. "
+        "Typical Pd loading 5-10 mol%."
+    ),
+    safety_notes=(
+        "Pd(OAc)2 is a skin sensitiser. DMA is a reproductive toxin "
+        "(H360). High temperatures require pressure-rated equipment."
+    ),
+)
+
+_t(
+    name="Asymmetric hydrogenation (Rh or Ru catalysed)",
+    named_reaction="Asymmetric hydrogenation",
+    category=ReactionCategory.REDUCTION,
+    reagents=["H2"],
+    solvents=["MeOH", "iPrOH", "DCM"],
+    catalysts=["Rh(cod)2BF4 / chiral bisphosphine", "Ru(OAc)2(BINAP)"],
+    temperature_range=(20.0, 50.0),
+    typical_yield=(85.0, 99.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["alkane"],
+    functional_group_incompatible=["thiol"],
+    mechanism=(
+        "Chiral transition-metal complex (Rh or Ru with enantiomerically "
+        "pure bisphosphine ligand) coordinates the prochiral olefin. "
+        "Oxidative addition of H2 followed by migratory insertion and "
+        "reductive elimination delivers H2 across the double bond with "
+        "enantioselectivities typically >95% ee."
+    ),
+    reverse_transform=(
+        "Disconnect two C-H bonds on adjacent carbons; restore the "
+        "alkene with defined geometry."
+    ),
+    scale_notes=(
+        "Highly scalable; used industrially for L-DOPA, menthol, etc. "
+        "Catalyst loadings as low as 0.01 mol% on scale. H2 pressures "
+        "of 1-50 atm are common."
+    ),
+    safety_notes=(
+        "H2 is extremely flammable (H220). Pressure equipment must "
+        "be rated. Chiral ligands are expensive."
+    ),
+)
+
+_t(
+    name="Ring-opening metathesis polymerisation (ROMP)",
+    named_reaction="ROMP",
+    category=ReactionCategory.POLYMERIZATION,
+    reagents=["Grubbs 3rd generation catalyst (or Grubbs 2nd gen)"],
+    solvents=["DCM", "THF", "toluene"],
+    catalysts=["Grubbs 3rd generation"],
+    temperature_range=(20.0, 40.0),
+    typical_yield=(80.0, 99.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=["thiol", "primary_amine"],
+    mechanism=(
+        "Ruthenium alkylidene initiates by [2+2] cycloaddition with the "
+        "strained cyclic olefin (norbornene, cyclooctene, etc.); "
+        "metallacyclobutane retro-[2+2] opens the ring and regenerates "
+        "the active alkylidene. Repetitive ring-opening of strained "
+        "monomers produces a linear polymer with backbone unsaturation. "
+        "Thermodynamic driving force is the release of ring strain."
+    ),
+    reverse_transform=(
+        "Depolymerise the unsaturated polymer back to cyclic monomer "
+        "under dilute conditions (ring-closing metathesis)."
+    ),
+    scale_notes=(
+        "Living polymerisation: PDI close to 1.0. Control molecular "
+        "weight via monomer-to-initiator ratio. Quench with ethyl "
+        "vinyl ether."
+    ),
+    safety_notes=(
+        "Strained monomers (e.g. dicyclopentadiene) are flammable and "
+        "may self-polymerise. Ru catalysts are air-sensitive."
+    ),
+)
+
+_t(
+    name="Olefin cross-metathesis (selective, with acrylate partner)",
+    named_reaction="Olefin cross-metathesis",
+    category=ReactionCategory.MISC,
+    reagents=["Hoveyda-Grubbs 2nd generation catalyst", "methyl acrylate"],
+    solvents=["DCM", "toluene"],
+    catalysts=["Hoveyda-Grubbs 2nd generation"],
+    temperature_range=(25.0, 50.0),
+    typical_yield=(50.0, 85.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["alkene", "ester"],
+    functional_group_incompatible=["thiol", "primary_amine"],
+    mechanism=(
+        "Hoveyda-Grubbs catalyst releases the chelating isopropoxy "
+        "styrenyl ligand to generate the active 14-electron Ru "
+        "alkylidene. [2+2] cycloaddition with the Type I olefin "
+        "(terminal alkene) followed by cycloreversion, then a second "
+        "[2+2]/retro-[2+2] cycle with the Type II partner (acrylate) "
+        "gives the E-cross product selectively. Ethylene by-product "
+        "is removed under reduced pressure."
+    ),
+    reverse_transform=(
+        "Disconnect the internal alkene adjacent to the ester; "
+        "one fragment is a terminal olefin, the other is the acrylate."
+    ),
+    scale_notes=(
+        "Hoveyda-Grubbs catalyst is more robust than Grubbs 2nd gen "
+        "for electron-poor partners. Typical loading 2-5 mol%."
+    ),
+    safety_notes=(
+        "Methyl acrylate is a skin sensitiser and respiratory irritant "
+        "(H312/H332). Ru catalysts are air-sensitive."
+    ),
 )
 
 

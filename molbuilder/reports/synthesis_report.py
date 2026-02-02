@@ -82,6 +82,12 @@ def generate_synthesis_report(route) -> str:
     * ``.expected_yield`` -- float (percent)
     * ``.notes`` -- str
     """
+    if not hasattr(route, 'steps'):
+        raise TypeError(
+            f"route must have a 'steps' attribute, "
+            f"got {type(route).__name__}"
+        )
+
     lines: list[str] = []
 
     # ------------------------------------------------------------------

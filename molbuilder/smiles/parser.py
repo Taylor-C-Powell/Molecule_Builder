@@ -33,6 +33,8 @@ _BOND_ORDER = {
     "=": 2,
     "#": 3,
     ":": 1,   # aromatic bond treated as order 1 for connectivity
+    "/": 1,   # E/Z bond direction indicator (single bond connectivity)
+    "\\": 1,  # E/Z bond direction indicator (single bond connectivity)
 }
 
 
@@ -44,11 +46,12 @@ class _AtomInfo:
     """Lightweight bookkeeping record for an atom during parsing."""
 
     __slots__ = ("index", "symbol", "aromatic", "bracket",
-                 "isotope", "hcount", "charge")
+                 "isotope", "hcount", "charge", "chirality")
 
     def __init__(self, index: int, symbol: str, aromatic: bool = False,
                  bracket: bool = False, isotope: int | None = None,
-                 hcount: int | None = None, charge: int = 0):
+                 hcount: int | None = None, charge: int = 0,
+                 chirality: str | None = None):
         self.index = index
         self.symbol = symbol
         self.aromatic = aromatic
@@ -56,6 +59,7 @@ class _AtomInfo:
         self.isotope = isotope
         self.hcount = hcount
         self.charge = charge
+        self.chirality = chirality
 
 
 class _BondInfo:
@@ -112,6 +116,7 @@ def _build_graph(tokens: list[Token]) -> tuple[list[_AtomInfo], list[_BondInfo]]
                 isotope=tok.isotope,
                 hcount=tok.hcount,
                 charge=tok.charge,
+                chirality=tok.chirality,
             ))
 
             # Bond to previous atom
@@ -463,6 +468,9 @@ def parse(smiles: str) -> Molecule:
             symbol=ai.symbol,
             position=[0.0, 0.0, 0.0],
             hybridization=hyb,
+            chirality=ai.chirality,
+            isotope=ai.isotope,
+            formal_charge=ai.charge,
         )
 
     # Add bonds

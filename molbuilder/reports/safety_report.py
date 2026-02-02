@@ -22,6 +22,10 @@ from molbuilder.reports.text_formatter import (
 #  Helpers
 # =====================================================================
 
+# Emergency contact numbers -- override these for non-US locales
+EMERGENCY_NUMBER = "911"
+POISON_CONTROL_NUMBER = "1-800-222-1222"
+
 _RISK_ORDER = {
     "low": 0,
     "moderate": 1,
@@ -77,6 +81,14 @@ def generate_safety_report(assessments) -> str:
     * ``.waste_classification`` -- str
     * ``.risk_level`` -- str  (e.g. ``"low"``, ``"high"``)
     """
+    if assessments is not None:
+        for i, a in enumerate(assessments):
+            if not hasattr(a, 'step_number'):
+                raise TypeError(
+                    f"Assessment {i} must have a 'step_number' attribute, "
+                    f"got {type(a).__name__}"
+                )
+
     lines: list[str] = []
 
     # ------------------------------------------------------------------
@@ -261,8 +273,8 @@ def generate_safety_report(assessments) -> str:
 
     lines.append(subsection_header("General Emergency Contacts"))
     contacts = [
-        ("Emergency Services",     "911"),
-        ("Poison Control",         "1-800-222-1222"),
+        ("Emergency Services",     EMERGENCY_NUMBER),
+        ("Poison Control",         POISON_CONTROL_NUMBER),
         ("Campus/Site EHS",        "See posted numbers in laboratory"),
     ]
     lines.append(key_value_block(contacts, indent=4))

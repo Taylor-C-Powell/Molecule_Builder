@@ -11,6 +11,7 @@ from enum import Enum, auto
 from typing import Optional
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
+from molbuilder.reactions.reagent_data import normalize_reagent_name
 
 
 # =====================================================================
@@ -87,8 +88,7 @@ def _is_high_temp(template: ReactionTemplate) -> bool:
 def _select_material(template: ReactionTemplate) -> str:
     """Choose vessel material based on temperature and corrosive reagents."""
     corrosive_keywords = {"hcl", "h2so4", "hno3", "hf", "tfa", "socl2", "ticl4"}
-    reagent_keys = {r.lower().replace(" ", "_").replace("-", "_")
-                    for r in template.reagents}
+    reagent_keys = {normalize_reagent_name(r) for r in template.reagents}
     if reagent_keys & corrosive_keywords:
         return "hastelloy"
     if _is_high_temp(template):
@@ -148,6 +148,12 @@ def select_reactor(
        addition
     6. Default                            -> BATCH
     """
+    if not hasattr(template, 'temperature_range'):
+        raise TypeError(
+            f"template must have a 'temperature_range' attribute, "
+            f"got {type(template).__name__}"
+        )
+
     mean_t = _mean_temp(template)
     volume = _volume_for_scale(scale_kg)
     material = _select_material(template)

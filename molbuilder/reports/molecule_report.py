@@ -129,6 +129,12 @@ def generate_molecule_report(mol) -> str:
 
     Returns a single multi-line string.
     """
+    if not hasattr(mol, 'atoms'):
+        raise TypeError(
+            f"mol must have an 'atoms' attribute, "
+            f"got {type(mol).__name__}"
+        )
+
     lines: list[str] = []
 
     # ------------------------------------------------------------------

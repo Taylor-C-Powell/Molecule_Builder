@@ -46,4 +46,6 @@ MAX_ELECTRONS_PER_SHELL = [2 * n**2 for n in range(1, 8)]  # shells 1-7
 # ---------------------------------------------------------------------------
 def coulombs_law(q1: float, q2: float, r: float) -> float:
     """Coulomb force between two charges q1, q2 (Coulombs) separated by r (metres)."""
+    if r <= 0:
+        raise ValueError("Distance must be positive")
     return COULOMB_CONSTANT * (abs(q1) * abs(q2)) / r**2

@@ -131,6 +131,9 @@ ELEMENTS: dict[int, tuple[str, str, float]] = {
 # Reverse lookup: symbol -> atomic number
 SYMBOL_TO_Z: dict[str, int] = {v[0]: k for k, v in ELEMENTS.items()}
 
+# Reverse lookup: lowercase name -> atomic number  (O(1) name lookup)
+_NAME_TO_Z: dict[str, int] = {v[1].lower(): k for k, v in ELEMENTS.items()}
+
 # Noble gas core atomic numbers (for shorthand notation)
 NOBLE_GASES: dict[int, str] = {
     2: "He", 10: "Ne", 18: "Ar",
@@ -158,12 +161,16 @@ def from_symbol(symbol: str) -> tuple[int, str, str, float]:
 
 
 def from_name(name: str) -> tuple[int, str, str, float]:
-    """Look up element by name.  Returns (Z, symbol, name, weight)."""
+    """Look up element by name.  Returns (Z, symbol, name, weight).
+
+    Uses a pre-built reverse mapping for O(1) lookup instead of linear scan.
+    """
     name_lower = name.strip().lower()
-    for z, (sym, elem_name, weight) in ELEMENTS.items():
-        if elem_name.lower() == name_lower:
-            return z, sym, elem_name, weight
-    raise ValueError(f"Unknown element name: {name}")
+    z = _NAME_TO_Z.get(name_lower)
+    if z is None:
+        raise ValueError(f"Unknown element name: {name}")
+    sym, elem_name, weight = ELEMENTS[z]
+    return z, sym, elem_name, weight
 
 
 def atomic_weight(symbol: str) -> float:

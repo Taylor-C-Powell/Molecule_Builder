@@ -166,5 +166,86 @@ class TestErrorHandling(unittest.TestCase):
             parse("[NH4")
 
 
+class TestStereochemistry(unittest.TestCase):
+    """Tests for P0-3: SMILES stereochemistry support."""
+
+    def test_tokenizer_preserves_chirality_at(self):
+        """Tokenizer should store '@' chirality on bracket atoms."""
+        tokens = tokenize("[C@H](F)(Cl)Br")
+        atom = tokens[0]
+        self.assertEqual(atom.chirality, "@")
+
+    def test_tokenizer_preserves_chirality_atat(self):
+        """Tokenizer should store '@@' chirality on bracket atoms."""
+        tokens = tokenize("[C@@H](F)(Cl)Br")
+        atom = tokens[0]
+        self.assertEqual(atom.chirality, "@@")
+
+    def test_tokenizer_no_chirality_default(self):
+        """Organic subset atoms should have chirality=None."""
+        tokens = tokenize("C")
+        self.assertIsNone(tokens[0].chirality)
+
+    def test_parser_propagates_chirality(self):
+        """Parser should set chirality on Atom from Token."""
+        mol = parse("[C@@H](F)(Cl)Br")
+        c_atoms = [a for a in mol.atoms if a.symbol == "C"]
+        self.assertEqual(len(c_atoms), 1)
+        self.assertEqual(c_atoms[0].chirality, "@@")
+
+    def test_ez_bond_tokenizes(self):
+        """E/Z directional bonds (/ and backslash) should tokenize."""
+        tokens = tokenize("F/C=C/F")
+        self.assertEqual(len(tokens), 7)  # F / C = C / F
+
+    def test_ez_bond_parses(self):
+        """E/Z SMILES should parse into correct atom counts."""
+        mol = parse("F/C=C/F")
+        symbols = [a.symbol for a in mol.atoms]
+        self.assertEqual(symbols.count("F"), 2)
+        self.assertEqual(symbols.count("C"), 2)
+
+
+class TestBracketAtomRoundTrip(unittest.TestCase):
+    """Tests for P0-4: bracket atom data preservation in writer."""
+
+    def test_charged_atom_round_trip(self):
+        """[NH4+] should round-trip preserving charge."""
+        mol = parse("[NH4+]")
+        smi = to_smiles(mol)
+        self.assertIn("+", smi)
+        # Re-parse should still have charge
+        mol2 = parse(smi)
+        n_atoms = [a for a in mol2.atoms if a.symbol == "N"]
+        self.assertEqual(n_atoms[0].formal_charge, 1)
+
+    def test_negative_charge_round_trip(self):
+        """[O-] should round-trip preserving negative charge."""
+        mol = parse("[O-]")
+        smi = to_smiles(mol)
+        self.assertIn("-", smi)
+
+    def test_isotope_round_trip(self):
+        """[13C] should round-trip preserving isotope number."""
+        mol = parse("[13C]")
+        smi = to_smiles(mol)
+        self.assertIn("13", smi)
+        mol2 = parse(smi)
+        c_atoms = [a for a in mol2.atoms if a.symbol == "C"]
+        self.assertEqual(c_atoms[0].isotope, 13)
+
+    def test_organic_subset_no_brackets(self):
+        """Simple organic atoms (C, N, O, etc.) should remain unbracketed."""
+        mol = parse("CCO")
+        smi = to_smiles(mol)
+        self.assertNotIn("[", smi)
+
+    def test_chirality_in_writer_output(self):
+        """Writer should include @@ in output for chiral atoms."""
+        mol = parse("[C@@H](F)(Cl)Br")
+        smi = to_smiles(mol)
+        self.assertIn("@@", smi)
+
+
 if __name__ == "__main__":
     unittest.main()

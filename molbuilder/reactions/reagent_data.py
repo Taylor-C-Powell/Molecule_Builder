@@ -14,6 +14,52 @@ from dataclasses import dataclass, field
 
 
 # =====================================================================
+#  Reagent name normalisation
+# =====================================================================
+
+# Alias dictionary for common alternative names
+_REAGENT_ALIASES: dict[str, str] = {
+    "lialh4": "lithium_aluminium_hydride",
+    "nabh4": "sodium_borohydride",
+    "pcc": "pyridinium_chlorochromate",
+    "dcc": "dicyclohexylcarbodiimide",
+    "mcpba": "meta_chloroperoxybenzoic_acid",
+    "tbscl": "tert_butyldimethylsilyl_chloride",
+    "tmscl": "trimethylsilyl_chloride",
+    "boc2o": "di_tert_butyl_dicarbonate",
+    "fmoc_cl": "fluorenylmethyloxycarbonyl_chloride",
+    "pd_c": "palladium_on_carbon",
+    "pd/c": "palladium_on_carbon",
+    "h2so4": "sulfuric_acid",
+    "hcl": "hydrochloric_acid",
+    "naoh": "sodium_hydroxide",
+    "koh": "potassium_hydroxide",
+    "kmno4": "potassium_permanganate",
+    "k2cr2o7": "potassium_dichromate",
+    "lioh": "lithium_hydroxide",
+    "nah": "sodium_hydride",
+    "n_buli": "n_butyllithium",
+    "n-buli": "n_butyllithium",
+    "t_buok": "potassium_tert_butoxide",
+    "t-buok": "potassium_tert_butoxide",
+    "et3n": "triethylamine",
+    "dbu": "1_8_diazabicyclo_5_4_0_undec_7_ene",
+    "dmap": "4_dimethylaminopyridine",
+    "tfa": "trifluoroacetic_acid",
+}
+
+
+def normalize_reagent_name(name: str) -> str:
+    """Normalize a reagent name to its canonical key.
+
+    Lowercases, replaces whitespace/hyphens with underscores, and checks
+    the alias dictionary for common abbreviations.
+    """
+    key = name.strip().lower().replace(" ", "_").replace("-", "_")
+    return _REAGENT_ALIASES.get(key, key)
+
+
+# =====================================================================
 #  Data classes
 # =====================================================================
 
@@ -1179,13 +1225,13 @@ SOLVENT_DB: dict[str, Solvent] = {
 
 def get_reagent(name: str) -> Reagent | None:
     """Look up a reagent by name or normalised key."""
-    key = name.lower().replace(" ", "_").replace("-", "_")
+    key = normalize_reagent_name(name)
     return REAGENT_DB.get(key) or REAGENT_DB.get(name)
 
 
 def get_solvent(name: str) -> Solvent | None:
     """Look up a solvent by name or normalised key."""
-    key = name.lower().replace(" ", "_").replace("-", "_")
+    key = normalize_reagent_name(name)
     return SOLVENT_DB.get(key) or SOLVENT_DB.get(name)
 
 

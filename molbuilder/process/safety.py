@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, List
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
-from molbuilder.reactions.reagent_data import REAGENT_DB, get_reagent, Reagent
+from molbuilder.reactions.reagent_data import REAGENT_DB, get_reagent, Reagent, normalize_reagent_name
 
 
 # =====================================================================
@@ -69,6 +69,7 @@ GHS_HAZARD_STATEMENTS: dict[str, str] = {
     "H301": "Toxic if swallowed",
     "H302": "Harmful if swallowed",
     "H304": "May be fatal if swallowed and enters airways",
+    "H305": "May be harmful if swallowed and enters airways",
     "H310": "Fatal in contact with skin",
     "H311": "Toxic in contact with skin",
     "H312": "Harmful in contact with skin",
@@ -89,6 +90,11 @@ GHS_HAZARD_STATEMENTS: dict[str, str] = {
     "H351": "Suspected of causing cancer",
     "H360": "May damage fertility or the unborn child",
     "H361": "Suspected of damaging fertility or the unborn child",
+    "H362": "May cause harm to breast-fed children",
+    "H360F": "May damage fertility",
+    "H360D": "May damage the unborn child",
+    "H360Fd": "May damage fertility; suspected of damaging the unborn child",
+    "H360Df": "May damage the unborn child; suspected of damaging fertility",
     "H370": "Causes damage to organs",
     "H371": "May cause damage to organs",
     "H372": "Causes damage to organs through prolonged or repeated exposure",
@@ -288,8 +294,7 @@ def _determine_incompatibilities(template: ReactionTemplate) -> list[str]:
     """List known incompatible material pairs in the step."""
     incompatibilities: list[str] = []
 
-    reagent_keys = {r.lower().replace(" ", "_").replace("-", "_")
-                    for r in template.reagents}
+    reagent_keys = {normalize_reagent_name(r) for r in template.reagents}
 
     # Oxidizer + organic / reducer
     oxidizers = {"kmno4", "cro3", "h2o2", "naocl", "mcpba", "hno3", "naio4"}
@@ -317,10 +322,63 @@ def _determine_incompatibilities(template: ReactionTemplate) -> list[str]:
         )
 
     # Peroxides + metals
-    peroxides = {"h2o2", "mcpba"}
-    metals = {"ticl4", "alcl3", "zncl2", "cui"}
+    peroxides = {"h2o2", "mcpba", "tbhp", "dtbp", "benzoyl_peroxide"}
+    metals = {"ticl4", "alcl3", "zncl2", "cui", "fecl3", "fecl2"}
     if reagent_keys & peroxides and reagent_keys & metals:
         incompatibilities.append("Peroxide + metal salt: risk of uncontrolled decomposition")
+
+    # Hypochlorite + acids -> chlorine gas
+    hypochlorites = {"naocl", "bleach", "calcium_hypochlorite"}
+    if reagent_keys & hypochlorites and reagent_keys & acids:
+        incompatibilities.append("CRITICAL: Hypochlorite + acid liberates Cl2 gas (toxic)")
+
+    # Permanganate + concentrated organics -> fire/explosion
+    permanganates = {"kmno4", "namno4"}
+    flammable_organics = {"acetone", "diethyl_ether", "thf", "ethanol", "methanol",
+                          "toluene", "hexane", "pentane", "dcm", "dmf", "dmso"}
+    if reagent_keys & permanganates and reagent_keys & flammable_organics:
+        incompatibilities.append("Permanganate + flammable organic: fire/explosion risk")
+
+    # Alkali metals + water -> violent reaction
+    alkali_metals = {"na", "k", "li", "cs", "nah", "kh"}
+    aqueous = {"h2o", "water", "naoh_aq", "hcl_aq"}
+    if reagent_keys & alkali_metals and reagent_keys & aqueous:
+        incompatibilities.append("CRITICAL: Alkali metal/hydride + water -> violent H2 evolution")
+
+    # Chlorine/halogens + ammonia -> toxic gases
+    halogens = {"cl2", "br2", "i2", "ncs"}
+    ammonia = {"nh3", "nh4oh", "nh4cl"}
+    if reagent_keys & halogens and reagent_keys & ammonia:
+        incompatibilities.append("CRITICAL: Halogen + ammonia -> toxic NCl3/NBr3")
+
+    # Strong oxidizers + flammable solvents
+    strong_oxidizers = {"kmno4", "cro3", "k2cr2o7", "hno3_conc", "h2o2_conc",
+                        "naio4", "oxone", "dmp"}
+    if reagent_keys & strong_oxidizers and reagent_keys & flammable_organics:
+        incompatibilities.append("Strong oxidizer + flammable solvent: fire risk -- use compatible solvent")
+
+    # Nitrates + organics -> explosion risk
+    nitrates = {"nano3", "kno3", "agno3", "nh4no3"}
+    if reagent_keys & nitrates and reagent_keys & flammable_organics:
+        incompatibilities.append("Nitrate salt + organic solvent: explosion risk at elevated temperature")
+
+    # Concentrated acids + concentrated bases -> exothermic
+    bases = {"naoh", "koh", "lioh", "naoh_conc", "koh_conc", "nah", "naoh_aq"}
+    conc_acids = {"h2so4", "hno3", "hcl_conc", "h3po4", "hf"}
+    if reagent_keys & conc_acids and reagent_keys & bases:
+        incompatibilities.append("Concentrated acid + base: highly exothermic neutralization -- add slowly with cooling")
+
+    # Grignard/organolithium + protic solvents
+    organometallics = {"memgbr", "etmgbr", "phmgbr", "meli", "phli",
+                       "n_buli", "t_buli", "s_buli", "znet2", "znme2"}
+    protic_solvents = {"meoh", "etoh", "h2o", "acoh", "ipoh"}
+    if reagent_keys & organometallics and reagent_keys & protic_solvents:
+        incompatibilities.append("Organometallic + protic solvent: immediate quench -- use ethereal solvents only")
+
+    # Perchloric acid + organics -> explosive perchlorates
+    perchlorics = {"hclo4", "perchloric_acid"}
+    if reagent_keys & perchlorics and reagent_keys & flammable_organics:
+        incompatibilities.append("CRITICAL: Perchloric acid + organics -> explosive perchlorate esters")
 
     return incompatibilities
 
@@ -372,6 +430,15 @@ def assess_safety(steps: list[Any]) -> list[SafetyAssessment]:
     list[SafetyAssessment]
         One assessment per step, in order.
     """
+    if not steps:
+        return []
+    for i, step in enumerate(steps):
+        if not hasattr(step, 'template'):
+            raise TypeError(
+                f"Step {i} must have a 'template' attribute, "
+                f"got {type(step).__name__}"
+            )
+
     assessments: list[SafetyAssessment] = []
 
     for idx, step in enumerate(steps):

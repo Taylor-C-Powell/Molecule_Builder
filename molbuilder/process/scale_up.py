@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, List
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
+from molbuilder.process import DEFAULT_SOLVENT_L_PER_KG
 
 
 # =====================================================================
@@ -46,8 +47,8 @@ _MAX_BATCH_VOLUME_L = 16_000.0
 # Typical product density assumption (kg/L)
 _PRODUCT_DENSITY = 1.0
 
-# Solvent-to-product volume ratio
-_SOLVENT_RATIO = 6.0
+# Solvent-to-product volume ratio (shared constant)
+_SOLVENT_RATIO = DEFAULT_SOLVENT_L_PER_KG
 
 # Batch turnaround time (cleaning, charging, discharging) in hours
 _TURNAROUND_HOURS = 2.0
@@ -310,6 +311,26 @@ def analyze_scale_up(
         batch sizing, capital and operating cost estimates, risks, and
         recommendations.
     """
+    if not steps:
+        return ScaleUpAnalysis(
+            target_annual_kg=target_annual_kg,
+            recommended_mode="batch",
+            batch_size_kg=None,
+            batches_per_year=None,
+            cycle_time_hours=0.0,
+            annual_capacity_kg=0.0,
+            capital_cost_usd=0.0,
+            operating_cost_annual_usd=0.0,
+            scale_up_risks=[],
+            recommendations=[],
+        )
+    for i, step in enumerate(steps):
+        if not hasattr(step, 'template'):
+            raise TypeError(
+                f"Step {i} must have a 'template' attribute, "
+                f"got {type(step).__name__}"
+            )
+
     if target_annual_kg <= 0:
         target_annual_kg = 1.0
 

@@ -55,6 +55,9 @@ class Token:
         Formal charge from a bracket atom, e.g. +1 in ``[NH4+]``.
     aromatic : bool
         True if the atom was given in lowercase (aromatic notation).
+    chirality : str | None
+        Chirality marker from a bracket atom: ``"@"`` (anticlockwise),
+        ``"@@"`` (clockwise), or ``None`` (no chirality specified).
     """
     type: TokenType
     value: str
@@ -62,6 +65,7 @@ class Token:
     hcount: int | None = None
     charge: int = 0
     aromatic: bool = False
+    chirality: str | None = None
 
 
 # ===================================================================
@@ -82,7 +86,7 @@ DEFAULT_VALENCE: dict[str, list[int]] = {
     "b": [3], "c": [4], "n": [3], "o": [2], "p": [3], "s": [2],
 }
 
-BOND_CHARS = {"-", "=", "#", ":"}
+BOND_CHARS = {"-", "=", "#", ":", "/", "\\"}
 
 
 # ===================================================================
@@ -104,6 +108,7 @@ def _parse_bracket(smiles: str, start: int) -> tuple[Token, int]:
     hcount: int | None = None
     charge: int = 0
     aromatic: bool = False
+    chirality: str | None = None
 
     i = 0
     n = len(inner)
@@ -133,11 +138,14 @@ def _parse_bracket(smiles: str, start: int) -> tuple[Token, int]:
         raise ValueError(
             f"Expected element symbol in bracket atom: [{inner}]")
 
-    # --- chirality (skip @, @@) ---
+    # --- chirality (@, @@) ---
     if i < n and inner[i] == "@":
         i += 1
         if i < n and inner[i] == "@":
+            chirality = "@@"
             i += 1
+        else:
+            chirality = "@"
 
     # --- hydrogen count ---
     if i < n and inner[i] == "H":
@@ -175,6 +183,7 @@ def _parse_bracket(smiles: str, start: int) -> tuple[Token, int]:
         hcount=hcount,
         charge=charge,
         aromatic=aromatic,
+        chirality=chirality,
     ), end + 1
 
 

@@ -130,7 +130,7 @@ def build_cyclohexane(
     if conformation == RingConformation.CHAIR:
         puckering = [d, -d, d, -d, d, -d]
     elif conformation == RingConformation.BOAT:
-        puckering = [d, -d * 0.5, -d, d, -d, -d * 0.5]
+        puckering = [d, -d, 0, d, -d, 0]
     else:
         raise ValueError(
             f"Unsupported conformation: {conformation}. "

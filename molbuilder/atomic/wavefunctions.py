@@ -17,6 +17,7 @@ Physics conventions:
     - Condon-Shortley phase is included (via scipy)
 """
 
+import functools
 import math
 import numpy as np
 from scipy import special
@@ -226,6 +227,7 @@ def expectation_1_over_r(n: int, l: int, Z: int = 1) -> float:
     return Z / (n**2 * BOHR_RADIUS)
 
 
+@functools.lru_cache(maxsize=256)
 def most_probable_radius(n: int, l: int, Z: int = 1) -> float:
     """Most probable radius (peak of radial probability density), in metres.
 

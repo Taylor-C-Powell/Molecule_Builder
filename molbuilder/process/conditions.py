@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
+from molbuilder.reactions.reagent_data import normalize_reagent_name
 
 
 # =====================================================================
@@ -76,8 +77,7 @@ def _select_atmosphere(template: ReactionTemplate) -> str:
     sensitive_keywords = {"lialh4", "nabh4", "n_buli", "dibal", "grignard",
                           "memgbr", "etmgbr", "phmgbr", "lda", "lhmds",
                           "nahmds", "khmds", "nah", "red_al"}
-    reagent_keys = {r.lower().replace(" ", "_").replace("-", "_")
-                    for r in template.reagents}
+    reagent_keys = {normalize_reagent_name(r) for r in template.reagents}
     if reagent_keys & sensitive_keywords:
         return "Ar"
     return "air"
@@ -114,7 +114,7 @@ def _estimate_reaction_time(template: ReactionTemplate, scale_kg: float) -> floa
     """
     # Base time from yield midpoint heuristic: higher yield takes longer
     _, yield_hi = template.typical_yield
-    base_hours = 1.0 + (100.0 - yield_hi) * 0.05  # 1-3 h typical
+    base_hours = 0.5 + (yield_hi / 100.0) * 2.0  # higher yield -> longer time
 
     # Temperature effect: cryogenic reactions are faster but need hold time
     mean_t = (template.temperature_range[0] + template.temperature_range[1]) / 2.0
@@ -207,6 +207,12 @@ def optimize_conditions(
     * Longer reaction time accounting for heat/mass transfer
     * Appropriate workup procedures
     """
+    if not hasattr(template, 'temperature_range'):
+        raise TypeError(
+            f"template must have a 'temperature_range' attribute, "
+            f"got {type(template).__name__}"
+        )
+
     mean_t = (template.temperature_range[0] + template.temperature_range[1]) / 2.0
 
     # Concentration adjustment: dilute slightly at large scale for mixing
@@ -225,8 +231,7 @@ def optimize_conditions(
     if template.category == ReactionCategory.REDUCTION:
         # Check for hydrogenation reagents
         h2_reagents = {"h2_pd_c", "pd_c_10", "lindlar"}
-        reagent_keys = {r.lower().replace(" ", "_").replace("-", "_")
-                        for r in template.reagents}
+        reagent_keys = {normalize_reagent_name(r) for r in template.reagents}
         if reagent_keys & h2_reagents:
             pressure = 4.0  # typical balloon to autoclave
 

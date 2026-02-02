@@ -5,6 +5,8 @@ CPK colours, octet targets, period/group information.
 Migrated from element_data.py.
 """
 
+import warnings
+
 from molbuilder.core.elements import SYMBOL_TO_Z
 
 # ---------------------------------------------------------------------------
@@ -66,6 +68,12 @@ COVALENT_RADII_PM: dict[str, float] = {
     "At": 150, "Rn": 150,
     "Fr": 260, "Ra": 221, "Ac": 215, "Th": 206, "Pa": 200,
     "U":  196, "Np": 190, "Pu": 187, "Am": 180, "Cm": 169,
+    # Elements 97-118 (Pyykko & Atsumi 2009, estimated for superheavy)
+    "Bk": 168, "Cf": 168, "Es": 165, "Fm": 167, "Md": 173,
+    "No": 176, "Lr": 161, "Rf": 157, "Db": 149, "Sg": 143,
+    "Bh": 141, "Hs": 134, "Mt": 129, "Ds": 128, "Rg": 121,
+    "Cn": 122, "Nh": 136, "Fl": 143, "Mc": 162, "Lv": 175,
+    "Ts": 165, "Og": 157,
 }
 
 # ---------------------------------------------------------------------------
@@ -110,7 +118,14 @@ def electronegativity(symbol: str) -> float:
 
 def covalent_radius_pm(symbol: str) -> float:
     """Single-bond covalent radius in picometres.  Fallback: 150 pm."""
-    return COVALENT_RADII_PM.get(symbol, 150.0)
+    val = COVALENT_RADII_PM.get(symbol)
+    if val is None:
+        warnings.warn(
+            f"No covalent radius data for '{symbol}'; using 150 pm fallback",
+            stacklevel=2,
+        )
+        return 150.0
+    return val
 
 
 def estimated_bond_length_pm(symbol_a: str, symbol_b: str,

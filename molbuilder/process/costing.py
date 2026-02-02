@@ -12,7 +12,8 @@ from dataclasses import dataclass, field
 from typing import Any, List
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
-from molbuilder.reactions.reagent_data import REAGENT_DB, SOLVENT_DB, get_reagent, get_solvent
+from molbuilder.reactions.reagent_data import REAGENT_DB, SOLVENT_DB, get_reagent, get_solvent, normalize_reagent_name
+from molbuilder.process import DEFAULT_SOLVENT_L_PER_KG
 
 
 # =====================================================================
@@ -67,8 +68,8 @@ _EQUIPMENT_DEPRECIATION_PER_BATCH = 0.002
 # Default reagent equivalents if not otherwise specified
 _DEFAULT_REAGENT_EQUIV = 1.2
 
-# Typical solvent volume: litres per kg of product
-_SOLVENT_L_PER_KG = 8.0
+# Typical solvent volume: litres per kg of product (shared constant)
+_SOLVENT_L_PER_KG = DEFAULT_SOLVENT_L_PER_KG
 
 
 # =====================================================================
@@ -77,7 +78,7 @@ _SOLVENT_L_PER_KG = 8.0
 
 def _normalise_key(name: str) -> str:
     """Normalise a reagent/solvent name to a REAGENT_DB lookup key."""
-    return name.lower().replace(" ", "_").replace("-", "_")
+    return normalize_reagent_name(name)
 
 
 def _reagent_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
@@ -220,6 +221,20 @@ def estimate_cost(
     CostEstimate
         Complete cost estimate with per-kg pricing and itemised breakdown.
     """
+    if not steps:
+        breakdown = CostBreakdown(0, 0, 0, 0, 0, 0)
+        return CostEstimate(
+            total_usd=0.0, per_kg_usd=0.0,
+            breakdown=breakdown, scale_kg=scale_kg,
+            notes=["No synthesis steps provided; returning zero cost."],
+        )
+    for i, step in enumerate(steps):
+        if not hasattr(step, 'template'):
+            raise TypeError(
+                f"Step {i} must have a 'template' attribute, "
+                f"got {type(step).__name__}"
+            )
+
     if scale_kg <= 0:
         scale_kg = 0.001  # avoid division by zero
 

@@ -76,6 +76,9 @@ def from_mol_string(content: str) -> Molecule:
     n_atoms = int(counts_line[0:3])
     n_bonds = int(counts_line[3:6])
 
+    if len(lines) < 4 + n_atoms + n_bonds:
+        raise ValueError(f"MOL file truncated: expected {4 + n_atoms + n_bonds} lines")
+
     mol = Molecule(name=name)
 
     # Atom block: starts at line 4

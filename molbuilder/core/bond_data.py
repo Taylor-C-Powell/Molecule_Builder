@@ -94,6 +94,16 @@ BDE_TABLE: dict[tuple[str, str, int], float] = {
     ("N", "O", 2):  607,
     ("C", "S", 2):  577,
     ("S", "O", 2):  522,
+    # Additional single bonds (P2-DATA-2)
+    ("C", "P", 1):  264,   # Luo 2007
+    ("C", "Si", 1): 318,   # CRC Handbook
+    ("N", "S", 1):  272,   # Benson estimates
+    ("Cl", "N", 1): 200,   # chloramine / N-Cl
+    ("F", "O", 1):  190,   # OF2
+    ("O", "S", 1):  265,   # dimethyl sulfoxide (single)
+    ("F", "S", 1):  327,   # SF6 type
+    ("N", "P", 1):  230,   # P-N amine
+    ("F", "Si", 1): 565,   # SiF4
     # Triple bonds
     ("C", "C", 3):  839,
     ("C", "N", 3):  891,
@@ -107,10 +117,24 @@ BDE_TABLE: dict[tuple[str, str, int], float] = {
 # ===================================================================
 
 TORSION_BARRIERS: dict[str, dict[str, float]] = {
+    # sp3-sp3 torsions (alkanes)
     "H_sp3_sp3_H": {"V1": 0.0,  "V2": 0.0,   "V3": 1.39},
     "C_sp3_sp3_C": {"V1": 2.73, "V2": -0.53,  "V3": 0.84},
     "C_sp3_sp3_H": {"V1": 0.0,  "V2": 0.0,    "V3": 0.76},
     "H_sp3_sp3_C": {"V1": 0.0,  "V2": 0.0,    "V3": 0.76},
+    # sp2-sp3 torsions (P2-DATA-3, OPLS-AA Jorgensen et al. JACS 1996)
+    "C_sp2_sp3_C": {"V1": 0.0,  "V2": 0.0,    "V3": 0.50},
+    "C_sp2_sp3_H": {"V1": 0.0,  "V2": 0.0,    "V3": 0.50},
+    "H_sp2_sp3_C": {"V1": 0.0,  "V2": 0.0,    "V3": 0.50},
+    "H_sp2_sp3_H": {"V1": 0.0,  "V2": 0.0,    "V3": 0.50},
+    "H_sp3_sp2_C": {"V1": 0.0,  "V2": 0.0,    "V3": 0.50},
+    "C_sp3_sp2_C": {"V1": 0.0,  "V2": 0.0,    "V3": 0.50},
+    "C_sp3_sp2_H": {"V1": 0.0,  "V2": 0.0,    "V3": 0.50},
+    # sp2-sp2 torsions (conjugated systems)
+    "C_sp2_sp2_C": {"V1": 0.0,  "V2": 12.0,   "V3": 0.0},
+    "C_sp2_sp2_H": {"V1": 0.0,  "V2": 12.0,   "V3": 0.0},
+    "H_sp2_sp2_C": {"V1": 0.0,  "V2": 12.0,   "V3": 0.0},
+    "H_sp2_sp2_H": {"V1": 0.0,  "V2": 12.0,   "V3": 0.0},
     "default":     {"V1": 0.0,  "V2": 0.0,    "V3": 1.00},
 }
 
