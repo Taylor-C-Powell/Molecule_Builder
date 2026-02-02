@@ -108,8 +108,8 @@ def spherical_harmonic(l: int, m: int, theta, phi):
         raise ValueError(f"|m| must be <= l, got l={l}, m={m}")
     theta = np.asarray(theta, dtype=float)
     phi = np.asarray(phi, dtype=float)
-    # scipy convention: sph_harm(m, n, theta_az, theta_polar)
-    return special.sph_harm(m, l, phi, theta)
+    # scipy convention: sph_harm_y(n, m, theta_polar, theta_az)
+    return special.sph_harm_y(l, m, theta, phi)
 
 
 def real_spherical_harmonic(l: int, m: int, theta, phi):
@@ -132,13 +132,13 @@ def real_spherical_harmonic(l: int, m: int, theta, phi):
     phi = np.asarray(phi, dtype=float)
 
     if m > 0:
-        Y = special.sph_harm(m, l, phi, theta)
+        Y = special.sph_harm_y(l, m, theta, phi)
         return np.sqrt(2.0) * (-1)**m * Y.real
     elif m < 0:
-        Y = special.sph_harm(abs(m), l, phi, theta)
+        Y = special.sph_harm_y(l, abs(m), theta, phi)
         return np.sqrt(2.0) * (-1)**abs(m) * Y.imag
     else:
-        return special.sph_harm(0, l, phi, theta).real
+        return special.sph_harm_y(l, 0, theta, phi).real
 
 
 # ===================================================================

@@ -7,6 +7,8 @@ All output is cp1252-safe.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from molbuilder.reports.text_formatter import (
     section_header,
     subsection_header,
@@ -18,6 +20,9 @@ from molbuilder.reports.text_formatter import (
     format_percent,
     word_wrap,
 )
+
+if TYPE_CHECKING:
+    from molbuilder.reports import CostEstimateLike
 
 
 # =====================================================================
@@ -48,7 +53,7 @@ def _safe_float(value, default: float = 0.0) -> float:
 #  Public API
 # =====================================================================
 
-def generate_cost_report(estimate) -> str:
+def generate_cost_report(estimate: CostEstimateLike) -> str:
     """Generate an ASCII cost breakdown report.
 
     Uses duck typing -- *estimate* should expose:

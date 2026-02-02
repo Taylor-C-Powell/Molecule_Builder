@@ -3,8 +3,9 @@
 Authoritative reference for continuing development after context compactions.
 Read this file at the start of every new session or after context resets.
 
-**Current state:** All 10 phases (0-9) COMPLETE. Sprints 1-3 COMPLETE.
-446+ tests passing. 21 FG detectors. 86 reaction templates.
+**Current state:** All 10 phases (0-9) COMPLETE. All 3 sprints COMPLETE.
+517 tests passing (6 warnings). ~19,900 source lines + ~4,100 test lines.
+21 FG detectors. 91 reaction templates. 69 GHS codes. 49 BDE entries. 118 covalent radii.
 
 **Sprint 1 completed fixes (P0 critical):**
 - P0-1: Dipole moment formula corrected in `bonding/covalent.py`
@@ -20,7 +21,7 @@ Read this file at the start of every new session or after context resets.
 - P1-SCI-2: Bohr model limitation warning for multi-electron atoms
 - P1-SCI-3: Reaction time estimation formula corrected
 - P1-SCI-4: Safety incompatibility detection expanded (14 checks)
-- P1-SCI-5: Aufbau exceptions expanded for d-block and f-block
+- P1-SCI-5: Aufbau exceptions expanded for d-block and f-block (22 entries)
 - P1-SCI-6: 5-membered aromatic ring detection (furan, pyrrole, thiophene)
 - P1-SCI-7: Cyclohexane boat conformation puckering fixed
 - P1-SCI-8: Replaced hardcoded vacuum permittivity with VACUUM_PERMITTIVITY
@@ -30,7 +31,7 @@ Read this file at the start of every new session or after context resets.
 - P1-CODE-4: Named tolerance constants in geometry.py
 - P1-CODE-5: Convenience re-exports in all __init__.py files
 - P1-CODE-6: Unified solvent ratio constant (DEFAULT_SOLVENT_L_PER_KG = 7.0)
-- P1-CODE-7: Duplicate reaction templates removed (86 unique)
+- P1-CODE-7: Duplicate reaction templates removed (91 unique)
 
 **Sprint 3 completed improvements (P2 medium):**
 - P2-ALGO-1: O(1) name->Z reverse mapping in elements.py
@@ -40,12 +41,19 @@ Read this file at the start of every new session or after context resets.
 - P2-ROBUST-1: Warnings for silent covalent radius fallback
 - P2-ROBUST-2: Parameterized emergency contact numbers in safety_report.py
 - P2-ROBUST-3: Steric clash detection method on Molecule class
-- P2-DATA-2: Expanded BDE table (10 additional bond types)
+- P2-DATA-1: Covalent radii extended to all 118 elements
+- P2-DATA-2: Expanded BDE table (49 entries total)
 - P2-DATA-3: Expanded torsion barriers (sp2-sp3, sp2-sp2 parameters)
 - P2-DATA-4: 5 new FG detectors (acid chloride, anhydride, sulfoxide, sulfone, imine)
-- P2-TEST-1/2: Edge case and scientific validation test suite (in progress)
+- P2-DATA-5: 7 new reaction templates (cross-metathesis, C-H activation, ROMP, etc.)
+- P2-DATA-6: GHS hazard statements expanded to 69 codes
+- P2-TEST-1: Edge case tests (invalid SMILES, empty molecules, boundary conditions)
+- P2-TEST-2: Scientific validation tests (Bohr model, bond lengths, VSEPR angles)
+- P2-TYPE-1: Type hints added to geometry.py, reports/, quantum_atom.py
+- P2-TYPE-2: Protocol classes (SynthesisStepLike, SynthesisRouteLike, etc.)
+- Bonus: scipy.special.sph_harm -> sph_harm_y migration (DeprecationWarning fix)
 
-Next: Remaining P2 items (P2-TYPE, P2-DATA-1/5/6, P2-TEST finalization).
+All P0, P1, and P2 items from the development roadmap are COMPLETE.
 
 ---
 
@@ -67,8 +75,8 @@ Next: Remaining P2 items (P2-TYPE, P2-DATA-1/5/6, P2-TEST finalization).
 
 ## Project Overview
 
-**molbuilder** is a professional-grade molecular engineering tool. ~19,100 source
-lines + ~3,300 test lines across 81 Python files in 12 subpackages.
+**molbuilder** is a professional-grade molecular engineering tool. ~19,900 source
+lines + ~4,100 test lines across 81 Python files in 12 subpackages.
 
 - **Pure Python** + numpy + scipy + matplotlib (no RDKit, no OpenBabel)
 - **Windows cp1252 compatible** -- no special unicode in source files
@@ -91,14 +99,15 @@ Molecule_Builder/
   legacy/                     # Original 13 flat files preserved
   tests/
     __init__.py
-    test_core.py              # 56 tests
-    test_atomic.py            # 48 tests
+    test_core.py              # 105 tests
+    test_atomic.py            # 110 tests
     test_bonding.py           # 72 tests
-    test_molecule.py          # 68 tests
-    test_smiles.py            # 52 tests
-    test_io.py                # 44 tests
-    test_reactions.py         # 50 tests
+    test_molecule.py          # 49 tests
+    test_smiles.py            # 30 tests
+    test_io.py                # 12 tests
+    test_reactions.py         # 23 tests
     test_process.py           # 45 tests
+    test_edge_cases.py        # 71 tests (edge cases + scientific validation)
   molbuilder/
     __init__.py               # __version__ = "1.0.0"
     __main__.py               # Entry point -> cli.menu.main()
@@ -138,8 +147,8 @@ Molecule_Builder/
     reactions/                # Reaction templates, reagent DB, FG detection
       reaction_types.py       # ReactionCategory enum, ReactionTemplate dataclass
       reagent_data.py         # REAGENT_DB (~100), SOLVENT_DB (~30)
-      knowledge_base.py       # ~80 reaction templates, lookup functions
-      functional_group_detect.py  # 16 FG detectors
+      knowledge_base.py       # 91 reaction templates, lookup functions
+      functional_group_detect.py  # 21 FG detectors
       retrosynthesis.py       # Beam search retrosynthesis engine
       synthesis_route.py      # SynthesisStep, SynthesisRoute, extract_best_route
     process/                  # Reactor, solvents, costing, safety, scale-up

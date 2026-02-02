@@ -313,7 +313,7 @@ class QuantumAtom:
 # Convenience constructors
 # ===================================================================
 
-def from_symbol(symbol: str, mass_number: int = None, charge: int = 0):
+def from_symbol(symbol: str, mass_number: int = None, charge: int = 0) -> QuantumAtom:
     """Create a QuantumAtom from an element symbol."""
     sym = symbol.strip()
     if len(sym) > 1:
@@ -325,7 +325,7 @@ def from_symbol(symbol: str, mass_number: int = None, charge: int = 0):
     return QuantumAtom(SYMBOL_TO_Z[sym], mass_number, charge)
 
 
-def from_name(name: str, mass_number: int = None, charge: int = 0):
+def from_name(name: str, mass_number: int = None, charge: int = 0) -> QuantumAtom:
     """Create a QuantumAtom from an element name."""
     name_lower = name.strip().lower()
     for z, (sym, elem_name, _) in ELEMENTS.items():

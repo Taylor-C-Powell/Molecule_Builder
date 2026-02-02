@@ -7,6 +7,8 @@ All output is cp1252-safe.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from molbuilder.reports.text_formatter import (
     section_header,
     subsection_header,
@@ -17,6 +19,9 @@ from molbuilder.reports.text_formatter import (
     format_percent,
     format_currency,
 )
+
+if TYPE_CHECKING:
+    from molbuilder.reports import SynthesisRouteLike
 
 
 # =====================================================================
@@ -56,7 +61,7 @@ def _temp_str(template) -> str:
 #  Public API
 # =====================================================================
 
-def generate_synthesis_report(route) -> str:
+def generate_synthesis_report(route: SynthesisRouteLike) -> str:
     """Generate an ASCII synthesis route report.
 
     Uses duck typing -- *route* should expose:

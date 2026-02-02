@@ -8,6 +8,9 @@ All output is cp1252-safe.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
 from molbuilder.reports.text_formatter import (
     section_header,
     subsection_header,
@@ -16,6 +19,9 @@ from molbuilder.reports.text_formatter import (
     key_value_block,
     word_wrap,
 )
+
+if TYPE_CHECKING:
+    from molbuilder.reports import SafetyAssessmentLike
 
 
 # =====================================================================
@@ -61,7 +67,9 @@ def _safe_str(value, default: str = "N/A") -> str:
 #  Public API
 # =====================================================================
 
-def generate_safety_report(assessments) -> str:
+def generate_safety_report(
+    assessments: Iterable[SafetyAssessmentLike] | None,
+) -> str:
     """Generate an ASCII safety report.
 
     Uses duck typing -- *assessments* should be a list (or iterable)

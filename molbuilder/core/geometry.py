@@ -6,8 +6,15 @@ _rotation_matrix, etc.) in molecular_conformations.py.  Also includes
 coordinate conversions from quantum_wavefunctions.py.
 """
 
+from __future__ import annotations
+
 import math
+from typing import TYPE_CHECKING
+
 import numpy as np
+
+if TYPE_CHECKING:
+    from molbuilder.molecule.graph import Molecule
 
 # Tolerance constants for near-zero comparisons
 _ZERO_VECTOR_TOL = 1e-12     # For zero-length vector detection
@@ -163,7 +170,7 @@ def available_tetrahedral_dirs(
 # Hydrogen placement helper
 # ===================================================================
 
-def add_sp3_hydrogens(mol, carbon_idx: int, count: int):
+def add_sp3_hydrogens(mol: Molecule, carbon_idx: int, count: int) -> None:
     """Add *count* hydrogens to fill remaining tetrahedral positions.
 
     Uses direct 3D geometry to find available tetrahedral directions
@@ -171,9 +178,12 @@ def add_sp3_hydrogens(mol, carbon_idx: int, count: int):
 
     Parameters
     ----------
-    mol : molecule object with .atoms, .neighbors(), .add_atom(), .add_bond()
-    carbon_idx : index of the atom to add hydrogens to
-    count : number of hydrogens to add
+    mol : Molecule
+        Molecule object to modify in-place.
+    carbon_idx : int
+        Index of the atom to add hydrogens to.
+    count : int
+        Number of hydrogens to add.
     """
     from molbuilder.core.bond_data import bond_length as _bond_length
 

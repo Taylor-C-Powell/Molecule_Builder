@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from collections import Counter
 
+from typing import TYPE_CHECKING
+
 from molbuilder.reports.text_formatter import (
     section_header,
     subsection_header,
@@ -16,6 +18,9 @@ from molbuilder.reports.text_formatter import (
     key_value_block,
     format_percent,
 )
+
+if TYPE_CHECKING:
+    from molbuilder.reports import MoleculeLike
 
 # Attempt to import functional-group detection.  If the reactions module
 # is unavailable the report simply omits that section.
@@ -116,7 +121,7 @@ def _bond_order_label(order) -> str:
 #  Public API
 # =====================================================================
 
-def generate_molecule_report(mol) -> str:
+def generate_molecule_report(mol: MoleculeLike) -> str:
     """Generate a comprehensive ASCII report about a molecule.
 
     Uses duck typing -- *mol* should expose:
