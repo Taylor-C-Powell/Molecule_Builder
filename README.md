@@ -322,4 +322,6 @@ python -m pytest tests/ -q
 
 ## License
 
-Copyright Taylor C. Powell. All rights reserved.
+MIT License. See [LICENSE](LICENSE) for details.
+
+Copyright (c) 2025 Taylor C. Powell.
