@@ -57,6 +57,19 @@ class MolBuilderApp:
         analysis_menu.add_command(label="Bond Analysis", command=lambda: self._run_analysis("Bond Analysis"))
         analysis_menu.add_command(label="Generate SMILES", command=lambda: self._run_analysis("SMILES"))
 
+        # Simulate menu
+        simulate_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Simulate", menu=simulate_menu)
+        simulate_menu.add_command(
+            label="MD Vibration...", command=self._sim_md_vibration)
+        simulate_menu.add_command(
+            label="Bond Formation...", command=self._sim_bond_formation)
+        simulate_menu.add_command(
+            label="SN2 Mechanism...", command=self._sim_sn2)
+        simulate_menu.add_separator()
+        simulate_menu.add_command(
+            label="Export Animation...", command=self._sim_export)
+
     def _build_ui(self):
         # Toolbar at top
         self.toolbar = MolToolbar(
@@ -274,6 +287,107 @@ class MolBuilderApp:
 
         except Exception as e:
             self.sidebar.show_results(f"Error: {e}")
+
+    # ---- Simulate menu commands ----
+
+    def _sim_md_vibration(self):
+        """Launch MD vibration simulation on the current molecule."""
+        mol = self.handler.mol
+        if not mol or len(mol.atoms) == 0:
+            messagebox.showwarning("Simulate", "No molecule loaded.")
+            return
+        try:
+            from molbuilder.visualization.interaction_viz import (
+                visualize_md_trajectory, PlaybackConfig,
+            )
+            self.status_var.set("Running MD simulation...")
+            self.root.update()
+            config = PlaybackConfig(show_electron_density=False)
+            visualize_md_trajectory(mol, n_steps=500, config=config)
+            self.status_var.set("MD simulation complete.")
+        except Exception as e:
+            messagebox.showerror("Simulation Error", str(e))
+
+    def _sim_bond_formation(self):
+        """Visualize bond formation between two selected atoms."""
+        mol = self.handler.mol
+        selected = list(self.handler.selected_atoms)
+        if len(selected) != 2:
+            messagebox.showinfo(
+                "Bond Formation",
+                "Select exactly 2 atoms first, then run this command.")
+            return
+        try:
+            from molbuilder.visualization.interaction_viz import (
+                visualize_bond_formation, PlaybackConfig,
+            )
+            self.status_var.set("Simulating bond formation...")
+            self.root.update()
+            config = PlaybackConfig(show_electron_density=True)
+            visualize_bond_formation(
+                mol, selected[0], selected[1], config=config)
+            self.status_var.set("Bond formation visualization complete.")
+        except Exception as e:
+            messagebox.showerror("Simulation Error", str(e))
+
+    def _sim_sn2(self):
+        """Run an SN2 mechanism demonstration."""
+        try:
+            from molbuilder.visualization.interaction_viz import (
+                visualize_reaction, PlaybackConfig,
+            )
+            from molbuilder.dynamics.mechanisms import sn2_mechanism
+            from molbuilder.molecule.builders import build_ethane
+
+            # Build a simple substrate (methane-like with a "leaving group")
+            mol = build_ethane(60.0)
+            mechanism = sn2_mechanism(
+                substrate_C=0, nucleophile=1, leaving_group=2)
+            self.status_var.set("Running SN2 mechanism...")
+            self.root.update()
+            config = PlaybackConfig(
+                show_electron_density=True,
+                show_electron_flows=True,
+            )
+            visualize_reaction(
+                mol, mechanism,
+                n_steps_per_stage=150, config=config)
+            self.status_var.set("SN2 mechanism visualization complete.")
+        except Exception as e:
+            messagebox.showerror("Simulation Error", str(e))
+
+    def _sim_export(self):
+        """Export the current molecule's MD animation to a file."""
+        mol = self.handler.mol
+        if not mol or len(mol.atoms) == 0:
+            messagebox.showwarning("Export", "No molecule loaded.")
+            return
+        from tkinter import filedialog
+        path = filedialog.asksaveasfilename(
+            parent=self.root,
+            title="Export Animation",
+            filetypes=[("GIF", "*.gif"), ("MP4", "*.mp4")],
+            defaultextension=".gif",
+        )
+        if not path:
+            return
+        try:
+            from molbuilder.visualization.interaction_viz import (
+                visualize_md_trajectory, PlaybackConfig,
+            )
+            self.status_var.set(f"Exporting animation to {path}...")
+            self.root.update()
+            config = PlaybackConfig(
+                export_path=path,
+                show_electron_density=False,
+            )
+            viz = visualize_md_trajectory(
+                mol, n_steps=300, config=config, show=False)
+            viz.export(path)
+            self.status_var.set(f"Exported: {path}")
+            messagebox.showinfo("Export", f"Animation saved to:\n{path}")
+        except Exception as e:
+            messagebox.showerror("Export Error", str(e))
 
     def run(self):
         """Start the application main loop."""

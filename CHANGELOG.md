@@ -5,6 +5,27 @@ All notable changes to MolBuilder will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-05
+
+### Added
+- **Molecular Dynamics Engine** (`dynamics/`): Classical force field with Lennard-Jones, Coulomb, harmonic bond/angle, and OPLS-AA torsional terms; Velocity Verlet integrator with Berendsen thermostat; trajectory storage with CubicSpline interpolation for sub-femtosecond time resolution
+- **Reaction Mechanism Templates**: Data model for multi-stage reaction mechanisms with electron flow arrows; predefined templates for SN2, E2, radical substitution, and nucleophilic addition to carbonyl
+- **Steered-MD Choreography**: Sigmoid-ramped harmonic restraints that guide atoms through mechanism stages, producing smooth bond formation/breaking events with fractional bond orders
+- **Extreme Slow-Motion Visualization**: FuncAnimation renderer with configurable slowdown factor (default 1 fs = 1 second), CPK atom rendering, fractional bond-order line styling (dashed for forming, fading for breaking), energy bar overlay, and SI-prefixed time labels
+- **Electron Density Rendering**: LCAO-based Monte Carlo point cloud visualization of bonding electron density during bond events, using Slater effective nuclear charges
+- **Playback Controls**: Keyboard bindings (Space, arrows, E, L, R, Q) and optional tkinter panel for interactive animation control (play/pause, step, speed, toggle overlays)
+- **GUI Integration**: "Simulate" menu in MolBuilder GUI with MD Vibration, Bond Formation, SN2 Mechanism, and Export Animation commands
+- **CLI Demo**: `demo_slowmo_interaction()` with interactive options for ethane MD vibration, SN2 mechanism, and C-C bond formation visualization
+- **Animation Export**: MP4 (FFMpeg) and GIF (Pillow) export with configurable DPI and frame rate
+- **68 new tests**: ForceField parameterization, force computation correctness, Velocity Verlet integration, energy conservation validation (<5% deviation over 1000 steps for harmonic diatomic), trajectory interpolation, mechanism templates, choreography restraints, animation pipeline (headless Agg backend), electron density rendering, GIF export verification
+
+### Scientific Validation
+- Energy conservation verified: harmonic diatomic conserves total energy to <5% over 1000 Verlet steps (0.5 fs timestep, NVE ensemble)
+- C-C stretch vibration period validated in 15-100 fs range (expected ~33 fs for 1000 cm^-1 stretch)
+- UFF Lennard-Jones parameters from Rappe et al., J. Am. Chem. Soc. 1992
+- OPLS-AA torsion parameters from Jorgensen et al., J. Am. Chem. Soc. 1996
+- Velocity Verlet integrator per Swope et al., J. Chem. Phys. 1982
+
 ## [1.0.0] - 2026-02-03
 
 ### Added

@@ -465,7 +465,7 @@ def demo_visualization():
             print(f"  Rendering gallery of {len(mols)} molecules...")
             visualize_gallery(mols)
     else:
-        print("  Skipped.")
+        print("  Skipped visualization.")
     print()
 
 
@@ -511,6 +511,78 @@ def demo_quantum_visualization():
             visualize_atom(atom)
         except Exception as e:
             print(f"  Error: {e}")
+    else:
+        print("  Skipped.")
+    print()
+
+
+def demo_slowmo_interaction():
+    """Extreme slow-motion atomic interaction visualization."""
+    try:
+        import matplotlib
+    except ImportError:
+        print("  matplotlib is not installed. Skipping visualization.")
+        return
+
+    print("=" * 60)
+    print("  EXTREME SLOW-MOTION ATOMIC INTERACTIONS")
+    print("=" * 60)
+    print()
+
+    print("  This demo visualizes atomic interactions at sub-femtosecond")
+    print("  time resolution using molecular dynamics simulation.")
+    print()
+
+    choice = input(
+        "  Show: [1] Ethane MD vibration  [2] SN2 mechanism\n"
+        "        [3] Bond formation        [4] Skip: ").strip()
+
+    if choice == "1":
+        from molbuilder.molecule.builders import build_ethane
+        from molbuilder.visualization.interaction_viz import (
+            visualize_md_trajectory, PlaybackConfig,
+        )
+        print("  Building ethane and running MD at 300 K...")
+        mol = build_ethane(60.0)
+        config = PlaybackConfig(
+            show_electron_density=False,
+            slowmo_factor=1e15,
+        )
+        visualize_md_trajectory(mol, n_steps=500, config=config)
+
+    elif choice == "2":
+        from molbuilder.molecule.builders import build_ethane
+        from molbuilder.dynamics.mechanisms import sn2_mechanism
+        from molbuilder.visualization.interaction_viz import (
+            visualize_reaction, PlaybackConfig,
+        )
+        print("  Setting up SN2 mechanism demonstration...")
+        mol = build_ethane(60.0)
+        mechanism = sn2_mechanism(
+            substrate_C=0, nucleophile=1, leaving_group=2)
+        config = PlaybackConfig(
+            show_electron_density=True,
+            show_electron_flows=True,
+        )
+        visualize_reaction(
+            mol, mechanism,
+            n_steps_per_stage=150, config=config)
+
+    elif choice == "3":
+        from molbuilder.molecule.graph import Molecule, Hybridization
+        from molbuilder.visualization.interaction_viz import (
+            visualize_bond_formation, PlaybackConfig,
+        )
+        print("  Setting up bond formation between two carbon atoms...")
+        mol = Molecule("C...C bond formation")
+        c0 = mol.add_atom("C", [0.0, 0.0, 0.0], Hybridization.SP3)
+        c1 = mol.add_atom("C", [3.0, 0.0, 0.0], Hybridization.SP3)
+        config = PlaybackConfig(
+            show_electron_density=True,
+            show_electron_flows=True,
+        )
+        visualize_bond_formation(mol, c0, c1, config=config)
+
     else:
         print("  Skipped.")
     print()

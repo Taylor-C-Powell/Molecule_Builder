@@ -19,6 +19,7 @@ from molbuilder.cli.demos import (
     demo_amino_acids,
     demo_visualization,
     demo_quantum_visualization,
+    demo_slowmo_interaction,
 )
 from molbuilder.cli.wizard import wizard_main
 
@@ -38,6 +39,7 @@ DEMOS = [
     ("Amino Acids & Functional Groups",     demo_amino_acids),
     ("3D Molecule Visualization",           demo_visualization),
     ("Quantum Orbital Visualization",       demo_quantum_visualization),
+    ("Slow-Motion Atomic Interactions",     demo_slowmo_interaction),
     ("Molecule Builder Wizard",             wizard_main),
 ]
 

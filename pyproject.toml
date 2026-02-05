@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "molbuilder"
-version = "1.0.0"
+version = "1.1.0"
 description = "Professional-grade molecular engineering toolkit: atoms to retrosynthesis to process engineering"
 readme = "README.md"
 license = "MIT"
