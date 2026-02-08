@@ -7,28 +7,30 @@ Derived from MolBuilder_GTM_Strategy.md. Track progress by checking items as com
 ## Phase 0: Pre-Launch Preparation
 
 ### Package and Documentation
-- [ ] Verify all 517 tests pass: `pytest tests/ -v`
-- [ ] Review and clean up public API surface (remove internal helpers from `__init__.py` exports)
-- [ ] Ensure README.md has: installation, quickstart, feature overview, example code
-- [ ] Add CHANGELOG.md
-- [ ] Add CONTRIBUTING.md (if open-sourcing Core tier)
-- [ ] Verify `pyproject.toml` metadata is complete (classifiers, keywords, URLs)
-- [ ] Test local install: `pip install -e .` in a clean virtualenv
-- [ ] Test package build: `python -m build`
+- [x] Verify all 585 tests pass: `pytest tests/ -v` (585/585 passing, 2026-02-08)
+- [x] Review and clean up public API surface (added top-level exports, explicit core imports, populated io/__init__.py)
+- [x] Ensure README.md has: installation, quickstart, feature overview, example code
+- [x] Add CHANGELOG.md (covers v1.0.0 and v1.1.0)
+- [x] Add CONTRIBUTING.md
+- [x] Verify `pyproject.toml` metadata is complete (classifiers, keywords, URLs, PEP 639 license)
+- [x] Test local install: verified in clean virtualenv with all subpackage imports
+- [x] Test package build: `python -m build` produces molbuilder-1.1.0-py3-none-any.whl (243 KB)
 
 ### PyPI Publication
-- [ ] Create PyPI account (pypi.org)
-- [ ] Create TestPyPI account (test.pypi.org)
-- [ ] Upload to TestPyPI first: `twine upload --repository testpypi dist/*`
-- [ ] Verify TestPyPI install: `pip install --index-url https://test.pypi.org/simple/ molbuilder`
-- [ ] Upload to PyPI: `twine upload dist/*`
-- [ ] Verify PyPI install: `pip install molbuilder`
+- [x] Create PyPI account (pypi.org)
+- [x] Create TestPyPI account (test.pypi.org)
+- [x] Upload to TestPyPI first: `twine upload --repository testpypi dist/*`
+- [x] Verify TestPyPI install
+- [x] Upload to PyPI: `twine upload dist/*`
+- [x] Verify PyPI install: `pip install molbuilder` resolves v1.1.0 (2026-02-08)
+- [ ] Upload v1.1.1 patch release with corrected URLs and API improvements
 
 ### Web Presence
 - [ ] Register domain (molbuilder.io or similar)
 - [ ] Create landing page with: value proposition, feature highlights, install command, screenshots
-- [ ] Set up GitHub repository (if open-sourcing)
+- [x] Set up GitHub repository: https://github.com/Taylor-C-Powell/Molecule_Builder
 - [ ] Add GitHub topics: chemistry, molecular-modeling, retrosynthesis, cheminformatics, python
+- [ ] Add GitHub repo description
 - [ ] Create GitHub Discussions or link to community Discord
 
 ---

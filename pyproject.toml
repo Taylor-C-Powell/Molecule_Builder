@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "molbuilder"
-version = "1.1.0"
+version = "1.1.1"
 description = "Professional-grade molecular engineering toolkit: atoms to retrosynthesis to process engineering"
 readme = "README.md"
 license = "MIT"
@@ -42,10 +42,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/molbuilder/molbuilder"
-Documentation = "https://molbuilder.io/docs"
-Repository = "https://github.com/molbuilder/molbuilder"
-Issues = "https://github.com/molbuilder/molbuilder/issues"
+Homepage = "https://github.com/Taylor-C-Powell/Molecule_Builder"
+Repository = "https://github.com/Taylor-C-Powell/Molecule_Builder"
+Issues = "https://github.com/Taylor-C-Powell/Molecule_Builder/issues"
 
 [project.scripts]
 molbuilder = "molbuilder.__main__:main"

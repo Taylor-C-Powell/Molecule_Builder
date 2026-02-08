@@ -21,11 +21,15 @@ MolBuilder is a self-contained chemistry platform that covers seven layers of mo
 **Requirements:** Python >= 3.11, numpy, scipy, matplotlib
 
 ```bash
-# From the project directory
-pip install -e .
+pip install molbuilder
+```
 
-# Or install dependencies manually
-pip install numpy scipy matplotlib
+For development:
+
+```bash
+git clone https://github.com/Taylor-C-Powell/Molecule_Builder.git
+cd Molecule_Builder
+pip install -e ".[dev]"
 ```
 
 The GUI uses `tkinter`, which is included with most Python distributions. On some Linux systems you may need to install it separately (`sudo apt install python3-tk`).
@@ -310,7 +314,7 @@ molbuilder/
   cli/             Interactive menu, demos, molecule builder wizard
 ```
 
-~19,900 lines of source code across 81 Python files in 12 subpackages. No external chemistry dependencies -- only numpy, scipy, and matplotlib.
+~20,000 lines of source code across 80+ Python files in 13 subpackages. No external chemistry dependencies -- only numpy, scipy, and matplotlib.
 
 ## Testing
 
@@ -318,10 +322,10 @@ molbuilder/
 python -m pytest tests/ -q
 ```
 
-517 tests covering core chemistry data, atomic models, bonding theory, molecular operations, SMILES round-trips, file I/O, reaction knowledge base, process engineering, and edge cases with scientific validation against known experimental values.
+585 tests covering core chemistry data, atomic models, bonding theory, molecular operations, SMILES round-trips, file I/O, reaction knowledge base, process engineering, molecular dynamics, and edge cases with scientific validation against known experimental values.
 
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
 
-Copyright (c) 2025 Taylor C. Powell.
+Copyright (c) 2025-2026 Taylor C. Powell.

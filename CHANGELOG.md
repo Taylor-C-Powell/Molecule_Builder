@@ -5,6 +5,22 @@ All notable changes to MolBuilder will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-02-08
+
+### Fixed
+- Project URLs in pyproject.toml now point to the correct GitHub repository
+- README installation section updated with correct `pip install molbuilder` and clone URL
+
+### Changed
+- Top-level `molbuilder` package now exports `Molecule`, `Atom`, `Bond`, `Hybridization`, `parse`, and `to_smiles` for convenient imports
+- `molbuilder.core` replaces wildcard import with explicit constant imports
+- `molbuilder.io` now exports all read/write functions (`read_xyz`, `write_xyz`, etc.)
+- README test count updated from 517 to 585
+- Copyright year updated to 2025-2026
+
+### Added
+- CONTRIBUTING.md with development setup, testing, and contribution guidelines
+
 ## [1.1.0] - 2026-02-05
 
 ### Added
