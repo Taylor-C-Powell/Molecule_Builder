@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: saas/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
+      - AUDIT_DB_PATH=/data/molbuilder_audit.db
+    volumes:
+      - audit_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  audit_data:

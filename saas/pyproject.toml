@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "molbuilder-api"
+version = "0.1.0"
+description = "REST API for MolBuilder molecular engineering toolkit"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    {name = "Taylor C. Powell"},
+]
+dependencies = [
+    "molbuilder>=1.1.1",
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.25.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "pyjwt>=2.8.0",
+    "python-multipart>=0.0.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "httpx>=0.25.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

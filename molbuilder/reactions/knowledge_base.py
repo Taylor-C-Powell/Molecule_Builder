@@ -1601,6 +1601,1496 @@ _t(
 )
 
 
+# -----------------------------------------------------------------
+#  HETEROCYCLE FUNCTIONALIZATION  (~4)
+# -----------------------------------------------------------------
+
+_t(
+    name="N-methylation of secondary amine with methyl iodide",
+    named_reaction="N-Alkylation",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["MeI", "K2CO3"],
+    solvents=["DMF", "DMSO", "acetone"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(70.0, 95.0),
+    functional_group_required=["secondary_amine"],
+    functional_group_produced=["tertiary_amine"],
+    functional_group_incompatible=[],
+    mechanism=(
+        "Deprotonation of the N-H by K2CO3 generates the nucleophilic "
+        "nitrogen, which attacks the electrophilic carbon of methyl iodide "
+        "in an SN2 mechanism, forming the N-CH3 bond with loss of iodide."
+    ),
+    reverse_transform=(
+        "Disconnect N-CH3 bond on a tertiary amine to reveal a secondary "
+        "amine precursor plus methyl iodide."
+    ),
+    scale_notes=(
+        "MeI is volatile (bp 42 C); use excess K2CO3 to neutralise HI. "
+        "Monitor by TLC or NMR for over-alkylation on polyamines."
+    ),
+    safety_notes=(
+        "Methyl iodide is highly toxic and a suspected carcinogen "
+        "(H301/H311/H331/H351). Must be handled in a well-ventilated "
+        "fume hood with appropriate PPE."
+    ),
+)
+
+_t(
+    name="N-methylation of secondary amine with dimethyl sulfate",
+    named_reaction="N-Alkylation (DMS)",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["(MeO)2SO2", "NaOH"],
+    solvents=["water", "DCM"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(75.0, 92.0),
+    functional_group_required=["secondary_amine"],
+    functional_group_produced=["tertiary_amine"],
+    functional_group_incompatible=["alcohol"],
+    mechanism=(
+        "Dimethyl sulfate methylates the nitrogen nucleophile. NaOH "
+        "neutralises the acidic by-product and destroys excess DMS."
+    ),
+    reverse_transform=(
+        "Disconnect N-CH3 bond on a tertiary amine to reveal a secondary "
+        "amine precursor."
+    ),
+    safety_notes=(
+        "Dimethyl sulfate is extremely toxic and a known carcinogen "
+        "(H300/H310/H330/H350). Requires maximum PPE and fume hood."
+    ),
+)
+
+_t(
+    name="Amide bond formation from amine and acid chloride",
+    named_reaction="Schotten-Baumann acylation",
+    category=ReactionCategory.COUPLING,
+    reagents=["acid chloride", "Et3N"],
+    solvents=["DCM", "THF"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(75.0, 95.0),
+    functional_group_required=["primary_amine", "secondary_amine"],
+    functional_group_produced=["amide"],
+    functional_group_incompatible=[],
+    mechanism=(
+        "Nucleophilic addition-elimination: the amine nitrogen attacks "
+        "the electrophilic carbonyl carbon of the acid chloride, "
+        "displacing chloride. Triethylamine scavenges HCl."
+    ),
+    reverse_transform=(
+        "Disconnect the amide C-N bond to give an amine and an acid "
+        "chloride (or carboxylic acid) as precursors."
+    ),
+    safety_notes="Acid chlorides are corrosive and moisture-sensitive.",
+)
+
+_t(
+    name="Amide bond formation with coupling reagent",
+    named_reaction="EDC/HOBt amide coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["EDC", "HOBt", "DIPEA"],
+    solvents=["DMF", "DCM"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(70.0, 92.0),
+    functional_group_required=["primary_amine", "secondary_amine"],
+    functional_group_produced=["amide"],
+    functional_group_incompatible=[],
+    mechanism=(
+        "EDC activates the carboxylic acid as an O-acylisourea, HOBt "
+        "converts it to an active ester, and the amine displaces HOBt "
+        "to form the amide bond."
+    ),
+    reverse_transform=(
+        "Disconnect the amide C-N bond to give an amine and a carboxylic "
+        "acid as precursors."
+    ),
+    safety_notes="EDC is an irritant. HOBt is shock-sensitive when dry.",
+)
+
+
+# -----------------------------------------------------------------
+#  CROSS-COUPLING (additional)  (~13)
+# -----------------------------------------------------------------
+
+_t(
+    name="Buchwald-Hartwig amination",
+    named_reaction="Buchwald-Hartwig amination",
+    category=ReactionCategory.COUPLING,
+    reagents=["aryl halide", "amine", "NaOtBu"],
+    solvents=["toluene", "dioxane"],
+    catalysts=["Pd2(dba)3/XPhos", "Pd(OAc)2/BINAP"],
+    temperature_range=(80.0, 110.0),
+    typical_yield=(70.0, 95.0),
+    functional_group_required=["alkyl_halide_br", "primary_amine"],
+    functional_group_produced=["secondary_amine"],
+    functional_group_incompatible=[],
+    mechanism="Pd(0) oxidatively adds to the aryl halide; coordination and deprotonation of the amine gives a Pd-amido species; reductive elimination forms the new C-N bond.",
+    reverse_transform="Disconnect the aryl C-N bond; one fragment gets halide, the other is the amine.",
+)
+
+_t(
+    name="Chan-Lam coupling",
+    named_reaction="Chan-Lam coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["ArB(OH)2", "amine (or alcohol)", "Et3N"],
+    solvents=["DCM", "DMF"],
+    catalysts=["Cu(OAc)2"],
+    temperature_range=(20.0, 40.0),
+    typical_yield=(40.0, 80.0),
+    functional_group_required=["boronic_acid", "primary_amine"],
+    functional_group_produced=["secondary_amine"],
+    functional_group_incompatible=[],
+    mechanism="Cu(II)-mediated oxidative coupling of a boronic acid with an N-H or O-H nucleophile under aerobic conditions. Air serves as terminal oxidant.",
+    reverse_transform="Disconnect aryl C-N (or C-O) bond; one fragment gets B(OH)2, the other retains N-H.",
+)
+
+_t(
+    name="Ullmann coupling",
+    named_reaction="Ullmann coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["aryl halide", "Cu powder (or CuI)", "base"],
+    solvents=["DMF", "DMSO"],
+    catalysts=["CuI", "1,10-phenanthroline"],
+    temperature_range=(80.0, 150.0),
+    typical_yield=(50.0, 85.0),
+    functional_group_required=["alkyl_halide_br", "alkyl_halide_i"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Cu(I) undergoes oxidative addition to one aryl halide, then a second aryl halide undergoes transmetalation or sigma-bond metathesis; reductive elimination gives the biaryl.",
+    reverse_transform="Disconnect biaryl C-C bond; both fragments get halides.",
+)
+
+_t(
+    name="Kumada coupling",
+    named_reaction="Kumada coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["RMgX (Grignard reagent)", "aryl/vinyl halide"],
+    solvents=["THF", "Et2O"],
+    catalysts=["NiCl2(dppf)", "PdCl2(dppf)"],
+    temperature_range=(0.0, 60.0),
+    typical_yield=(65.0, 90.0),
+    functional_group_required=["alkyl_halide_br", "alkyl_halide_cl"],
+    functional_group_produced=[],
+    functional_group_incompatible=["aldehyde", "ketone", "ester"],
+    mechanism="Ni(0) or Pd(0) oxidatively adds to the halide; transmetalation with the Grignard reagent; reductive elimination forms C-C bond. Limited FG tolerance due to Grignard reactivity.",
+    reverse_transform="Disconnect C-C bond; one fragment gets halide, the other becomes RMgX.",
+)
+
+_t(
+    name="Hiyama coupling",
+    named_reaction="Hiyama coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["R-Si(OMe)3 (organosilane)", "aryl halide", "TBAF (activator)"],
+    solvents=["THF", "DMF"],
+    catalysts=["Pd(PPh3)4"],
+    temperature_range=(50.0, 100.0),
+    typical_yield=(55.0, 85.0),
+    functional_group_required=["alkyl_halide_br", "alkyl_halide_i"],
+    functional_group_produced=[],
+    functional_group_incompatible=[],
+    mechanism="Fluoride activates the organosilane to form a pentacoordinate silicate; Pd(0) oxidatively adds to the halide; transmetalation with the activated silane; reductive elimination gives C-C bond.",
+    reverse_transform="Disconnect C-C bond; one fragment gets halide, the other gets Si(OMe)3.",
+)
+
+_t(
+    name="Miyaura borylation",
+    named_reaction="Miyaura borylation",
+    category=ReactionCategory.COUPLING,
+    reagents=["B2pin2 (bis(pinacolato)diboron)", "KOAc"],
+    solvents=["dioxane", "DMSO"],
+    catalysts=["PdCl2(dppf)"],
+    temperature_range=(80.0, 100.0),
+    typical_yield=(70.0, 90.0),
+    functional_group_required=["alkyl_halide_br", "alkyl_halide_i"],
+    functional_group_produced=["boronic_acid"],
+    functional_group_incompatible=[],
+    mechanism="Pd(0) oxidatively adds to aryl halide; sigma-bond metathesis with B2pin2 installs the boronate ester; reductive elimination gives Ar-Bpin.",
+    reverse_transform="Disconnect C-B bond; restore the halide.",
+)
+
+_t(
+    name="C-H borylation (Ir-catalysed)",
+    named_reaction="Ir-catalysed C-H borylation",
+    category=ReactionCategory.COUPLING,
+    reagents=["B2pin2", "dtbpy (4,4'-di-tert-butyl-2,2'-bipyridine)"],
+    solvents=["hexane", "THF"],
+    catalysts=["[Ir(cod)OMe]2"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(60.0, 90.0),
+    functional_group_required=["aromatic_ring"],
+    functional_group_produced=["boronic_acid"],
+    functional_group_incompatible=[],
+    mechanism="Ir(III)-trisboryl complex activates the arene C-H bond via oxidative addition; reductive elimination installs the Bpin group. Regioselectivity is governed by sterics (meta/para to substituents).",
+    reverse_transform="Disconnect C-B bond; restore C-H.",
+)
+
+_t(
+    name="Suzuki coupling (alkyl, Ni-catalysed)",
+    named_reaction="Suzuki coupling (alkyl)",
+    category=ReactionCategory.COUPLING,
+    reagents=["alkyl-9-BBN", "aryl halide", "K3PO4"],
+    solvents=["THF/water"],
+    catalysts=["NiCl2(dme)/bathophenanthroline"],
+    temperature_range=(25.0, 60.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["alkyl_halide_br"],
+    functional_group_produced=[],
+    functional_group_incompatible=[],
+    mechanism="Ni(0) activates the alkyl halide (which resists Pd-catalysed oxidative addition); transmetalation with the alkyl borane; reductive elimination forms C(sp3)-C(sp2) bond.",
+    reverse_transform="Disconnect the C(sp3)-C(sp2) bond; one fragment gets halide, the other gets 9-BBN.",
+)
+
+_t(
+    name="Tsuji-Trost allylation",
+    named_reaction="Tsuji-Trost reaction",
+    category=ReactionCategory.COUPLING,
+    reagents=["allyl acetate (or allyl carbonate)", "nucleophile", "base"],
+    solvents=["THF", "DCM"],
+    catalysts=["Pd(PPh3)4", "Pd2(dba)3/dppe"],
+    temperature_range=(0.0, 60.0),
+    typical_yield=(60.0, 90.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=[],
+    mechanism="Pd(0) oxidatively adds to the allyl electrophile forming a pi-allyl-Pd complex; nucleophilic attack on the allyl terminus (soft nucleophiles attack carbon, hard nucleophiles attack Pd) forms the product.",
+    reverse_transform="Disconnect the allyl C-nucleophile bond; restore the allyl leaving group.",
+)
+
+_t(
+    name="Photoredox/Ni dual catalysis C-C coupling",
+    named_reaction="Metallaphotoredox coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["alkyl radical precursor", "aryl halide"],
+    solvents=["DMF", "DMA"],
+    catalysts=["Ir(ppy)3", "NiCl2*glyme/dtbbpy"],
+    temperature_range=(20.0, 30.0),
+    typical_yield=(40.0, 75.0),
+    functional_group_required=["alkyl_halide_br"],
+    functional_group_produced=[],
+    functional_group_incompatible=[],
+    mechanism="Ir photocatalyst generates an alkyl radical from a carboxylic acid or alkyl halide via single-electron transfer; Ni(0) oxidatively adds to the aryl halide; radical capture by Ni(II) and reductive elimination form the C(sp3)-C(sp2) bond.",
+    reverse_transform="Disconnect the C(sp3)-C(sp2) bond; one fragment becomes a radical precursor.",
+)
+
+_t(
+    name="Liebeskind-Srogl coupling",
+    named_reaction="Liebeskind-Srogl coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["thioester", "boronic acid", "CuTC (copper(I) thiophene-2-carboxylate)"],
+    solvents=["THF"],
+    catalysts=["Pd(PPh3)4"],
+    temperature_range=(40.0, 60.0),
+    typical_yield=(55.0, 85.0),
+    functional_group_required=["ester"],
+    functional_group_produced=["ketone"],
+    functional_group_incompatible=[],
+    mechanism="Pd(0) oxidatively adds to the thioester C-S bond; CuTC mediates transmetalation with the boronic acid; reductive elimination gives the ketone.",
+    reverse_transform="Disconnect the ketone C-C bond; one fragment becomes thioester, the other boronic acid.",
+)
+
+_t(
+    name="Cadiot-Chodkiewicz coupling",
+    named_reaction="Cadiot-Chodkiewicz coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["terminal alkyne", "1-bromoalkyne", "CuCl", "NH2OH*HCl"],
+    solvents=["MeOH/Et2O", "pyridine"],
+    catalysts=["CuCl"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["alkyne"],
+    functional_group_produced=["alkyne"],
+    functional_group_incompatible=[],
+    mechanism="Cu(I) forms a copper acetylide from the terminal alkyne; oxidative coupling with the 1-bromoalkyne gives an unsymmetrical 1,3-diyne.",
+    reverse_transform="Disconnect the diyne central bond; one fragment is a terminal alkyne, the other a 1-bromoalkyne.",
+)
+
+# -----------------------------------------------------------------
+#  OLEFINATION  (~6)
+# -----------------------------------------------------------------
+
+_t(
+    name="Julia-Kocienski olefination",
+    named_reaction="Julia-Kocienski olefination",
+    category=ReactionCategory.CARBONYL,
+    reagents=["1-phenyl-1H-tetrazol-5-yl sulfone", "KHMDS"],
+    solvents=["THF", "DMF"],
+    temperature_range=(-78.0, 0.0),
+    typical_yield=(55.0, 85.0),
+    functional_group_required=["aldehyde"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=[],
+    mechanism="Base deprotonates the sulfone; the carbanion attacks the aldehyde; beta-elimination of SO2 and the heterocycle gives predominantly the E-alkene.",
+    reverse_transform="Disconnect C=C; one fragment becomes aldehyde, the other a sulfone.",
+)
+
+_t(
+    name="Peterson olefination",
+    named_reaction="Peterson olefination",
+    category=ReactionCategory.CARBONYL,
+    reagents=["alpha-silyl carbanion (e.g. TMSCH2Li)", "BF3*OEt2 (or base)"],
+    solvents=["THF"],
+    temperature_range=(-78.0, 25.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["aldehyde", "ketone"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=[],
+    mechanism="Alpha-silyl carbanion adds to the carbonyl; the beta-hydroxy silane eliminates to give the alkene. Acid conditions give Z-alkene; base conditions give E-alkene.",
+    reverse_transform="Disconnect C=C; one fragment becomes carbonyl, the other an alpha-silyl halide.",
+)
+
+_t(
+    name="Tebbe olefination",
+    named_reaction="Tebbe olefination",
+    category=ReactionCategory.CARBONYL,
+    reagents=["Tebbe reagent (Cp2Ti(mu-Cl)(mu-CH2)AlMe2)", "pyridine"],
+    solvents=["THF", "toluene"],
+    temperature_range=(-40.0, 25.0),
+    typical_yield=(60.0, 85.0),
+    functional_group_required=["aldehyde", "ketone", "ester"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=[],
+    mechanism="Pyridine triggers release of the Schrock carbene Cp2Ti=CH2 from the Tebbe reagent; [2+2] cycloaddition with the carbonyl forms a titanacyclobutane; retro-[2+2] gives the alkene and Cp2Ti=O.",
+    reverse_transform="Disconnect C=CH2; restore the carbonyl.",
+)
+
+_t(
+    name="Aza-Wittig reaction",
+    named_reaction="Aza-Wittig reaction",
+    category=ReactionCategory.CARBONYL,
+    reagents=["iminophosphorane (R3P=NR')", "carbonyl compound"],
+    solvents=["THF", "toluene"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["aldehyde", "ketone"],
+    functional_group_produced=["imine"],
+    functional_group_incompatible=[],
+    mechanism="Iminophosphorane attacks the carbonyl; a betaine closes to a four-membered aza-oxaphosphetane; retro-[2+2] gives the imine and Ph3P=O, analogous to the Wittig reaction.",
+    reverse_transform="Disconnect C=N; one fragment becomes carbonyl, the other an amine precursor.",
+)
+
+_t(
+    name="Shapiro reaction",
+    named_reaction="Shapiro reaction",
+    category=ReactionCategory.ELIMINATION,
+    reagents=["TsNHNH2 (tosylhydrazide)", "n-BuLi (2 equiv)"],
+    solvents=["THF", "TMEDA"],
+    temperature_range=(-78.0, 25.0),
+    typical_yield=(50.0, 75.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=["ester"],
+    mechanism="Tosylhydrazone is formed from the ketone; double deprotonation by BuLi generates a dianion which loses N2 and tosyl anion to produce a vinyl lithium species, protonated to give the less-substituted alkene.",
+    reverse_transform="Disconnect the alkene; restore the ketone via hydration.",
+)
+
+_t(
+    name="Bamford-Stevens reaction",
+    named_reaction="Bamford-Stevens reaction",
+    category=ReactionCategory.ELIMINATION,
+    reagents=["TsNHNH2", "NaOMe (or NaH)"],
+    solvents=["diglyme", "ethylene glycol"],
+    temperature_range=(150.0, 200.0),
+    typical_yield=(45.0, 70.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=[],
+    mechanism="Tosylhydrazone decomposes thermally under basic conditions via a diazo intermediate and a carbene; 1,2-hydride shift gives the alkene. In protic solvents, carbocation intermediates give Zaitsev products.",
+    reverse_transform="Disconnect the alkene; restore the ketone.",
+)
+
+# -----------------------------------------------------------------
+#  HETEROCYCLE SYNTHESIS  (~14)
+# -----------------------------------------------------------------
+
+_t(
+    name="Hantzsch pyridine synthesis",
+    named_reaction="Hantzsch pyridine synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["aldehyde", "2 equiv beta-keto ester", "NH4OAc"],
+    solvents=["EtOH", "AcOH"],
+    temperature_range=(60.0, 80.0),
+    typical_yield=(40.0, 70.0),
+    functional_group_required=["aldehyde"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Knoevenagel condensation of aldehyde with one beta-keto ester; Michael addition of the enamine (from the second keto ester + ammonia); cyclisation and aromatisation give the 1,4-dihydropyridine, oxidised to the pyridine.",
+    reverse_transform="Disconnect the pyridine ring into aldehyde + two beta-keto esters + ammonia.",
+)
+
+_t(
+    name="Skraup quinoline synthesis",
+    named_reaction="Skraup synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["glycerol", "aniline", "H2SO4", "oxidant (nitrobenzene)"],
+    solvents=["neat"],
+    temperature_range=(100.0, 180.0),
+    typical_yield=(30.0, 60.0),
+    functional_group_required=["primary_amine", "aromatic_ring"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Glycerol is dehydrated to acrolein by sulfuric acid; conjugate addition of aniline, followed by cyclisation and oxidative aromatisation gives quinoline.",
+    reverse_transform="Disconnect quinoline ring at C2-C3; fragments are aniline and acrolein equivalent.",
+)
+
+_t(
+    name="Doebner-Miller quinoline synthesis",
+    named_reaction="Doebner-Miller synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["aniline", "alpha,beta-unsaturated aldehyde", "acid catalyst"],
+    solvents=["AcOH", "EtOH"],
+    temperature_range=(80.0, 130.0),
+    typical_yield=(40.0, 70.0),
+    functional_group_required=["primary_amine", "aromatic_ring"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Aniline condenses with the alpha,beta-unsaturated aldehyde; conjugate addition, cyclisation, and dehydration give 2-substituted quinoline.",
+    reverse_transform="Disconnect quinoline; fragments are aniline and alpha,beta-unsaturated aldehyde.",
+)
+
+_t(
+    name="Friedlander quinoline synthesis",
+    named_reaction="Friedlander synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["2-aminobenzaldehyde", "ketone", "base (or acid)"],
+    solvents=["EtOH", "toluene"],
+    temperature_range=(60.0, 120.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["aldehyde", "ketone", "primary_amine"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Aldol-type condensation of the ketone with the 2-aminobenzaldehyde followed by intramolecular cyclodehydration gives the quinoline.",
+    reverse_transform="Disconnect quinoline at C2-C3; fragments are 2-aminobenzaldehyde and ketone.",
+)
+
+_t(
+    name="Paal-Knorr pyrrole synthesis",
+    named_reaction="Paal-Knorr pyrrole synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["1,4-dicarbonyl compound", "primary amine (or NH4OAc)"],
+    solvents=["AcOH", "toluene"],
+    temperature_range=(25.0, 110.0),
+    typical_yield=(50.0, 85.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="The amine condenses with both carbonyls of the 1,4-diketone; double cyclodehydration gives the pyrrole ring.",
+    reverse_transform="Disconnect pyrrole ring; fragments are 1,4-diketone and amine.",
+)
+
+_t(
+    name="Paal-Knorr furan synthesis",
+    named_reaction="Paal-Knorr furan synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["1,4-dicarbonyl compound", "acid catalyst (H2SO4 or P2O5)"],
+    solvents=["toluene", "neat"],
+    temperature_range=(80.0, 150.0),
+    typical_yield=(40.0, 75.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Acid-catalysed intramolecular cyclodehydration of a 1,4-diketone; loss of two equivalents of water gives the furan ring.",
+    reverse_transform="Disconnect furan ring into 1,4-diketone.",
+)
+
+_t(
+    name="Fischer indole synthesis",
+    named_reaction="Fischer indole synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["aryl hydrazine", "aldehyde/ketone", "acid catalyst (ZnCl2 or BF3)"],
+    solvents=["AcOH", "EtOH"],
+    temperature_range=(80.0, 180.0),
+    typical_yield=(40.0, 75.0),
+    functional_group_required=["ketone", "aromatic_ring"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Phenylhydrazine condenses with ketone to form phenylhydrazone; acid-catalysed [3,3]-sigmatropic rearrangement, re-aromatisation, and loss of NH3 give the indole.",
+    reverse_transform="Disconnect indole at C2-C3; fragments are aryl hydrazine and ketone.",
+)
+
+_t(
+    name="Madelung indole synthesis",
+    named_reaction="Madelung indole synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["N-acyl-o-toluidine", "strong base (NaNH2 or BuLi)"],
+    solvents=["THF", "toluene"],
+    temperature_range=(200.0, 350.0),
+    typical_yield=(30.0, 60.0),
+    functional_group_required=["amide", "aromatic_ring"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Strong base deprotonates the benzylic methyl of the N-acyl-o-toluidine; intramolecular cyclisation onto the amide carbonyl forms the indole after dehydration.",
+    reverse_transform="Disconnect indole ring; fragments are o-toluidine and acyl group.",
+)
+
+_t(
+    name="Leimgruber-Batcho indole synthesis",
+    named_reaction="Leimgruber-Batcho indole synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["2-nitrotoluene", "DMF-DMA (dimethylformamide dimethyl acetal)"],
+    solvents=["DMF", "toluene"],
+    temperature_range=(100.0, 150.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["aromatic_ring", "nitro"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="DMF-DMA condenses with the methyl group of the nitrotoluene to form an enamine; reductive cyclisation (Fe/AcOH or catalytic hydrogenation) gives the indole.",
+    reverse_transform="Disconnect indole; fragments are 2-nitrotoluene and one-carbon unit.",
+)
+
+_t(
+    name="Chichibabin pyridine synthesis",
+    named_reaction="Chichibabin synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["aldehyde (3 equiv)", "NH3"],
+    solvents=["neat", "AcOH"],
+    temperature_range=(200.0, 350.0),
+    typical_yield=(20.0, 50.0),
+    functional_group_required=["aldehyde"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Three molecules of aldehyde condense with ammonia via sequential aldol-type reactions and cyclodehydration to give a 2,4,6-trisubstituted pyridine.",
+    reverse_transform="Disconnect pyridine into three aldehyde fragments and ammonia.",
+)
+
+_t(
+    name="Knorr pyrazole synthesis",
+    named_reaction="Knorr pyrazole synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["1,3-diketone", "hydrazine"],
+    solvents=["EtOH", "AcOH"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(60.0, 90.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Hydrazine condenses with both carbonyls of the 1,3-diketone; double cyclodehydration gives the pyrazole ring.",
+    reverse_transform="Disconnect pyrazole; fragments are 1,3-diketone and hydrazine.",
+)
+
+_t(
+    name="Gewald reaction (2-aminothiophene synthesis)",
+    named_reaction="Gewald reaction",
+    category=ReactionCategory.MISC,
+    reagents=["ketone", "alpha-cyano ester (or malononitrile)", "elemental sulfur", "Et3N"],
+    solvents=["EtOH", "DMF"],
+    temperature_range=(50.0, 80.0),
+    typical_yield=(40.0, 75.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["aromatic_ring", "primary_amine"],
+    functional_group_incompatible=[],
+    mechanism="Knoevenagel condensation followed by sulfur insertion via Gewald cyclisation; the 2-aminothiophene is obtained after base-mediated ring closure.",
+    reverse_transform="Disconnect the thiophene ring; fragments are ketone, active methylene compound, and sulfur.",
+)
+
+_t(
+    name="Combes quinoline synthesis",
+    named_reaction="Combes synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["aniline", "1,3-diketone", "acid catalyst"],
+    solvents=["AcOH", "neat"],
+    temperature_range=(100.0, 150.0),
+    typical_yield=(40.0, 70.0),
+    functional_group_required=["primary_amine", "aromatic_ring", "ketone"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Aniline condenses with the 1,3-diketone to form a Schiff base; acid-catalysed electrophilic cyclisation and dehydration give the quinoline.",
+    reverse_transform="Disconnect quinoline; fragments are aniline and 1,3-diketone.",
+)
+
+# -----------------------------------------------------------------
+#  AROMATIC FUNCTIONALIZATION  (~13)
+# -----------------------------------------------------------------
+
+_t(
+    name="Friedel-Crafts alkylation",
+    named_reaction="Friedel-Crafts alkylation",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["alkyl halide", "AlCl3 (or FeCl3)"],
+    solvents=["DCM", "CS2", "nitrobenzene"],
+    catalysts=["AlCl3"],
+    temperature_range=(0.0, 80.0),
+    typical_yield=(40.0, 80.0),
+    functional_group_required=["aromatic_ring", "alkyl_halide"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=["nitro", "nitrile"],
+    mechanism="AlCl3 generates carbocation from alkyl halide; electrophilic aromatic substitution installs the alkyl group. Rearrangement-prone; over-alkylation is common.",
+    reverse_transform="Disconnect the aryl-alkyl C-C bond; restore halide on the alkyl fragment.",
+)
+
+_t(
+    name="Friedel-Crafts acylation",
+    named_reaction="Friedel-Crafts acylation",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["acyl chloride (or anhydride)", "AlCl3 (>1 equiv)"],
+    solvents=["DCM", "CS2", "nitrobenzene"],
+    catalysts=["AlCl3"],
+    temperature_range=(0.0, 80.0),
+    typical_yield=(60.0, 90.0),
+    functional_group_required=["aromatic_ring"],
+    functional_group_produced=["ketone"],
+    functional_group_incompatible=["nitro", "primary_amine"],
+    mechanism="AlCl3 activates the acyl chloride to form an acylium cation; electrophilic aromatic substitution installs the C=O group. No rearrangement (unlike alkylation). Requires >1 equiv AlCl3 (coordinates to product).",
+    reverse_transform="Disconnect aryl-C(=O) bond; fragments are arene and acyl chloride.",
+)
+
+_t(
+    name="Vilsmeier-Haack formylation",
+    named_reaction="Vilsmeier-Haack reaction",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["DMF", "POCl3"],
+    solvents=["DCM", "DMF (excess as solvent)"],
+    temperature_range=(0.0, 80.0),
+    typical_yield=(50.0, 85.0),
+    functional_group_required=["aromatic_ring"],
+    functional_group_produced=["aldehyde"],
+    functional_group_incompatible=["nitro"],
+    mechanism="POCl3 activates DMF to form the Vilsmeier reagent (a chloroiminium ion); electrophilic attack on the electron-rich arene, followed by hydrolysis gives the aryl aldehyde.",
+    reverse_transform="Disconnect aryl-CHO bond; restore the arene.",
+)
+
+_t(
+    name="Sandmeyer reaction",
+    named_reaction="Sandmeyer reaction",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["NaNO2", "HX (HCl, HBr)", "CuX (CuCl, CuBr, CuCN)"],
+    solvents=["water", "aqueous HCl"],
+    temperature_range=(0.0, 5.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["primary_amine", "aromatic_ring"],
+    functional_group_produced=["alkyl_halide_cl", "alkyl_halide_br", "nitrile"],
+    functional_group_incompatible=[],
+    mechanism="Diazotisation of aniline with NaNO2/HX forms the diazonium salt; CuX mediates radical substitution of N2 by halide or CN.",
+    reverse_transform="Disconnect aryl-X; restore the amine (via diazotisation reverse).",
+    safety_notes="Diazonium salts are explosive when dry. Keep at 0-5 C in solution.",
+)
+
+_t(
+    name="Kolbe-Schmitt carboxylation",
+    named_reaction="Kolbe-Schmitt reaction",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["CO2 (high pressure)", "NaOH"],
+    solvents=["neat (sodium phenoxide melt)"],
+    temperature_range=(100.0, 200.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["aromatic_ring", "alcohol"],
+    functional_group_produced=["carboxylic_acid"],
+    functional_group_incompatible=[],
+    mechanism="Sodium phenoxide reacts with CO2 under pressure; electrophilic carboxylation at the ortho position (Na) or para position (K); acidification liberates salicylic acid (or p-hydroxybenzoic acid).",
+    reverse_transform="Disconnect aryl-COOH; restore phenol.",
+)
+
+_t(
+    name="Minisci reaction",
+    named_reaction="Minisci reaction",
+    category=ReactionCategory.RADICAL,
+    reagents=["carboxylic acid (or alkyl halide)", "AgNO3 (cat.)", "(NH4)2S2O8"],
+    solvents=["water/TFA", "DCM/TFA"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(30.0, 70.0),
+    functional_group_required=["aromatic_ring"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Silver-catalysed oxidative decarboxylation generates an alkyl radical; the radical adds to the protonated heteroarene (pyridine, quinoline) in a Minisci-type substitution.",
+    reverse_transform="Disconnect the alkyl-heteroaryl C-C bond.",
+)
+
+_t(
+    name="Duff reaction (formylation with hexamine)",
+    named_reaction="Duff reaction",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["hexamethylenetetramine (hexamine)", "AcOH (or TFA)"],
+    solvents=["AcOH", "TFA"],
+    temperature_range=(80.0, 120.0),
+    typical_yield=(30.0, 60.0),
+    functional_group_required=["aromatic_ring", "alcohol"],
+    functional_group_produced=["aldehyde"],
+    functional_group_incompatible=["nitro"],
+    mechanism="Hexamine is hydrolysed under acidic conditions to generate formaldehyde equivalents; electrophilic aromatic formylation of activated (phenolic) arenes gives the salicylaldehyde.",
+    reverse_transform="Disconnect aryl-CHO; restore the phenol.",
+)
+
+_t(
+    name="Gattermann-Koch formylation",
+    named_reaction="Gattermann-Koch reaction",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["CO", "HCl", "AlCl3", "CuCl (cat.)"],
+    solvents=["neat"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(40.0, 70.0),
+    functional_group_required=["aromatic_ring"],
+    functional_group_produced=["aldehyde"],
+    functional_group_incompatible=["alcohol", "primary_amine"],
+    mechanism="CO and HCl form formyl chloride (HCOCl) in situ; AlCl3-mediated Friedel-Crafts acylation installs the formyl group.",
+    reverse_transform="Disconnect aryl-CHO; restore the arene.",
+    safety_notes="CO is extremely toxic; requires pressure equipment.",
+)
+
+_t(
+    name="Birch alkylation",
+    named_reaction="Birch alkylation",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["Na (or Li)", "NH3 (liquid)", "t-BuOH", "alkyl halide"],
+    solvents=["liquid NH3"],
+    temperature_range=(-78.0, -33.0),
+    typical_yield=(40.0, 70.0),
+    functional_group_required=["aromatic_ring", "alkyl_halide"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=[],
+    mechanism="Birch reduction generates a dienolate intermediate which is trapped by the alkyl halide electrophile to give an alkylated 1,4-cyclohexadiene.",
+    reverse_transform="Disconnect alkyl group from the cyclohexadienyl system.",
+    safety_notes="Liquid NH3 and alkali metals: extreme hazard.",
+)
+
+_t(
+    name="Balz-Schiemann fluorination",
+    named_reaction="Balz-Schiemann reaction",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["NaNO2", "HBF4"],
+    solvents=["water", "aqueous HBF4"],
+    temperature_range=(0.0, 5.0),
+    typical_yield=(40.0, 70.0),
+    functional_group_required=["primary_amine", "aromatic_ring"],
+    functional_group_produced=["alkyl_halide"],
+    functional_group_incompatible=[],
+    mechanism="Diazotisation of the aniline with NaNO2/HBF4 gives aryl diazonium tetrafluoroborate; thermal decomposition releases N2 and BF3, installing fluorine on the ring.",
+    reverse_transform="Disconnect aryl-F; restore amine.",
+    safety_notes="Diazonium tetrafluoroborates are shock-sensitive solids.",
+)
+
+_t(
+    name="Reimer-Tiemann formylation",
+    named_reaction="Reimer-Tiemann reaction",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["CHCl3", "NaOH (aq.)"],
+    solvents=["water/CHCl3"],
+    temperature_range=(60.0, 70.0),
+    typical_yield=(20.0, 50.0),
+    functional_group_required=["aromatic_ring", "alcohol"],
+    functional_group_produced=["aldehyde"],
+    functional_group_incompatible=[],
+    mechanism="NaOH deprotonates CHCl3 to generate dichlorocarbene (:CCl2); electrophilic attack on the phenoxide, followed by hydrolysis of the gem-dichloride gives the ortho-hydroxybenzaldehyde.",
+    reverse_transform="Disconnect aryl-CHO; restore phenol.",
+    safety_notes="CHCl3 is toxic; dichlorocarbene is very reactive.",
+)
+
+_t(
+    name="Schiemann fluorination via Balz-Schiemann",
+    named_reaction="Schiemann reaction",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["NaNO2", "HBF4"],
+    solvents=["water"],
+    temperature_range=(0.0, 5.0),
+    typical_yield=(35.0, 65.0),
+    functional_group_required=["primary_amine", "aromatic_ring"],
+    functional_group_produced=["alkyl_halide"],
+    functional_group_incompatible=[],
+    mechanism="Diazonium tetrafluoroborate decomposes thermally to aryl fluoride, N2, and BF3.",
+    reverse_transform="Disconnect Ar-F; restore ArNH2.",
+)
+
+# -----------------------------------------------------------------
+#  MULTICOMPONENT REACTIONS  (~6)
+# -----------------------------------------------------------------
+
+_t(
+    name="Strecker amino acid synthesis",
+    named_reaction="Strecker synthesis",
+    category=ReactionCategory.MISC,
+    reagents=["aldehyde", "NH4Cl", "NaCN"],
+    solvents=["water", "MeOH/water"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["aldehyde"],
+    functional_group_produced=["primary_amine", "nitrile"],
+    functional_group_incompatible=[],
+    mechanism="Ammonia condenses with aldehyde to form an imine; cyanide adds to the imine giving an alpha-aminonitrile; hydrolysis of the nitrile gives the alpha-amino acid.",
+    reverse_transform="Disconnect alpha-amino acid into aldehyde + ammonia + HCN.",
+)
+
+_t(
+    name="Mannich reaction",
+    named_reaction="Mannich reaction",
+    category=ReactionCategory.MISC,
+    reagents=["formaldehyde", "secondary amine (or NH4+)", "ketone"],
+    solvents=["water", "EtOH", "AcOH"],
+    temperature_range=(20.0, 80.0),
+    typical_yield=(40.0, 75.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["tertiary_amine"],
+    functional_group_incompatible=[],
+    mechanism="Iminium ion (from amine + formaldehyde) is attacked by the enol form of the ketone; the beta-aminoketone (Mannich base) is formed.",
+    reverse_transform="Disconnect C-C bond beta to the amine; fragments are ketone, formaldehyde, and amine.",
+)
+
+_t(
+    name="Passerini reaction",
+    named_reaction="Passerini reaction",
+    category=ReactionCategory.MISC,
+    reagents=["carboxylic acid", "aldehyde", "isocyanide"],
+    solvents=["DCM", "MeOH"],
+    temperature_range=(20.0, 40.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["aldehyde", "carboxylic_acid"],
+    functional_group_produced=["ester", "amide"],
+    functional_group_incompatible=[],
+    mechanism="Three-component reaction: aldehyde activates with carboxylic acid; isocyanide alpha-addition to the activated carbonyl; acyl transfer gives an alpha-acyloxyamide.",
+    reverse_transform="Disconnect into aldehyde, carboxylic acid, and isocyanide.",
+)
+
+_t(
+    name="Ugi four-component reaction",
+    named_reaction="Ugi reaction",
+    category=ReactionCategory.MISC,
+    reagents=["aldehyde", "amine", "carboxylic acid", "isocyanide"],
+    solvents=["MeOH", "DCM"],
+    temperature_range=(20.0, 40.0),
+    typical_yield=(40.0, 80.0),
+    functional_group_required=["aldehyde", "carboxylic_acid"],
+    functional_group_produced=["amide"],
+    functional_group_incompatible=[],
+    mechanism="Imine (from aldehyde + amine) is activated by the carboxylic acid; isocyanide attacks the iminium ion; intramolecular Mumm rearrangement gives the bis-amide product.",
+    reverse_transform="Disconnect into aldehyde, amine, carboxylic acid, and isocyanide.",
+)
+
+_t(
+    name="Baylis-Hillman reaction",
+    named_reaction="Baylis-Hillman reaction",
+    category=ReactionCategory.MISC,
+    reagents=["aldehyde", "activated alkene (acrylate, MVK)", "DABCO (cat.)"],
+    solvents=["DMF", "neat", "MeOH"],
+    catalysts=["DABCO"],
+    temperature_range=(20.0, 50.0),
+    typical_yield=(40.0, 80.0),
+    functional_group_required=["aldehyde", "alkene"],
+    functional_group_produced=["alcohol", "alkene"],
+    functional_group_incompatible=[],
+    mechanism="DABCO adds to the activated alkene in 1,4-fashion; the resulting zwitterion attacks the aldehyde; proton transfer and elimination of DABCO gives the alpha-methylene-beta-hydroxy product.",
+    reverse_transform="Disconnect C-C bond between the aldehyde-derived carbon and the acrylate.",
+)
+
+_t(
+    name="Henry (nitroaldol) reaction",
+    named_reaction="Henry reaction",
+    category=ReactionCategory.MISC,
+    reagents=["nitroalkane", "aldehyde", "base (Et3N or NaOH)"],
+    solvents=["THF", "MeOH", "water"],
+    temperature_range=(-20.0, 25.0),
+    typical_yield=(50.0, 85.0),
+    functional_group_required=["aldehyde", "nitro"],
+    functional_group_produced=["alcohol", "nitro"],
+    functional_group_incompatible=[],
+    mechanism="Base deprotonates the nitroalkane to form a nitronate; nucleophilic addition to the aldehyde gives a beta-nitro alcohol. Dehydration gives the nitroalkene (Henry-Nef).",
+    reverse_transform="Disconnect C-C bond between the alcohol carbon and the nitro-bearing carbon.",
+)
+
+# -----------------------------------------------------------------
+#  CONDENSATION (additional)  (~3)
+# -----------------------------------------------------------------
+
+_t(
+    name="Knoevenagel condensation",
+    named_reaction="Knoevenagel condensation",
+    category=ReactionCategory.CARBONYL,
+    reagents=["active methylene compound (malonate, cyanoacetate)", "amine catalyst (piperidine)"],
+    solvents=["EtOH", "toluene"],
+    catalysts=["piperidine"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(50.0, 85.0),
+    functional_group_required=["aldehyde"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=[],
+    mechanism="Piperidine catalyses formation of an iminium ion from the aldehyde; active methylene compound attacks; elimination of water gives the alpha,beta-unsaturated product.",
+    reverse_transform="Disconnect the C=C; fragments are aldehyde and active methylene compound.",
+)
+
+_t(
+    name="Weinreb amide formation and ketone synthesis",
+    named_reaction="Weinreb amide",
+    category=ReactionCategory.CARBONYL,
+    reagents=["N,O-dimethylhydroxylamine (HCl salt)", "EDC/HOBt (or acyl chloride)"],
+    solvents=["DCM", "THF"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(70.0, 90.0),
+    functional_group_required=["carboxylic_acid"],
+    functional_group_produced=["amide"],
+    functional_group_incompatible=[],
+    mechanism="Carboxylic acid is activated and coupled with N,O-dimethylhydroxylamine to give the Weinreb amide. Treatment with RMgBr or RLi gives the ketone (the tetrahedral intermediate is stabilised by chelation).",
+    reverse_transform="Disconnect the ketone C-C bond; fragments are Weinreb amide and organometallic.",
+)
+
+_t(
+    name="Reformatsky reaction",
+    named_reaction="Reformatsky reaction",
+    category=ReactionCategory.CARBONYL,
+    reagents=["alpha-bromo ester", "Zn dust"],
+    solvents=["THF", "Et2O"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["aldehyde", "ketone"],
+    functional_group_produced=["alcohol", "ester"],
+    functional_group_incompatible=[],
+    mechanism="Zinc inserts into the C-Br bond of the alpha-bromo ester to form a zinc enolate (Reformatsky reagent); addition to the aldehyde or ketone gives a beta-hydroxy ester.",
+    reverse_transform="Disconnect C-C bond; fragments are alpha-bromo ester (Zn) and aldehyde/ketone.",
+)
+
+# -----------------------------------------------------------------
+#  REARRANGEMENT (additional)  (~5)
+# -----------------------------------------------------------------
+
+_t(
+    name="Wolff rearrangement",
+    named_reaction="Wolff rearrangement",
+    category=ReactionCategory.REARRANGEMENT,
+    reagents=["alpha-diazo ketone", "hv (or Ag2O/heat)"],
+    solvents=["MeOH", "water", "THF"],
+    temperature_range=(20.0, 80.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["carboxylic_acid", "ester"],
+    functional_group_incompatible=[],
+    mechanism="Photolytic or thermal loss of N2 from the alpha-diazo ketone generates a ketocarbene; 1,2-shift gives a ketene which is trapped by MeOH (ester) or H2O (carboxylic acid). Part of the Arndt-Eistert homologation.",
+    reverse_transform="Disconnect the ester/acid; precursor is an alpha-diazo ketone.",
+)
+
+_t(
+    name="Favorskii rearrangement",
+    named_reaction="Favorskii rearrangement",
+    category=ReactionCategory.REARRANGEMENT,
+    reagents=["alpha-halo ketone", "NaOMe (or NaOH)"],
+    solvents=["MeOH", "water"],
+    temperature_range=(0.0, 60.0),
+    typical_yield=(45.0, 75.0),
+    functional_group_required=["ketone", "alkyl_halide"],
+    functional_group_produced=["ester", "carboxylic_acid"],
+    functional_group_incompatible=[],
+    mechanism="Base abstracts alpha-proton; enolate displaces halide intramolecularly to form a cyclopropanone; nucleophilic opening by methoxide gives a ring-contracted ester.",
+    reverse_transform="Disconnect the ester; precursor is an alpha-halo ketone.",
+)
+
+_t(
+    name="Fries rearrangement",
+    named_reaction="Fries rearrangement",
+    category=ReactionCategory.REARRANGEMENT,
+    reagents=["phenyl ester", "AlCl3"],
+    solvents=["nitrobenzene", "CS2"],
+    catalysts=["AlCl3"],
+    temperature_range=(25.0, 160.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["ester", "aromatic_ring"],
+    functional_group_produced=["ketone", "alcohol"],
+    functional_group_incompatible=[],
+    mechanism="Lewis acid cleaves the ester bond; the acylium fragment undergoes intramolecular Friedel-Crafts acylation on the phenol ring. Low temperature gives para product; high temperature gives ortho product.",
+    reverse_transform="Disconnect the aryl ketone; precursor is the phenyl ester.",
+)
+
+_t(
+    name="Schmidt reaction",
+    named_reaction="Schmidt reaction",
+    category=ReactionCategory.REARRANGEMENT,
+    reagents=["HN3 (hydrazoic acid)", "H2SO4"],
+    solvents=["CHCl3", "DCM"],
+    temperature_range=(0.0, 40.0),
+    typical_yield=(40.0, 75.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["amide"],
+    functional_group_incompatible=["primary_amine"],
+    mechanism="HN3 adds to the protonated ketone; 1,2-alkyl shift (analogous to Beckmann) with loss of N2 gives the amide (lactam for cyclic ketones).",
+    reverse_transform="Disconnect the amide C-N bond; precursor is the ketone.",
+    safety_notes="HN3 is extremely toxic and explosive. Use DPPA (safer) when possible.",
+)
+
+_t(
+    name="Overman rearrangement",
+    named_reaction="Overman rearrangement",
+    category=ReactionCategory.REARRANGEMENT,
+    reagents=["allylic trichloroacetimidate", "heat (or Hg(II) cat.)"],
+    solvents=["toluene", "xylene"],
+    temperature_range=(100.0, 160.0),
+    typical_yield=(60.0, 85.0),
+    functional_group_required=["alkene", "alcohol"],
+    functional_group_produced=["primary_amine"],
+    functional_group_incompatible=[],
+    mechanism="[3,3]-Sigmatropic rearrangement of the allylic trichloroacetimidate gives an allylic trichloroacetamide with 1,3-transposition of the nitrogen. Suprafacial chirality transfer.",
+    reverse_transform="Disconnect the C-N bond; restore the allylic alcohol and trichloroacetimidate.",
+)
+
+# -----------------------------------------------------------------
+#  OXIDATION (additional)  (~8)
+# -----------------------------------------------------------------
+
+_t(
+    name="TPAP (Ley-Griffith) oxidation",
+    named_reaction="TPAP oxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["TPAP (Pr4NRuO4, cat.)", "NMO (co-oxidant)", "4A molecular sieves"],
+    solvents=["DCM"],
+    catalysts=["TPAP"],
+    temperature_range=(20.0, 25.0),
+    typical_yield=(80.0, 95.0),
+    functional_group_required=["alcohol"],
+    functional_group_produced=["aldehyde", "ketone"],
+    functional_group_incompatible=["primary_amine"],
+    mechanism="Catalytic TPAP oxidises the alcohol to aldehyde/ketone; NMO re-oxidises Ru(V) to Ru(VII). 4A molecular sieves remove water. Mild, selective, no over-oxidation of primary alcohols.",
+    reverse_transform="Reduce aldehyde/ketone to alcohol.",
+)
+
+_t(
+    name="IBX oxidation",
+    named_reaction="IBX oxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["IBX (2-iodoxybenzoic acid)"],
+    solvents=["DMSO"],
+    temperature_range=(20.0, 40.0),
+    typical_yield=(80.0, 95.0),
+    functional_group_required=["alcohol"],
+    functional_group_produced=["aldehyde", "ketone"],
+    functional_group_incompatible=[],
+    mechanism="Hypervalent iodine(V) oxidises alcohols to carbonyls in DMSO. Selective for primary alcohols to aldehydes (no over-oxidation). Can also oxidise alpha-position of carbonyls to enones.",
+    reverse_transform="Reduce carbonyl to alcohol.",
+    safety_notes="IBX is shock-sensitive as a dry solid. Keep in solution.",
+)
+
+_t(
+    name="Pinnick (Lindgren) oxidation",
+    named_reaction="Pinnick oxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["NaClO2", "NaH2PO4 (buffer)", "2-methyl-2-butene (scavenger)"],
+    solvents=["t-BuOH/water", "THF/water"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(80.0, 95.0),
+    functional_group_required=["aldehyde"],
+    functional_group_produced=["carboxylic_acid"],
+    functional_group_incompatible=["alkene"],
+    mechanism="NaClO2 selectively oxidises aldehydes to carboxylic acids; 2-methyl-2-butene scavenges the HOCl byproduct to prevent side reactions. Highly chemoselective.",
+    reverse_transform="Reduce carboxylic acid to aldehyde (e.g. DIBAL-H).",
+)
+
+_t(
+    name="Riley (SeO2) oxidation",
+    named_reaction="Riley oxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["SeO2"],
+    solvents=["dioxane", "t-BuOH"],
+    temperature_range=(60.0, 100.0),
+    typical_yield=(40.0, 70.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["alcohol", "aldehyde"],
+    functional_group_incompatible=[],
+    mechanism="SeO2 performs an ene reaction with the alkene, followed by [2,3]-sigmatropic rearrangement of the allylseleninic acid; hydrolysis gives the allylic alcohol. Further oxidation can give the enone.",
+    reverse_transform="Disconnect the allylic C-OH; restore C-H.",
+    safety_notes="Selenium compounds are toxic; generate selenium waste carefully.",
+)
+
+_t(
+    name="Dakin oxidation",
+    named_reaction="Dakin oxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["H2O2", "NaOH (or Na2CO3)"],
+    solvents=["water", "MeOH/water"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["aldehyde", "aromatic_ring"],
+    functional_group_produced=["alcohol"],
+    functional_group_incompatible=[],
+    mechanism="H2O2 attacks the electron-poor carbonyl of an aryl aldehyde; 1,2-aryl shift (Baeyer-Villiger-like) gives a formate ester; hydrolysis under basic conditions gives the phenol.",
+    reverse_transform="Disconnect the phenol OH; restore the aldehyde.",
+)
+
+_t(
+    name="TEMPO-mediated oxidation",
+    named_reaction="TEMPO oxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["TEMPO (cat.)", "NaOCl (bleach, terminal oxidant)", "NaBr (co-cat.)"],
+    solvents=["DCM/water (biphasic)"],
+    catalysts=["TEMPO"],
+    temperature_range=(0.0, 10.0),
+    typical_yield=(85.0, 98.0),
+    functional_group_required=["alcohol"],
+    functional_group_produced=["aldehyde"],
+    functional_group_incompatible=["primary_amine"],
+    mechanism="TEMPO (a stable nitroxide radical) is oxidised to the oxoammonium cation, which selectively oxidises primary alcohols to aldehydes (Anelli protocol). NaBr mediates the oxidant cycle.",
+    reverse_transform="Reduce aldehyde to primary alcohol.",
+)
+
+_t(
+    name="Oppenauer oxidation",
+    named_reaction="Oppenauer oxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["Al(OiPr)3 (or Al(OtBu)3)", "acetone (hydrogen acceptor)"],
+    solvents=["toluene", "acetone (excess)"],
+    catalysts=["Al(OiPr)3"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["alcohol"],
+    functional_group_produced=["ketone"],
+    functional_group_incompatible=[],
+    mechanism="Aluminium alkoxide transfers a hydride from the substrate alcohol to acetone via a six-membered transition state (Meerwein-Ponndorf-Verley reverse). Equilibrium driven by excess acetone.",
+    reverse_transform="Reduce the ketone back to alcohol (MPV reduction).",
+)
+
+_t(
+    name="Lemieux-Johnson oxidation (OsO4/NaIO4)",
+    named_reaction="Lemieux-Johnson oxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["OsO4 (cat.)", "NaIO4"],
+    solvents=["dioxane/water", "THF/water"],
+    catalysts=["OsO4"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(70.0, 90.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["aldehyde", "ketone"],
+    functional_group_incompatible=[],
+    mechanism="OsO4 dihydroxylates the alkene (syn); NaIO4 cleaves the 1,2-diol to give two carbonyl fragments. One-pot oxidative cleavage.",
+    reverse_transform="Join two carbonyl fragments via Wittig or metathesis.",
+    safety_notes="OsO4 is extremely toxic. Use catalytic amounts.",
+)
+
+# -----------------------------------------------------------------
+#  REDUCTION (additional)  (~5)
+# -----------------------------------------------------------------
+
+_t(
+    name="Rosenmund reduction",
+    named_reaction="Rosenmund reduction",
+    category=ReactionCategory.REDUCTION,
+    reagents=["H2", "BaSO4-poisoned Pd (Rosenmund catalyst)"],
+    solvents=["toluene", "xylene"],
+    catalysts=["Pd/BaSO4 + quinoline-S poison"],
+    temperature_range=(25.0, 60.0),
+    typical_yield=(55.0, 80.0),
+    functional_group_required=["acid_chloride"],
+    functional_group_produced=["aldehyde"],
+    functional_group_incompatible=["alkene"],
+    mechanism="Selective reduction of acyl chloride to aldehyde using a poisoned Pd catalyst that prevents over-reduction to the alcohol.",
+    reverse_transform="Oxidise the aldehyde to acyl chloride.",
+)
+
+_t(
+    name="Lindlar hydrogenation",
+    named_reaction="Lindlar hydrogenation",
+    category=ReactionCategory.REDUCTION,
+    reagents=["H2"],
+    solvents=["EtOAc", "hexane", "MeOH"],
+    catalysts=["Pd/CaCO3 + Pb(OAc)2 + quinoline (Lindlar catalyst)"],
+    temperature_range=(20.0, 30.0),
+    typical_yield=(75.0, 95.0),
+    functional_group_required=["alkyne"],
+    functional_group_produced=["alkene"],
+    functional_group_incompatible=[],
+    mechanism="Poisoned Pd catalyst selectively reduces alkynes to cis-alkenes by syn addition of H2. The catalyst poison prevents further reduction to the alkane.",
+    reverse_transform="Dehydrogenate the cis-alkene to alkyne.",
+)
+
+_t(
+    name="CBS asymmetric reduction",
+    named_reaction="CBS reduction",
+    category=ReactionCategory.REDUCTION,
+    reagents=["BH3*THF", "(S)-CBS catalyst (Corey-Bakshi-Shibata oxazaborolidine)"],
+    solvents=["THF", "toluene"],
+    catalysts=["(S)-CBS oxazaborolidine"],
+    temperature_range=(-40.0, 0.0),
+    typical_yield=(80.0, 95.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["alcohol"],
+    functional_group_incompatible=[],
+    mechanism="Chiral oxazaborolidine pre-coordinates the ketone and activates BH3; face-selective hydride delivery via a six-membered transition state gives the alcohol with >95% ee.",
+    reverse_transform="Oxidise the chiral alcohol to the ketone.",
+)
+
+_t(
+    name="Noyori asymmetric hydrogenation (Ru-BINAP)",
+    named_reaction="Noyori asymmetric hydrogenation",
+    category=ReactionCategory.REDUCTION,
+    reagents=["H2"],
+    solvents=["MeOH", "iPrOH"],
+    catalysts=["RuCl2(BINAP)(dmf)n"],
+    temperature_range=(20.0, 50.0),
+    typical_yield=(85.0, 99.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["alcohol"],
+    functional_group_incompatible=[],
+    mechanism="Ru-BINAP complex catalyses enantioselective transfer of H2 to the ketone via a six-membered pericyclic transition state involving the N-H of the diamine co-ligand and Ru-H.",
+    reverse_transform="Oxidise the chiral alcohol to the ketone.",
+)
+
+_t(
+    name="Noyori asymmetric transfer hydrogenation",
+    named_reaction="Noyori transfer hydrogenation",
+    category=ReactionCategory.REDUCTION,
+    reagents=["HCO2H/Et3N (5:2 azeotrope)", "or iPrOH/KOtBu"],
+    solvents=["iPrOH", "DMF"],
+    catalysts=["RuCl(TsDPEN)(p-cymene)"],
+    temperature_range=(20.0, 40.0),
+    typical_yield=(80.0, 95.0),
+    functional_group_required=["ketone", "imine"],
+    functional_group_produced=["alcohol", "primary_amine"],
+    functional_group_incompatible=[],
+    mechanism="Ru-TsDPEN catalyst transfers hydrogen from isopropanol or formic acid to the substrate via an outer-sphere bifunctional mechanism (no direct Ru-substrate bond). Enantioselectivity >95% ee for aryl ketones.",
+    reverse_transform="Oxidise the product back to the ketone/imine.",
+)
+
+# -----------------------------------------------------------------
+#  RADICAL / PHOTOCHEMISTRY  (~5)
+# -----------------------------------------------------------------
+
+_t(
+    name="Barton decarboxylation",
+    named_reaction="Barton decarboxylation",
+    category=ReactionCategory.RADICAL,
+    reagents=["Barton ester (thiohydroxamic ester)", "hv or heat", "radical trap (Bu3SnH or thiol)"],
+    solvents=["benzene", "CCl4", "toluene"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(50.0, 80.0),
+    functional_group_required=["carboxylic_acid"],
+    functional_group_produced=[],
+    functional_group_incompatible=[],
+    mechanism="Photolysis of the Barton (thiohydroxamic) ester generates an alkyl radical by decarboxylation; the radical is trapped by Bu3SnH (reduction) or another radical acceptor.",
+    reverse_transform="Disconnect the C-H (or C-X) bond; restore the carboxylic acid.",
+)
+
+_t(
+    name="Norrish Type I photocleavage",
+    named_reaction="Norrish Type I",
+    category=ReactionCategory.RADICAL,
+    reagents=["hv (UV light)"],
+    solvents=["acetone", "benzene"],
+    temperature_range=(20.0, 25.0),
+    typical_yield=(30.0, 60.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["aldehyde", "alkene"],
+    functional_group_incompatible=[],
+    mechanism="UV irradiation excites the ketone to the n-pi* state; alpha-cleavage (homolysis of the C-C bond alpha to C=O) generates an acyl radical and an alkyl radical. Decarbonylation or recombination follows.",
+    reverse_transform="Recombine the radical fragments as a ketone.",
+)
+
+_t(
+    name="Norrish Type II photocleavage",
+    named_reaction="Norrish Type II",
+    category=ReactionCategory.RADICAL,
+    reagents=["hv (UV light)"],
+    solvents=["acetone", "benzene"],
+    temperature_range=(20.0, 25.0),
+    typical_yield=(30.0, 60.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["alkene", "ketone"],
+    functional_group_incompatible=[],
+    mechanism="UV-excited ketone undergoes intramolecular gamma-hydrogen abstraction via a six-membered transition state; the resulting 1,4-biradical undergoes retro-[2+2] fragmentation to give an enol (tautomerises to ketone) and an alkene.",
+    reverse_transform="Join an alkene and a methyl ketone via [2+2] cyclisation.",
+)
+
+_t(
+    name="Wohl-Ziegler bromination",
+    named_reaction="Wohl-Ziegler bromination",
+    category=ReactionCategory.RADICAL,
+    reagents=["NBS (N-bromosuccinimide)", "AIBN (or hv, or BPO)"],
+    solvents=["CCl4", "DCM"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(55.0, 80.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["alkyl_halide_br"],
+    functional_group_incompatible=[],
+    mechanism="Radical chain process: AIBN generates initiating radicals; hydrogen abstraction from the allylic position by Br radical; NBS maintains low [Br2] for selective allylic (not addition) bromination.",
+    reverse_transform="Remove the allylic bromide; restore C-H.",
+)
+
+_t(
+    name="Paternò-Büchi [2+2] photocycloaddition",
+    named_reaction="Paternò-Büchi reaction",
+    category=ReactionCategory.RADICAL,
+    reagents=["hv (UV light)", "carbonyl compound", "alkene"],
+    solvents=["acetone", "benzene"],
+    temperature_range=(20.0, 25.0),
+    typical_yield=(30.0, 65.0),
+    functional_group_required=["ketone", "alkene"],
+    functional_group_produced=["ether"],
+    functional_group_incompatible=[],
+    mechanism="Photoexcited carbonyl (n,pi* state) undergoes [2+2] cycloaddition with an alkene to form an oxetane. Proceeds via either a singlet or triplet biradical intermediate.",
+    reverse_transform="Retro-[2+2] fragmentation of the oxetane gives carbonyl + alkene.",
+)
+
+# -----------------------------------------------------------------
+#  ASYMMETRIC CATALYSIS  (~7)
+# -----------------------------------------------------------------
+
+_t(
+    name="Sharpless asymmetric dihydroxylation",
+    named_reaction="Sharpless AD",
+    category=ReactionCategory.ADDITION,
+    reagents=["OsO4 (cat.)", "K2OsO4*2H2O", "K3Fe(CN)6", "K2CO3", "chiral ligand (DHQD)2PHAL (or (DHQ)2PHAL)"],
+    solvents=["t-BuOH/water (1:1)"],
+    catalysts=["OsO4", "(DHQD)2PHAL"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(75.0, 95.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["diol"],
+    functional_group_incompatible=[],
+    mechanism="Chiral alkaloid ligand wraps around OsO4 creating a chiral pocket; [3+2] cycloaddition to the alkene face gives an osmate ester with high ee; K3Fe(CN)6 re-oxidises Os(VI) and releases the diol.",
+    reverse_transform="Convert diol to alkene via periodate cleavage.",
+)
+
+_t(
+    name="Jacobsen epoxidation (Mn-salen)",
+    named_reaction="Jacobsen epoxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["NaOCl (or mCPBA)", "Mn(salen) catalyst"],
+    solvents=["DCM"],
+    catalysts=["Jacobsen Mn(III)-salen catalyst"],
+    temperature_range=(0.0, 25.0),
+    typical_yield=(60.0, 90.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["epoxide"],
+    functional_group_incompatible=[],
+    mechanism="Mn(III)-salen catalyst is oxidised to Mn(V)=O by NaOCl; the oxo species transfers oxygen to the cis-disubstituted alkene enantioselectively via a side-on approach dictated by the salen ligand.",
+    reverse_transform="Open the epoxide to restore the alkene.",
+)
+
+_t(
+    name="Shi asymmetric epoxidation",
+    named_reaction="Shi epoxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["Oxone (KHSO5)", "fructose-derived ketone catalyst"],
+    solvents=["MeCN/DMM/water"],
+    catalysts=["Shi fructose ketone catalyst"],
+    temperature_range=(0.0, 5.0),
+    typical_yield=(60.0, 85.0),
+    functional_group_required=["alkene"],
+    functional_group_produced=["epoxide"],
+    functional_group_incompatible=[],
+    mechanism="Oxone oxidises the chiral ketone to a dioxirane in situ; the dioxirane epoxidises the trans-disubstituted alkene enantioselectively; the ketone is regenerated catalytically.",
+    reverse_transform="Open the epoxide to restore the alkene.",
+)
+
+_t(
+    name="Evans aldol reaction",
+    named_reaction="Evans aldol",
+    category=ReactionCategory.COUPLING,
+    reagents=["oxazolidinone auxiliary", "Bu2BOTf", "DIPEA", "aldehyde"],
+    solvents=["DCM"],
+    temperature_range=(-78.0, 0.0),
+    typical_yield=(70.0, 90.0),
+    functional_group_required=["aldehyde"],
+    functional_group_produced=["alcohol", "amide"],
+    functional_group_incompatible=[],
+    mechanism="Bu2BOTf generates the Z-boron enolate of the Evans N-acyloxazolidinone; Zimmerman-Traxler transition state controls facial selectivity in the aldol addition to the aldehyde, giving the syn-aldol with >95% de.",
+    reverse_transform="Disconnect the beta-hydroxy carbonyl C-C bond; fragments are aldehyde and the oxazolidinone.",
+)
+
+_t(
+    name="Enzymatic kinetic resolution",
+    named_reaction="Enzymatic resolution",
+    category=ReactionCategory.MISC,
+    reagents=["lipase (CAL-B, PPL, etc.)", "vinyl acetate (acyl donor)"],
+    solvents=["MTBE", "hexane", "toluene"],
+    catalysts=["Candida antarctica lipase B (CAL-B)"],
+    temperature_range=(25.0, 40.0),
+    typical_yield=(40.0, 50.0),
+    functional_group_required=["alcohol"],
+    functional_group_produced=["ester"],
+    functional_group_incompatible=[],
+    mechanism="Lipase selectively acylates one enantiomer of a racemic alcohol; the unreacted enantiomer and the acylated product are separated. Maximum theoretical yield per enantiomer is 50%.",
+    reverse_transform="Hydrolyse the ester to recover the alcohol.",
+)
+
+_t(
+    name="Sharpless click reaction (CuAAC)",
+    named_reaction="CuAAC (click chemistry)",
+    category=ReactionCategory.COUPLING,
+    reagents=["terminal alkyne", "organic azide", "CuSO4", "sodium ascorbate"],
+    solvents=["t-BuOH/water", "DMF/water"],
+    catalysts=["CuSO4/sodium ascorbate"],
+    temperature_range=(20.0, 60.0),
+    typical_yield=(80.0, 99.0),
+    functional_group_required=["alkyne"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Cu(I) forms a copper acetylide from the terminal alkyne; [3+2] cycloaddition with the azide gives regioselectively the 1,4-disubstituted 1,2,3-triazole. Highly reliable and orthogonal.",
+    reverse_transform="Disconnect the triazole ring; fragments are terminal alkyne and azide.",
+)
+
+_t(
+    name="Electrochemical oxidation (anodic)",
+    named_reaction="Anodic oxidation",
+    category=ReactionCategory.OXIDATION,
+    reagents=["electricity (constant current)", "supporting electrolyte (nBu4NBF4)"],
+    solvents=["MeCN", "DMF"],
+    temperature_range=(20.0, 25.0),
+    typical_yield=(40.0, 80.0),
+    functional_group_required=["aromatic_ring"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Anodic single-electron oxidation generates a radical cation; depending on conditions, coupling, methoxylation, or other functionalization occurs. No chemical oxidant required.",
+    reverse_transform="Reverse the electrochemical transformation (reduction).",
+)
+
+# -----------------------------------------------------------------
+#  MODERN / GREEN CHEMISTRY  (~4)
+# -----------------------------------------------------------------
+
+_t(
+    name="Photocatalytic oxidative coupling",
+    named_reaction="Photocatalytic C-H coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["photocatalyst (Ru(bpy)3Cl2 or Ir(ppy)3)", "oxidant or O2"],
+    solvents=["DMF", "MeCN"],
+    catalysts=["Ru(bpy)3Cl2"],
+    temperature_range=(20.0, 30.0),
+    typical_yield=(30.0, 70.0),
+    functional_group_required=["aromatic_ring"],
+    functional_group_produced=["aromatic_ring"],
+    functional_group_incompatible=[],
+    mechanism="Visible light excites the photocatalyst; single-electron transfer generates reactive radical intermediates from substrates; radical coupling or radical addition to heteroarenes gives C-C or C-heteroatom bonds.",
+    reverse_transform="Disconnect the newly formed C-C bond; restore the starting materials.",
+)
+
+_t(
+    name="Flow hydrogenation (H-Cube)",
+    named_reaction="Flow hydrogenation",
+    category=ReactionCategory.REDUCTION,
+    reagents=["H2 (generated in situ from water electrolysis)"],
+    solvents=["EtOAc", "MeOH"],
+    catalysts=["Pd/C cartridge", "Pt/C cartridge", "Raney Ni cartridge"],
+    temperature_range=(25.0, 80.0),
+    typical_yield=(85.0, 99.0),
+    functional_group_required=["alkene", "nitro", "nitrile"],
+    functional_group_produced=["alcohol", "primary_amine"],
+    functional_group_incompatible=[],
+    mechanism="Continuous-flow reactor generates H2 from water electrolysis and passes substrate solution over a fixed-bed heterogeneous catalyst. Enhanced mass transfer and safety vs. batch hydrogenation.",
+    reverse_transform="Dehydrogenation or oxidation of the reduced product.",
+)
+
+_t(
+    name="Nickel-catalysed reductive cross-coupling",
+    named_reaction="Ni reductive cross-coupling",
+    category=ReactionCategory.COUPLING,
+    reagents=["aryl halide", "alkyl halide", "Zn (or Mn) reductant"],
+    solvents=["DMA", "DMF"],
+    catalysts=["NiCl2*glyme/dtbbpy"],
+    temperature_range=(20.0, 60.0),
+    typical_yield=(40.0, 75.0),
+    functional_group_required=["alkyl_halide_br"],
+    functional_group_produced=[],
+    functional_group_incompatible=[],
+    mechanism="Ni(0) oxidatively adds to one halide; the second halide undergoes radical capture at the Ni centre; reductive elimination forms the new C-C bond. Mn or Zn reduces Ni(II) back to Ni(0).",
+    reverse_transform="Disconnect C(sp3)-C(sp2) bond; both fragments get halides.",
+)
+
+_t(
+    name="Biocatalytic ketone reduction (KRED)",
+    named_reaction="Ketoreductase reduction",
+    category=ReactionCategory.REDUCTION,
+    reagents=["ketoreductase enzyme (KRED)", "NADPH cofactor", "glucose/GDH (cofactor recycling)"],
+    solvents=["phosphate buffer (pH 7)", "iPrOH co-solvent"],
+    catalysts=["KRED engineered enzyme"],
+    temperature_range=(25.0, 37.0),
+    typical_yield=(80.0, 99.0),
+    functional_group_required=["ketone"],
+    functional_group_produced=["alcohol"],
+    functional_group_incompatible=[],
+    mechanism="Enzyme binds the ketone substrate in its active site; NADPH delivers a hydride enantioselectively; glucose dehydrogenase (GDH) regenerates NADPH from NADP+ using glucose. >99% ee is routine with directed-evolution-optimised KREDs.",
+    reverse_transform="Oxidise the chiral alcohol to the ketone.",
+)
+
+
 # =====================================================================
 #  Lookup helpers
 # =====================================================================

@@ -306,13 +306,98 @@ PURCHASABLE_MATERIALS: dict[str, tuple[str, float]] = {
     "C1CCOCC1": ("tetrahydropyran", 5.00),
     "C1CNCCN1": ("piperazine", 6.00),
     "c1c[nH]cn1": ("imidazole", 7.00),
+    "N(CCNC1)1": ("imidazole (canonical)", 7.00),
     "C1CO1": ("ethylene oxide (ring)", 3.00),
+
+    # --- xanthine / purine precursors ---
+    "CN1C=NC2=C1C(=O)NC(=O)N2C": ("theobromine", 45.00),
+    "O=C(NC(=O)C(N(C)C=NC=1N2C)=1)2": ("theobromine (canonical)", 45.00),
+    "CN1C(=O)N(C)C2=C1NC=N2": ("theophylline", 50.00),
+    "O=C(N(C)C(N=CNC=1N2C)=1)2": ("theophylline (canonical)", 50.00),
+    "O=C1NC(=O)C2=C(N1)NC=N2": ("xanthine", 60.00),
+    "O=C(NC(=O)C(N=CNC=1N2)=1)2": ("xanthine (canonical)", 60.00),
+    "O=C1C=CNC(=O)N1": ("uracil", 25.00),
+    "O=C(C=CNC(=O)N1)1": ("uracil (canonical)", 25.00),
+    "NC(=O)N": ("urea", 2.00),
+    "O=C(N)N": ("urea (canonical)", 2.00),
+    "CNC(=O)NC": ("1,3-dimethylurea", 8.00),
+    "O=C(NC)NC": ("1,3-dimethylurea (canonical)", 8.00),
+    "N=C(N)N": ("guanidine", 10.00),
+    "NC#N": ("cyanamide", 12.00),
+    "N#CN": ("cyanamide (canonical)", 12.00),
 
     # --- additional carboxylic acid derivatives ---
     "CC(=O)NC": ("N-methylacetamide", 5.00),
     "O=C(Cl)c1ccccc1": ("benzoyl chloride", 7.00),
     "OC(=O)CCCCCC(O)=O": ("pimelic acid", 6.00),
     "OC(=O)c1ccc(C(O)=O)cc1": ("terephthalic acid", 5.00),
+
+    # --- boronic acids / esters ---
+    "OB(O)c1ccccc1": ("phenylboronic acid", 15.00),
+    "OB(O)c1ccc(C)cc1": ("4-methylphenylboronic acid", 20.00),
+    "OB(O)c1ccc(OC)cc1": ("4-methoxyphenylboronic acid", 22.00),
+    "OB(O)c1ccc(F)cc1": ("4-fluorophenylboronic acid", 25.00),
+    "OB(O)c1ccncc1": ("pyridine-4-boronic acid", 35.00),
+    "OB(O)C=C": ("vinylboronic acid", 30.00),
+    "B1OC(C)(C)C(C)(C)O1": ("pinacolborane", 20.00),
+
+    # --- organozinc reagents ---
+    "ClZnCC": ("ethylzinc chloride", 25.00),
+    "ClZnc1ccccc1": ("phenylzinc chloride", 30.00),
+    "BrZnCCC": ("propylzinc bromide", 28.00),
+
+    # --- organotin reagents ---
+    "C(C)(C)(C)[Sn](CCCC)(CCCC)CCCC": ("tributyltin hydride (approx)", 15.00),
+    "[Sn](CCCC)(CCCC)(CCCC)C=C": ("vinyltributyltin", 20.00),
+    "[Sn](CCCC)(CCCC)(CCCC)c1ccccc1": ("phenyltributyltin", 25.00),
+
+    # --- organosilane reagents ---
+    "C[Si](C)(C)C=C": ("vinyltrimethylsilane", 12.00),
+    "CO[Si](OC)(OC)c1ccccc1": ("phenyltrimethoxysilane", 15.00),
+    "C[Si](C)(C)C#C": ("trimethylsilylacetylene", 18.00),
+
+    # --- heterocyclic building blocks ---
+    "c1cnc2ccccc2n1": ("quinoxaline", 10.00),
+    "c1c[nH]c2ccccc12": ("indole", 12.00),
+    "c1ccc2[nH]ccc2c1": ("indole (alt)", 12.00),
+    "c1ccnc(N)c1": ("2-aminopyridine", 8.00),
+    "c1ccc(N)c(N)c1": ("o-phenylenediamine", 7.00),
+    "c1cc(O)cc(O)c1O": ("phloroglucinol", 10.00),
+    "c1ccc2c(c1)oc(=O)cc2": ("coumarin", 8.00),
+    "c1csc(N)n1": ("2-aminothiazole", 10.00),
+    "c1nc[nH]n1": ("1,2,4-triazole", 9.00),
+    "c1ccnnc1": ("pyridazine", 15.00),
+    "c1ccncn1": ("pyrimidine", 8.00),
+    "c1cnccn1": ("pyrazine", 10.00),
+    "c1cc2ccccc2o1": ("benzofuran", 12.00),
+    "c1cc2ccccc2s1": ("benzothiophene", 14.00),
+
+    # --- beta-keto esters ---
+    "CCOC(=O)CC(C)=O": ("ethyl acetoacetate", 4.00),
+    "CCOC(=O)CC(=O)OCC": ("diethyl malonate", 5.00),
+    "COC(=O)CC(C)=O": ("methyl acetoacetate", 4.00),
+    "CCOC(=O)CC(=O)CC": ("ethyl 3-oxopentanoate", 8.00),
+
+    # --- hexamine and related ---
+    "C1N2CN3CN1CN(C2)C3": ("hexamethylenetetramine", 5.00),
+
+    # --- additional common reagents ---
+    "CC(C)=O": ("acetone (reagent)", 1.50),
+    "C=CC=O": ("acrolein", 4.00),
+    "O=CC=CC=O": ("glutaraldehyde", 6.00),
+    "OC(=O)CC#N": ("cyanoacetic acid", 8.00),
+    "N#CCC(=O)OCC": ("ethyl cyanoacetate", 7.00),
+    "CC(=O)CC(C)=O": ("2,4-pentanedione (acetylacetone)", 5.00),
+    "CC(=O)CCC(C)=O": ("2,5-hexanedione", 6.00),
+    "CCOP(=O)(OCC)OCC": ("triethyl phosphate", 8.00),
+    "c1cc(Cl)cc(Cl)c1": ("1,3-dichlorobenzene", 5.00),
+    "Fc1ccc(F)cc1": ("1,4-difluorobenzene", 8.00),
+
+    # --- additional amino acids ---
+    "OC(=O)C(N)Cc1ccccc1": ("phenylalanine", 15.00),
+    "OC(=O)C(N)CC(O)=O": ("aspartic acid (alt)", 12.00),
+    "OC(=O)C(N)CS": ("cysteine", 20.00),
+    "OC(=O)C1CCCN1": ("proline", 18.00),
 }
 
 # Also accept alkyl halide generic name
@@ -516,15 +601,40 @@ def score_disconnection(
         score += 30.0 * frac
 
     # --- 3. Complexity reduction (0--20) ---
+    # Reward precursors that are moderately simpler than the target.
+    # Penalise disconnections where total precursor atoms are far fewer
+    # than the target (mass-balance violation -- atoms are being lost).
     target_heavy = _count_heavy_atoms(target_mol)
     if target_heavy > 0 and precursors:
-        max_precursor_heavy = max(
+        precursor_heavies = [
             _heavy_atom_count_from_smiles(p.smiles) for p in precursors
-        )
+        ]
+        max_precursor_heavy = max(precursor_heavies)
+        total_precursor_heavy = sum(precursor_heavies)
+
         if max_precursor_heavy < target_heavy:
             reduction = (target_heavy - max_precursor_heavy) / target_heavy
             score += 20.0 * min(1.0, reduction * 2.0)
-        # If the precursor is no simpler, no points here.
+
+        # Mass-balance sanity: if all precursors combined account for
+        # less than 40% of the target heavy atoms, penalise heavily.
+        # A good disconnection should conserve most atoms.
+        mass_ratio = total_precursor_heavy / target_heavy
+        if mass_ratio < 0.4:
+            score -= 30.0
+
+    # --- 3b. Structural similarity bonus (0--15) ---
+    # If the largest precursor retains most of the target's heavy atoms
+    # AND is purchasable, this is a strong single-step transform.
+    if target_heavy > 0 and precursors:
+        best_ratio = max_precursor_heavy / target_heavy
+        if best_ratio >= 0.7:
+            best_precursor_smi = max(
+                precursors,
+                key=lambda p: _heavy_atom_count_from_smiles(p.smiles),
+            ).smiles
+            if is_purchasable(best_precursor_smi):
+                score += 15.0 * best_ratio
 
     # --- 4. Strategic bond preference (0--15) ---
     cc_keywords = ("coupling", "grignard", "aldol", "wittig", "suzuki",
@@ -635,11 +745,16 @@ def _generate_precursors_for_template(
         precursor_smi = _substitute_fg(
             target_smiles, target_mol, fg, template)
         if precursor_smi:
-            precursors.append(Precursor(
-                smiles=precursor_smi, molecule=None,
-                name=f"precursor ({template.name})",
-                cost_per_kg=_estimate_cost(precursor_smi),
-            ))
+            # Use the purchasable name if available
+            known = get_purchasable(precursor_smi)
+            if known is not None:
+                precursors.append(known)
+            else:
+                precursors.append(Precursor(
+                    smiles=precursor_smi, molecule=None,
+                    name=f"precursor ({template.name})",
+                    cost_per_kg=_estimate_cost(precursor_smi),
+                ))
         # Also add the reagent as a precursor if it is recognisable
         for reagent in template.reagents:
             rp = _reagent_to_precursor(reagent)
@@ -933,6 +1048,8 @@ def _substitute_fg(
         ("ether", "alkyl_halide"): ("OC", "Br"),
         ("ether", "alcohol"): ("OC", "O"),
         ("primary_amine", "alkyl_halide"): ("N", "Br"),
+        ("secondary_amine", "primary_amine"): ("NC", "N"),
+        ("tertiary_amine", "secondary_amine"): ("N(C)", "N"),
         ("nitrile", "alkyl_halide"): ("C#N", "Br"),
         ("azide", "alkyl_halide"): ("N=[N+]=[N-]", "Br"),
     }

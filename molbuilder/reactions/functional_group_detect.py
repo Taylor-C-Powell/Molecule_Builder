@@ -182,6 +182,9 @@ def detect_functional_groups(mol: Molecule) -> list[FunctionalGroup]:
     groups.extend(_detect_sulfoxides(mol))
     groups.extend(_detect_sulfones(mol))
     groups.extend(_detect_imines(mol))
+    groups.extend(_detect_boronic_acids(mol))
+    groups.extend(_detect_phosphonates(mol))
+    groups.extend(_detect_sulfonamides(mol))
     return groups
 
 
@@ -724,5 +727,53 @@ def _detect_imines(mol: Molecule) -> list[FunctionalGroup]:
             found.append(FunctionalGroup(
                 name="imine", smarts_like="[C]=[N]",
                 atoms=list(pair), center=idx,
+            ))
+    return found
+
+
+def _detect_boronic_acids(mol: Molecule) -> list[FunctionalGroup]:
+    """Boronic acid: B bonded to two O atoms (and one C)."""
+    found: list[FunctionalGroup] = []
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "B":
+            continue
+        o_nbrs = _single_bonded_to(mol, idx, "O")
+        c_nbrs = _single_bonded_to(mol, idx, "C")
+        if len(o_nbrs) >= 2 and len(c_nbrs) >= 1:
+            found.append(FunctionalGroup(
+                name="boronic_acid", smarts_like="[B]([OH])([OH])[C]",
+                atoms=[idx] + o_nbrs[:2] + c_nbrs[:1], center=idx,
+            ))
+    return found
+
+
+def _detect_phosphonates(mol: Molecule) -> list[FunctionalGroup]:
+    """Phosphonate ester: P with one P=O and two P-O-C linkages."""
+    found: list[FunctionalGroup] = []
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "P":
+            continue
+        dbl_o = _double_bonded_to(mol, idx, "O")
+        sgl_o = _single_bonded_to(mol, idx, "O")
+        if len(dbl_o) >= 1 and len(sgl_o) >= 2:
+            found.append(FunctionalGroup(
+                name="phosphonate", smarts_like="[P](=O)([O])([O])",
+                atoms=[idx] + dbl_o[:1] + sgl_o[:2], center=idx,
+            ))
+    return found
+
+
+def _detect_sulfonamides(mol: Molecule) -> list[FunctionalGroup]:
+    """Sulfonamide: S(=O)(=O)-N."""
+    found: list[FunctionalGroup] = []
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "S":
+            continue
+        dbl_o = _double_bonded_to(mol, idx, "O")
+        sgl_n = _single_bonded_to(mol, idx, "N")
+        if len(dbl_o) >= 2 and len(sgl_n) >= 1:
+            found.append(FunctionalGroup(
+                name="sulfonamide", smarts_like="[S](=O)(=O)[N]",
+                atoms=[idx] + dbl_o[:2] + sgl_n[:1], center=idx,
             ))
     return found

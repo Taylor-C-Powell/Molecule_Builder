@@ -23,7 +23,7 @@ Derived from MolBuilder_GTM_Strategy.md. Track progress by checking items as com
 - [x] Verify TestPyPI install
 - [x] Upload to PyPI: `twine upload dist/*`
 - [x] Verify PyPI install: `pip install molbuilder` resolves v1.1.0 (2026-02-08)
-- [ ] Upload v1.1.1 patch release with corrected URLs and API improvements
+- [x] Upload v1.1.1 patch release with corrected URLs and API improvements (2026-02-08)
 
 ### Web Presence
 - [ ] Register domain (molbuilder.io or similar)
