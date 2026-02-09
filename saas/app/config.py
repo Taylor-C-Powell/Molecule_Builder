@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     molecule_store_max: int = 10_000
 
     audit_db_path: str = "molbuilder_audit.db"
+    user_db_path: str = "molbuilder_users.db"
+    cors_origins: str = "*"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

@@ -31,6 +31,28 @@ def _temp_audit_db(tmp_path):
     set_audit_db(None)
 
 
+@pytest.fixture(autouse=True)
+def _temp_user_db(tmp_path):
+    """Use a temporary user DB for each test."""
+    from app.services.user_db import UserDB, set_user_db
+    db_path = str(tmp_path / "test_users.db")
+    db = UserDB(db_path)
+    set_user_db(db)
+    yield db
+    db.close()
+    set_user_db(None)
+
+
+@pytest.fixture(autouse=True)
+def _reset_api_key_store():
+    """Reset API key store between tests."""
+    api_key_store._keys.clear()
+    api_key_store._db = None
+    yield
+    api_key_store._keys.clear()
+    api_key_store._db = None
+
+
 @pytest.fixture()
 def client():
     with TestClient(app) as c:

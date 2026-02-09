@@ -16,6 +16,10 @@ async def lifespan(app: FastAPI):
     # Warm up molbuilder data structures by parsing a trivial molecule
     from molbuilder.smiles.parser import parse
     parse("C")
+    # Load persisted API keys from SQLite
+    from app.services.user_db import get_user_db
+    from app.auth.api_keys import api_key_store
+    api_key_store.load_from_db(get_user_db())
     yield
 
 
@@ -28,9 +32,11 @@ app = FastAPI(
 
 app.add_middleware(VersioningMiddleware)
 app.add_middleware(UsageTrackingMiddleware)
+from app.config import settings as _settings
+_cors_origins = [o.strip() for o in _settings.cors_origins.split(",")]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

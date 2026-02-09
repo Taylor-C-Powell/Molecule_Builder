@@ -27,15 +27,30 @@ class APIKeyRecord:
 
 
 class APIKeyStore:
-    """Thread-safe in-memory API key store."""
+    """Thread-safe in-memory API key store with optional SQLite persistence."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._keys: dict[str, APIKeyRecord] = {}  # hash -> record
+        self._db = None
 
     @staticmethod
     def _hash(key: str) -> str:
         return hashlib.sha256(key.encode()).hexdigest()
+
+    def load_from_db(self, db) -> None:
+        """Load all active keys from a UserDB and enable write-through."""
+        self._db = db
+        rows = db.load_all_active()
+        with self._lock:
+            for row in rows:
+                record = APIKeyRecord(
+                    key_hash=row["key_hash"],
+                    email=row["email"],
+                    tier=Tier(row["tier"]),
+                    role=Role(row["role"]),
+                )
+                self._keys[row["key_hash"]] = record
 
     def create(self, email: str, tier: Tier = Tier.FREE, role: Role = Role.CHEMIST) -> str:
         prefix = _PREFIX[tier]
@@ -44,6 +59,8 @@ class APIKeyStore:
         record = APIKeyRecord(key_hash=h, email=email, tier=tier, role=role)
         with self._lock:
             self._keys[h] = record
+        if self._db is not None:
+            self._db.insert_key(h, email, tier.value, role.value)
         return raw_key
 
     def validate(self, key: str) -> APIKeyRecord | None:
@@ -62,7 +79,9 @@ class APIKeyStore:
             to_delete = [h for h, r in self._keys.items() if r.email == email]
             for h in to_delete:
                 del self._keys[h]
-            return len(to_delete)
+        if self._db is not None and to_delete:
+            self._db.delete_by_email(email)
+        return len(to_delete)
 
     def list_users(self) -> list[dict]:
         """Return a list of unique users with their tier and role."""

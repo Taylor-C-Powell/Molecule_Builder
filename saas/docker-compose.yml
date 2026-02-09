@@ -8,6 +8,7 @@ services:
     environment:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
       - AUDIT_DB_PATH=/data/molbuilder_audit.db
+      - USER_DB_PATH=/data/molbuilder_users.db
     volumes:
       - audit_data:/data
     healthcheck:

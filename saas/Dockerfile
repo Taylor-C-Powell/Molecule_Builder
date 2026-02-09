@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir \
 RUN mkdir -p /data
 
 ENV AUDIT_DB_PATH=/data/molbuilder_audit.db
-ENV JWT_SECRET_KEY=change-me-in-production
+ENV USER_DB_PATH=/data/molbuilder_users.db
 
 EXPOSE 8000
 

@@ -33,6 +33,14 @@ htmlcov/
 Thumbs.db
 Desktop.ini
 
+# SQLite databases
+*.db
+*.db-wal
+*.db-shm
+
+# Environment
+.env
+
 # Distribution
 *.tar.gz
 *.whl
