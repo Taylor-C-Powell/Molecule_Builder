@@ -49,6 +49,16 @@ def list_users(admin: UserContext = Depends(require_admin)):
     return [UserInfo(**u) for u in api_key_store.list_users()]
 
 
+@router.patch("/users/{email}/tier")
+def update_user_tier(email: str, body: AdminKeyCreate, admin: UserContext = Depends(require_admin)):
+    """Admin-only: update tier for all keys belonging to an email."""
+    count = api_key_store.update_tier(email, body.tier)
+    if count == 0:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=f"No keys found for {email}")
+    return {"updated": count, "email": email, "tier": body.tier.value}
+
+
 @router.delete("/users/{email}")
 def delete_user(email: str, admin: UserContext = Depends(require_admin)):
     count = api_key_store.delete_by_email(email)
