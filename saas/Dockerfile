@@ -25,6 +25,9 @@ RUN pip install --no-cache-dir \
 # Create data directory for SQLite audit DB
 RUN mkdir -p /data
 
+# Verify molbuilder imports work at build time
+RUN python -c "from molbuilder.smiles.parser import parse; parse('C'); print('molbuilder import OK')"
+
 ENV AUDIT_DB_PATH=/data/molbuilder_audit.db
 ENV USER_DB_PATH=/data/molbuilder_users.db
 
@@ -34,4 +37,4 @@ EXPOSE ${PORT}
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD python -c "import os,urllib.request; urllib.request.urlopen(f'http://localhost:{os.environ.get(\"PORT\",8000)}/health')" || exit 1
 
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level info"]
