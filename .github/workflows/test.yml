@@ -1,0 +1,43 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install core package with dev deps
+        run: pip install -e ".[dev]"
+
+      - name: Install SaaS deps
+        run: pip install -e "./saas[dev]"
+
+      - name: Install SDK deps
+        run: pip install -e "./sdk[dev]"
+
+      - name: Lint with ruff
+        run: ruff check molbuilder/ saas/app/ sdk/molbuilder_client/
+
+      - name: Run core tests
+        run: python -m pytest tests/ -v
+
+      - name: Run SaaS tests
+        run: python -m pytest saas/tests/ -v
+
+      - name: Run SDK tests
+        run: python -m pytest sdk/tests/ -v
