@@ -1,5 +1,7 @@
 # MolBuilder
 
+![Tests](https://github.com/Taylor-C-Powell/Molecule_Builder/actions/workflows/test.yml/badge.svg) ![PyPI](https://img.shields.io/pypi/v/molbuilder-client)
+
 A professional-grade molecular engineering toolkit built from scratch in pure Python. MolBuilder spans the full pipeline from atomic theory and molecular modeling through retrosynthetic analysis, process engineering, and industrial scale-up -- without depending on RDKit, OpenBabel, or any external chemistry library.
 
 ## What It Does
