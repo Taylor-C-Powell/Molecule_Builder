@@ -38,18 +38,24 @@ Derived from MolBuilder_GTM_Strategy.md. Track progress by checking items as com
 ## Phase 1: Soft Launch (Months 1-3)
 
 ### API Development
-- [ ] Set up FastAPI project in `saas/` directory
-- [ ] Implement core endpoints:
-  - [ ] `POST /api/v1/molecule/from-smiles` — parse SMILES, return molecular data
-  - [ ] `GET /api/v1/molecule/{id}/properties` — molecular properties
-  - [ ] `GET /api/v1/molecule/{id}/3d` — 3D coordinates for visualization
-  - [ ] `POST /api/v1/retrosynthesis/plan` — run retrosynthesis on target molecule
-  - [ ] `POST /api/v1/process/evaluate` — process engineering evaluation
-  - [ ] `GET /api/v1/elements/{symbol}` — element data lookup
-- [ ] Authentication (API keys for free tier, JWT for Pro+)
-- [ ] Rate limiting per tier
-- [ ] Basic error handling and input validation
-- [ ] API documentation (auto-generated via FastAPI /docs)
+- [x] Set up FastAPI project in `saas/` directory (2026-02-08)
+- [x] Implement core endpoints (2026-02-08):
+  - [x] `POST /api/v1/molecule/from-smiles` — parse SMILES, return molecular data
+  - [x] `GET /api/v1/molecule/{id}/properties` — molecular properties
+  - [x] `GET /api/v1/molecule/{id}/3d` — 3D coordinates for visualization
+  - [x] `POST /api/v1/retrosynthesis/plan` — run retrosynthesis on target molecule
+  - [x] `POST /api/v1/process/evaluate` — process engineering evaluation
+  - [x] `GET /api/v1/elements/{symbol}` — element data lookup
+- [x] Authentication: API keys (tiered) + JWT exchange (2026-02-08)
+- [x] Rate limiting per tier (2026-02-08)
+- [x] Basic error handling and input validation (2026-02-08)
+- [x] API documentation: auto-generated at /docs (2026-02-08)
+- [x] RBAC: admin, chemist, viewer roles (2026-02-09)
+- [x] 21 CFR Part 11 audit trail (2026-02-09)
+- [x] Admin bootstrap + secured registration (2026-02-10)
+- [x] **Deployed to Railway**: https://molbuilder-api-production.up.railway.app (2026-02-10)
+- [x] **Swagger docs live**: https://molbuilder-api-production.up.railway.app/docs (2026-02-10)
+- [x] 88 SaaS API tests passing (2026-02-10)
 
 ### Web Frontend
 - [ ] React project scaffold
