@@ -9,11 +9,11 @@ class CheckoutRequest(BaseModel):
         ..., description="Subscription plan to purchase"
     )
     success_url: str = Field(
-        "https://molbuilder-api-production.up.railway.app/docs",
+        "https://www.molbuilder.io/docs",
         description="URL to redirect after successful payment",
     )
     cancel_url: str = Field(
-        "https://molbuilder-api-production.up.railway.app/docs",
+        "https://www.molbuilder.io/docs",
         description="URL to redirect if user cancels",
     )
 

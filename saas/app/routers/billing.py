@@ -67,7 +67,7 @@ def create_portal(user: UserContext = Depends(get_current_user)):
 
     portal_url = stripe_service.create_portal_session(
         customer_id=info["stripe_customer_id"],
-        return_url="https://molbuilder-api-production.up.railway.app/docs",
+        return_url="https://www.molbuilder.io/docs",
     )
     return PortalResponse(portal_url=portal_url)
 
