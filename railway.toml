@@ -3,6 +3,6 @@ dockerfilePath = "saas/Dockerfile"
 
 [deploy]
 healthcheckPath = "/health"
-healthcheckTimeout = 5
+healthcheckTimeout = 120
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 5
