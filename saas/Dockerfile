@@ -20,7 +20,8 @@ RUN pip install --no-cache-dir \
     "pydantic>=2.5.0" \
     "pydantic-settings>=2.1.0" \
     "pyjwt>=2.8.0" \
-    "python-multipart>=0.0.6"
+    "python-multipart>=0.0.6" \
+    "stripe>=8.0.0"
 
 # Create data directory for SQLite audit DB
 RUN mkdir -p /data

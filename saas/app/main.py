@@ -8,7 +8,7 @@ from app.exceptions import register_exception_handlers
 from app.middleware import UsageTrackingMiddleware
 from app.middleware_versioning import VersioningMiddleware
 from app.models.common import HealthResponse
-from app.routers import auth, molecule, retrosynthesis, process, elements, analytics, audit, version
+from app.routers import auth, billing, molecule, retrosynthesis, process, elements, analytics, audit, version
 
 
 @asynccontextmanager
@@ -73,6 +73,7 @@ app.add_middleware(
 register_exception_handlers(app)
 
 app.include_router(auth.router)
+app.include_router(billing.router)
 app.include_router(molecule.router)
 app.include_router(retrosynthesis.router)
 app.include_router(process.router)

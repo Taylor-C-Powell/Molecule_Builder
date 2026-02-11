@@ -83,6 +83,18 @@ class APIKeyStore:
             self._db.delete_by_email(email)
         return len(to_delete)
 
+    def update_tier(self, email: str, new_tier: Tier) -> int:
+        """Update tier for all in-memory keys for an email, write through to DB."""
+        count = 0
+        with self._lock:
+            for r in self._keys.values():
+                if r.email == email:
+                    r.tier = new_tier
+                    count += 1
+        if self._db is not None and count > 0:
+            self._db.update_tier(email, new_tier.value)
+        return count
+
     def list_users(self) -> list[dict]:
         """Return a list of unique users with their tier and role."""
         with self._lock:

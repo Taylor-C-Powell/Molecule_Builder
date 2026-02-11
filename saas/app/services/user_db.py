@@ -37,6 +37,14 @@ class UserDB:
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_keys_email ON api_keys(email)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_keys_active ON api_keys(active)")
+        # Migrate: add Stripe columns if missing
+        existing = {r[1] for r in conn.execute("PRAGMA table_info(api_keys)").fetchall()}
+        if "stripe_customer_id" not in existing:
+            conn.execute("ALTER TABLE api_keys ADD COLUMN stripe_customer_id TEXT")
+        if "stripe_subscription_id" not in existing:
+            conn.execute("ALTER TABLE api_keys ADD COLUMN stripe_subscription_id TEXT")
+        if "subscription_status" not in existing:
+            conn.execute("ALTER TABLE api_keys ADD COLUMN subscription_status TEXT DEFAULT 'none'")
         conn.commit()
 
     def insert_key(self, key_hash: str, email: str, tier: str, role: str) -> int:
@@ -59,6 +67,60 @@ class UserDB:
         )
         conn.commit()
         return cursor.rowcount
+
+    def update_tier(self, email: str, tier: str) -> int:
+        """Update the tier for all active keys belonging to an email."""
+        conn = self._get_conn()
+        cursor = conn.execute(
+            "UPDATE api_keys SET tier = ? WHERE email = ? AND active = 1",
+            (tier, email),
+        )
+        conn.commit()
+        return cursor.rowcount
+
+    def update_stripe_customer(self, email: str, customer_id: str) -> None:
+        """Associate a Stripe customer ID with a user's active keys."""
+        conn = self._get_conn()
+        conn.execute(
+            "UPDATE api_keys SET stripe_customer_id = ? WHERE email = ? AND active = 1",
+            (customer_id, email),
+        )
+        conn.commit()
+
+    def update_subscription(
+        self, email: str, subscription_id: str | None, status: str, tier: str
+    ) -> None:
+        """Update subscription info and tier for a user."""
+        conn = self._get_conn()
+        conn.execute(
+            """UPDATE api_keys
+               SET stripe_subscription_id = ?, subscription_status = ?, tier = ?
+               WHERE email = ? AND active = 1""",
+            (subscription_id, status, tier, email),
+        )
+        conn.commit()
+
+    def get_by_stripe_customer(self, customer_id: str) -> dict | None:
+        """Look up user by Stripe customer ID."""
+        conn = self._get_conn()
+        row = conn.execute(
+            """SELECT email, tier, role, stripe_customer_id,
+                      stripe_subscription_id, subscription_status
+               FROM api_keys WHERE stripe_customer_id = ? AND active = 1 LIMIT 1""",
+            (customer_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def get_stripe_info(self, email: str) -> dict | None:
+        """Get Stripe-related info for a user."""
+        conn = self._get_conn()
+        row = conn.execute(
+            """SELECT email, tier, stripe_customer_id,
+                      stripe_subscription_id, subscription_status
+               FROM api_keys WHERE email = ? AND active = 1 LIMIT 1""",
+            (email,),
+        ).fetchone()
+        return dict(row) if row else None
 
     def load_all_active(self) -> list[dict]:
         """Load all active API key records."""

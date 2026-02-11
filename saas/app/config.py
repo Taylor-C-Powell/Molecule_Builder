@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     cors_origins: str = "*"
     admin_bootstrap_email: str = ""
 
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_pro_monthly_price_id: str = ""
+    stripe_pro_yearly_price_id: str = ""
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     def rpm_for_tier(self, tier: Tier) -> int:
