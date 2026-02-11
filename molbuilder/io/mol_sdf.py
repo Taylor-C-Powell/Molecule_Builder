@@ -20,9 +20,8 @@ Bond type: 1 = single, 2 = double, 3 = triple.
 
 from __future__ import annotations
 
-import numpy as np
 
-from molbuilder.molecule.graph import Molecule, Hybridization
+from molbuilder.molecule.graph import Molecule
 
 
 # ── MOL string serialisation ─────────────────────────────────────────

@@ -6,11 +6,10 @@ to generate the SMILES string.
 
 from __future__ import annotations
 
-from collections import deque
 
 from molbuilder.molecule.graph import Molecule
 from molbuilder.core.elements import SYMBOL_TO_Z
-from molbuilder.smiles.tokenizer import ORGANIC_SUBSET, DEFAULT_VALENCE
+from molbuilder.smiles.tokenizer import ORGANIC_SUBSET
 
 
 # ===================================================================

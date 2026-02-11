@@ -19,7 +19,6 @@ from molbuilder.reactions.retrosynthesis import (
     RetroNode,
     Precursor,
     PURCHASABLE_MATERIALS,
-    is_purchasable,
 )
 from molbuilder.reactions.reaction_types import ReactionTemplate
 

@@ -20,7 +20,6 @@ format_tree(tree) -> str
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 
 from molbuilder.molecule.graph import Molecule
@@ -28,7 +27,6 @@ from molbuilder.smiles.parser import parse
 from molbuilder.smiles.writer import to_smiles
 from molbuilder.reactions.reaction_types import ReactionTemplate, ReactionCategory
 from molbuilder.reactions.knowledge_base import (
-    REACTION_TEMPLATES,
     lookup_by_functional_group,
     find_reactions_producing,
 )

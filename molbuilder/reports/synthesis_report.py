@@ -17,7 +17,6 @@ from molbuilder.reports.text_formatter import (
     key_value_block,
     word_wrap,
     format_percent,
-    format_currency,
 )
 
 if TYPE_CHECKING:

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from molbuilder.dynamics.forcefield import ForceField, ForceResult
+from molbuilder.dynamics.forcefield import ForceField
 from molbuilder.dynamics.integrator import (
     VelocityVerletIntegrator,
     IntegratorState,
@@ -21,7 +21,6 @@ from molbuilder.dynamics.trajectory import Trajectory, TrajectoryFrame
 if TYPE_CHECKING:
     from molbuilder.molecule.graph import Molecule
     from molbuilder.dynamics.mechanisms import ReactionMechanism
-    from molbuilder.dynamics.mechanism_choreography import MechanismChoreographer
 
 
 class MDSimulation:

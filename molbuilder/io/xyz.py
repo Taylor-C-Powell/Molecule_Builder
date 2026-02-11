@@ -14,7 +14,6 @@ interatomic distances and covalent radii when reading.
 
 from __future__ import annotations
 
-import math
 
 import numpy as np
 

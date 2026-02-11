@@ -18,22 +18,18 @@ All coordinates are in Angstroms.  No Unicode characters are used
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum, auto
 
-import numpy as np
 
-from molbuilder.molecule.graph import Molecule, Hybridization, Bond as MolBond
-from molbuilder.core.bond_data import bond_length, SP3_ANGLE, SP2_ANGLE, SP_ANGLE
-from molbuilder.core.geometry import normalize, available_tetrahedral_dirs, place_atom_zmatrix
+from molbuilder.molecule.graph import Molecule, Hybridization
+from molbuilder.core.bond_data import bond_length, SP3_ANGLE, SP2_ANGLE
+from molbuilder.core.geometry import normalize, available_tetrahedral_dirs
 from molbuilder.core.geometry import add_sp3_hydrogens
-from molbuilder.core.geometry import rotation_matrix
 from molbuilder.molecule.functional_groups import (
     add_hydroxyl,
     add_amino,
     add_carboxyl,
-    add_carbonyl,
     add_amide,
     add_thiol,
     add_phenyl_ring,
@@ -41,10 +37,6 @@ from molbuilder.molecule.functional_groups import (
     add_indole_ring,
     add_guanidinium,
     AMIDE_CN,
-    SS_BOND,
-    CC_AROMATIC,
-    CN_AROMATIC,
-    CO_CARBOXYL,
 )
 
 

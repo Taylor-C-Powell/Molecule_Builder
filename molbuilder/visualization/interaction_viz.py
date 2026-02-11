@@ -13,8 +13,7 @@ Convenience functions:
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -33,14 +32,11 @@ from molbuilder.core.elements import SYMBOL_TO_Z
 from molbuilder.visualization.theme import (
     BG_COLOR, TEXT_COLOR, BOND_COLOR,
     FORMING_BOND_COLOR, BREAKING_BOND_COLOR,
-    ELECTRON_CLOUD_COLOR, ARROW_COLOR, TRANSITION_STATE_COLOR,
+    ARROW_COLOR, TRANSITION_STATE_COLOR,
 )
 
 if TYPE_CHECKING:
-    from molbuilder.molecule.graph import Molecule
-    from molbuilder.dynamics.trajectory import Trajectory
-    from molbuilder.dynamics.mechanisms import ReactionMechanism, ElectronFlow
-    from molbuilder.dynamics.mechanism_choreography import MechanismChoreographer
+    pass
 
 
 # ===================================================================
@@ -521,7 +517,6 @@ def visualize_reaction(molecule,
     """
     from molbuilder.dynamics.simulation import MDSimulation
     from molbuilder.dynamics.mechanism_choreography import MechanismChoreographer
-    from molbuilder.dynamics.forcefield import ForceField
 
     sim = MDSimulation(molecule, dt_fs=dt_fs,
                        temperature_K=temperature_K,

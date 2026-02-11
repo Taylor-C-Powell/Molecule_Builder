@@ -22,8 +22,6 @@ from molbuilder.core.elements import SYMBOL_TO_Z
 from molbuilder.core.element_properties import (
     electronegativity,
     estimated_bond_length_pm,
-    covalent_radius_pm,
-    PAULING_ELECTRONEGATIVITY,
 )
 from molbuilder.core.bond_data import BDE_TABLE, NONPOLAR_THRESHOLD, POLAR_COVALENT_MAX
 from molbuilder.core.constants import DEBYE_PER_E_ANGSTROM

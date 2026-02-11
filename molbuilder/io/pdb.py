@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
-import numpy as np
 
 from molbuilder.molecule.graph import Molecule
 

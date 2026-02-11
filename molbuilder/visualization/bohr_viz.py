@@ -4,11 +4,9 @@ Migrated from legacy/bohr_model.py -- wavelength_to_rgb and visualize functions.
 """
 
 import math
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.patches import Circle
-from molbuilder.visualization.theme import BG_COLOR, TEXT_COLOR, GRID_COLOR
 
 
 def wavelength_to_rgb(wavelength_nm: float) -> tuple:

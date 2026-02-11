@@ -5,10 +5,7 @@ Defines quantum number containers, subshell representations,
 Aufbau filling order, and known configuration exceptions.
 """
 
-import math
-from dataclasses import dataclass, field
-from molbuilder.core.constants import HBAR
-from molbuilder.core.elements import NOBLE_GASES
+from dataclasses import dataclass
 
 
 # ---------------------------------------------------------------------------

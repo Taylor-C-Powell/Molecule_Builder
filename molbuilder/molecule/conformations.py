@@ -7,9 +7,8 @@ and torsional energy scanning.
 
 from __future__ import annotations
 
-import math
 
-from molbuilder.molecule.graph import Molecule, TorsionAngle, ConformationType
+from molbuilder.molecule.graph import Molecule, ConformationType
 
 
 def classify_conformation(dihedral_deg: float) -> ConformationType:

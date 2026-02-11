@@ -12,7 +12,7 @@ central atom.  Given a molecular formula, this module:
 
 import math
 import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from molbuilder.core.element_properties import estimated_bond_length_pm
 from molbuilder.bonding.lewis import LewisStructure

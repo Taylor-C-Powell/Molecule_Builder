@@ -7,8 +7,8 @@ annual capacity, capital costs, and identifies scale-up risks.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Any, List
+from dataclasses import dataclass
+from typing import Any
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
 from molbuilder.process import DEFAULT_SOLVENT_L_PER_KG

@@ -17,16 +17,13 @@ import math
 import warnings
 from molbuilder.core.constants import (
     BOHR_RADIUS_M,
-    BOHR_RADIUS_PM,
     PLANCK_CONSTANT,
     HBAR,
     SPEED_OF_LIGHT,
     ELECTRON_CHARGE,
-    ELECTRON_MASS,
     COULOMB_CONSTANT,
     EV_TO_JOULES,
     RYDBERG_ENERGY_EV,
-    MAX_ELECTRONS_PER_SHELL,
     VACUUM_PERMITTIVITY,
 )
 from molbuilder.core.elements import ELEMENTS, SYMBOL_TO_Z

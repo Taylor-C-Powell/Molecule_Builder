@@ -7,11 +7,11 @@ produces a per-step :class:`SafetyAssessment`.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, List
+from dataclasses import dataclass
+from typing import Any
 
-from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
-from molbuilder.reactions.reagent_data import REAGENT_DB, get_reagent, Reagent, normalize_reagent_name
+from molbuilder.reactions.reaction_types import ReactionTemplate
+from molbuilder.reactions.reagent_data import get_reagent, normalize_reagent_name
 
 
 # =====================================================================

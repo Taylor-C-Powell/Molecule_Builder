@@ -17,8 +17,6 @@ from molbuilder.core.elements import SYMBOL_TO_Z
 from molbuilder.core.element_properties import (
     electronegativity,
     target_electrons,
-    can_expand_octet,
-    PAULING_ELECTRONEGATIVITY,
 )
 
 

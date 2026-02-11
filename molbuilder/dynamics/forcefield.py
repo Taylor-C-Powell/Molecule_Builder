@@ -26,7 +26,6 @@ from molbuilder.core.bond_data import (
 )
 from molbuilder.core.element_properties import (
     electronegativity,
-    PAULING_ELECTRONEGATIVITY,
 )
 from molbuilder.core.elements import ELEMENTS, SYMBOL_TO_Z
 

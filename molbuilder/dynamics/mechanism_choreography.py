@@ -15,7 +15,6 @@ import numpy as np
 
 from molbuilder.dynamics.mechanisms import (
     ReactionMechanism,
-    MechanismStage,
     ElectronFlow,
 )
 

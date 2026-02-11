@@ -11,12 +11,8 @@ Provides plotting functions for:
 Migrated from legacy/quantum_visualization.py.
 """
 
-import math
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-from matplotlib.patches import FancyArrowPatch
-from mpl_toolkits.mplot3d import Axes3D
 
 from molbuilder.core.constants import BOHR_RADIUS_M as BOHR_RADIUS
 from molbuilder.atomic.quantum_numbers import SUBSHELL_LETTER, ORBITAL_NAMES
@@ -28,7 +24,7 @@ from molbuilder.atomic.wavefunctions import (
     expectation_r,
     orbital_label,
 )
-from molbuilder.core.geometry import cartesian_to_spherical, spherical_to_cartesian
+from molbuilder.core.geometry import cartesian_to_spherical
 from molbuilder.visualization.theme import (
     BG_COLOR, TEXT_COLOR, GRID_COLOR,
     POSITIVE_COLOR, NEGATIVE_COLOR, NEUTRAL_COLOR, ENERGY_COLOR,
@@ -258,7 +254,6 @@ def plot_electron_configuration(atom, figsize: tuple = None):
     Each orbital is a box. Spin-up electrons are shown as up-arrows,
     spin-down as down-arrows.
     """
-    from molbuilder.atomic.quantum_atom import QuantumAtom
 
     subshells = atom.subshells
     if not subshells:
@@ -338,7 +333,6 @@ def plot_electron_configuration(atom, figsize: tuple = None):
 
 def plot_energy_levels(atom, figsize: tuple = (7, 8)):
     """Plot an energy level diagram for the atom's subshells."""
-    from molbuilder.atomic.quantum_atom import QuantumAtom
 
     subshells = atom.subshells
     if not subshells:
@@ -408,7 +402,6 @@ def visualize_atom(atom, orbital_nlm: tuple = None):
     atom        : QuantumAtom instance
     orbital_nlm : (n, l, m) to visualize in 3D; defaults to outermost subshell m=0
     """
-    from molbuilder.atomic.quantum_atom import QuantumAtom
 
     print(atom.summary())
 

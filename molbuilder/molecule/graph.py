@@ -27,7 +27,6 @@ from enum import Enum, auto
 import numpy as np
 
 from molbuilder.core.elements import SYMBOL_TO_Z
-from molbuilder.core.element_properties import cpk_color
 from molbuilder.core.bond_data import bond_length, SP3_ANGLE, SP2_ANGLE, SP_ANGLE, TORSION_BARRIERS
 from molbuilder.core.geometry import normalize, rotation_matrix, place_atom_zmatrix
 

@@ -7,7 +7,6 @@ Provides :func:`optimize_conditions` which returns a fully populated
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
 from molbuilder.reactions.reagent_data import normalize_reagent_name

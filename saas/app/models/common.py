@@ -1,7 +1,6 @@
 """Common response models."""
 
 from pydantic import BaseModel
-from app.config import Tier
 
 
 class ErrorResponse(BaseModel):

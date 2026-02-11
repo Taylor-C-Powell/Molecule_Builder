@@ -17,7 +17,6 @@ from molbuilder.reports.text_formatter import (
     ascii_table,
     bullet_list,
     key_value_block,
-    word_wrap,
 )
 
 if TYPE_CHECKING:

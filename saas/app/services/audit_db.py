@@ -1,11 +1,9 @@
 """Immutable SQLite audit trail for 21 CFR Part 11 compliance."""
 
 import hashlib
-import json
 import sqlite3
 import threading
 import time
-from pathlib import Path
 
 
 class AuditDB:

@@ -9,17 +9,14 @@ Represents atoms using the quantum mechanical framework:
     - Known configuration exceptions for d- and f-block elements
 """
 
-import math
-from molbuilder.core.constants import RYDBERG_ENERGY_EV, EV_TO_JOULES, BOHR_RADIUS_M, HBAR
+from molbuilder.core.constants import RYDBERG_ENERGY_EV
 from molbuilder.core.elements import ELEMENTS, SYMBOL_TO_Z, NOBLE_GASES
 from molbuilder.atomic.quantum_numbers import (
     QuantumState,
     Subshell,
     aufbau_order,
     AUFBAU_EXCEPTIONS,
-    SUBSHELL_LETTER,
 )
-from molbuilder.atomic.wavefunctions import orbital_angular_momentum, angular_momentum_z
 
 
 # ===================================================================

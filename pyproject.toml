@@ -59,3 +59,13 @@ addopts = "-v --tb=short"
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+
+[tool.ruff.lint]
+ignore = [
+    "E402",   # module-level import not at top of file (FastAPI middleware ordering)
+    "E741",   # ambiguous variable names (l, O, I) -- standard in scientific notation
+    "F401",   # unused imports -- many are availability checks or re-exports
+    "F541",   # f-string without placeholders
+    "F601",   # repeated dict keys (duplicate SMILES entries in lookup tables)
+    "F841",   # local variable assigned but never used
+]

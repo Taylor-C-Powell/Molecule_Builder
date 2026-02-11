@@ -1,7 +1,7 @@
 """Dialog windows: SMILES input, file open/save, export settings."""
 
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog
 
 
 class SmilesDialog:

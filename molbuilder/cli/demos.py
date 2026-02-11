@@ -14,7 +14,7 @@ Migrated from legacy/main.py.
 
 def demo_bohr_model():
     """Bohr atomic model: orbital radii, energies, spectral transitions."""
-    from molbuilder.atomic.bohr import BohrAtom, from_symbol
+    from molbuilder.atomic.bohr import from_symbol
 
     print("=" * 60)
     print("  BOHR ATOMIC MODEL")
@@ -48,7 +48,7 @@ def demo_bohr_model():
 
 def demo_quantum_model():
     """Quantum mechanical atom: electron configurations, Slater's rules."""
-    from molbuilder.atomic.quantum_atom import QuantumAtom, from_symbol, aufbau_order
+    from molbuilder.atomic.quantum_atom import from_symbol, aufbau_order
 
     print("=" * 60)
     print("  QUANTUM MECHANICAL ATOM")
@@ -338,8 +338,7 @@ def demo_amino_acids():
     from molbuilder.molecule.amino_acids import (
         build_amino_acid, form_peptide_bond, build_peptide,
         set_secondary_structure, add_hydroxyl, add_amino,
-        add_carboxyl, add_thiol, add_phenyl_ring,
-        AminoAcidType, SecondaryStructure, AMINO_ACID_DATA,
+        add_thiol, AminoAcidType, SecondaryStructure, AMINO_ACID_DATA,
     )
     from molbuilder.molecule.graph import Molecule, Hybridization
     from molbuilder.core.bond_data import SP3_ANGLE
@@ -480,8 +479,6 @@ def demo_quantum_visualization():
     from molbuilder.atomic.quantum_atom import from_symbol as q_from_symbol
     from molbuilder.visualization.quantum_viz import (
         plot_orbital_3d,
-        plot_radial_probability,
-        plot_energy_levels,
         visualize_atom,
     )
 

@@ -6,9 +6,8 @@ reactor type and provides a fully populated :class:`ReactorSpec` dataclass.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Optional
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
 from molbuilder.reactions.reagent_data import normalize_reagent_name

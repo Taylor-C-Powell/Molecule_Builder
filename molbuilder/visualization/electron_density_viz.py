@@ -21,7 +21,6 @@ import math
 import numpy as np
 
 from molbuilder.core.constants import BOHR_RADIUS_M
-from molbuilder.core.elements import SYMBOL_TO_Z
 from molbuilder.visualization.theme import ELECTRON_CLOUD_COLOR
 
 

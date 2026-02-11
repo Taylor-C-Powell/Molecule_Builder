@@ -7,12 +7,11 @@ all synthesis steps.  Reagent pricing comes from ``REAGENT_DB``.
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
-from typing import Any, List
+from dataclasses import dataclass
+from typing import Any
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
-from molbuilder.reactions.reagent_data import REAGENT_DB, SOLVENT_DB, get_reagent, get_solvent, normalize_reagent_name
+from molbuilder.reactions.reagent_data import get_reagent, get_solvent, normalize_reagent_name
 from molbuilder.process import DEFAULT_SOLVENT_L_PER_KG
 
 

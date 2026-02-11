@@ -7,8 +7,7 @@ Scores every solvent in ``SOLVENT_DB`` against the requirements of a
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import List
+from dataclasses import dataclass
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
 from molbuilder.reactions.reagent_data import SOLVENT_DB, Solvent

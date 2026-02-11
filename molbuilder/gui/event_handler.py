@@ -3,8 +3,6 @@
 from __future__ import annotations
 import numpy as np
 from molbuilder.molecule.graph import Molecule, Hybridization
-from molbuilder.core.bond_data import bond_length, SP3_ANGLE
-from molbuilder.core.geometry import normalize, available_tetrahedral_dirs
 
 
 class MolEventHandler:

@@ -12,8 +12,8 @@ import math
 import numpy as np
 
 from molbuilder.molecule.graph import Molecule, Hybridization
-from molbuilder.core.bond_data import bond_length, SP3_ANGLE, SP2_ANGLE, SP_ANGLE
-from molbuilder.core.geometry import normalize, available_tetrahedral_dirs, place_atom_zmatrix
+from molbuilder.core.bond_data import bond_length, SP3_ANGLE, SP2_ANGLE
+from molbuilder.core.geometry import normalize
 
 
 # ===================================================================

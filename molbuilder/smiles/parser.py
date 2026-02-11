@@ -9,7 +9,6 @@ Algorithm:
 
 from __future__ import annotations
 
-import math
 from collections import deque
 
 import numpy as np
@@ -20,7 +19,7 @@ from molbuilder.smiles.tokenizer import (
 from molbuilder.molecule.graph import Molecule, Hybridization
 from molbuilder.core.bond_data import bond_length, SP3_ANGLE, SP2_ANGLE, SP_ANGLE
 from molbuilder.core.geometry import (
-    normalize, place_atom_zmatrix, available_tetrahedral_dirs,
+    normalize, place_atom_zmatrix,
 )
 
 

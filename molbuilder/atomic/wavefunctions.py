@@ -24,8 +24,6 @@ from scipy import special
 from molbuilder.core.constants import (
     BOHR_RADIUS_M as BOHR_RADIUS,
     HBAR,
-    ELECTRON_MASS,
-    ELECTRON_CHARGE,
     SPEED_OF_LIGHT,
     EV_TO_JOULES,
     RYDBERG_ENERGY_EV,
