@@ -1,0 +1,132 @@
+# molbuilder-client
+
+Python SDK for the [MolBuilder](https://www.molbuilder.io) REST API.
+
+## Install
+
+```bash
+pip install molbuilder-client
+```
+
+Requires Python 3.11+. The only runtime dependency is [httpx](https://www.python-httpx.org/).
+
+## Quickstart
+
+```python
+from molbuilder_client import MolBuilder
+
+client = MolBuilder(api_key="mb_...")
+
+# Parse a SMILES string
+mol = client.from_smiles("CCO", name="ethanol")
+print(mol.id, mol.num_atoms)  # mol_xxxx 9
+
+# Get molecular properties
+props = client.get_properties(mol.id)
+print(props.formula, props.molecular_weight)  # C2H6O 46.07
+
+# Get 3D coordinates
+structure = client.get_3d(mol.id)
+for atom in structure.atoms:
+    print(atom.symbol, atom.position)
+
+# Look up an element
+fe = client.get_element("Fe")
+print(fe.name, fe.atomic_weight)  # Iron 55.845
+
+# Retrosynthesis
+plan = client.retrosynthesis("c1ccccc1O")  # phenol
+print(plan.routes_found, plan.best_route.total_steps)
+
+# Process evaluation
+proc = client.process_evaluate("CCO", scale_kg=100.0)
+print(proc.cost.total_usd, proc.cost.per_kg_usd)
+```
+
+## Async usage
+
+```python
+import asyncio
+from molbuilder_client import AsyncMolBuilder
+
+async def main():
+    async with AsyncMolBuilder(api_key="mb_...") as client:
+        mol = await client.from_smiles("CCO")
+        props = await client.get_properties(mol.id)
+        print(props.formula)
+
+asyncio.run(main())
+```
+
+## Error handling
+
+All API errors raise typed exceptions that inherit from `MolBuilderError`:
+
+```python
+from molbuilder_client import MolBuilder, ValidationError, RateLimitError
+
+client = MolBuilder(api_key="mb_...")
+
+try:
+    client.from_smiles("not_valid")
+except ValidationError as e:
+    print(f"Bad SMILES: {e.message}")
+except RateLimitError as e:
+    print(f"Slow down! Retry after {e.retry_after}s")
+```
+
+| HTTP Status | Exception                  |
+|-------------|----------------------------|
+| 401         | `AuthenticationError`      |
+| 403         | `ForbiddenError`           |
+| 404         | `NotFoundError`            |
+| 422         | `ValidationError`          |
+| 429         | `RateLimitError`           |
+| 500         | `ServerError`              |
+| 501/503     | `ServiceUnavailableError`  |
+
+## API reference
+
+### Auth
+
+| Method                    | Returns        | Description                         |
+|---------------------------|----------------|-------------------------------------|
+| `register(email)`         | `APIKeyInfo`   | Register a new free-tier API key    |
+| `get_token()`             | `Token`        | Exchange API key for a JWT          |
+
+### Molecule
+
+| Method                        | Returns              | Description                  |
+|-------------------------------|----------------------|------------------------------|
+| `from_smiles(smiles, name="")` | `MoleculeInfo`     | Parse SMILES into a molecule |
+| `get_properties(mol_id)`      | `MoleculeProperties` | Computed molecular properties |
+| `get_3d(mol_id)`              | `Molecule3D`        | 3D coordinates and bonds     |
+
+### Elements
+
+| Method                | Returns   | Description                  |
+|-----------------------|-----------|------------------------------|
+| `get_element(symbol)` | `Element` | Look up element by symbol    |
+
+### Retrosynthesis
+
+| Method                                              | Returns              | Description              |
+|-----------------------------------------------------|----------------------|--------------------------|
+| `retrosynthesis(smiles, max_depth=5, beam_width=5)` | `RetrosynthesisPlan` | Plan retrosynthetic routes |
+
+### Process
+
+| Method                                                            | Returns             | Description                    |
+|-------------------------------------------------------------------|---------------------|--------------------------------|
+| `process_evaluate(smiles, scale_kg=1.0, max_depth=5, beam_width=5)` | `ProcessEvaluation` | Full process engineering report |
+
+### Billing
+
+| Method                  | Returns           | Description                        |
+|-------------------------|-------------------|------------------------------------|
+| `create_checkout(plan)` | `CheckoutSession` | Create Stripe checkout session     |
+| `billing_status()`      | `BillingStatus`   | Current subscription status        |
+
+## License
+
+MIT
