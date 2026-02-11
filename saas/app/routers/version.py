@@ -12,6 +12,7 @@ class VersionResponse(BaseModel):
     api_version: str
     min_supported_version: str
     deprecation_policy: str
+    ci_cd: str = "github-actions"
 
 
 @router.get("/version", response_model=VersionResponse)
