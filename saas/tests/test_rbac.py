@@ -132,10 +132,23 @@ class TestRoleInJWT:
         resp = client.get("/api/v1/analytics/summary", headers=headers)
         assert resp.status_code == 200
 
-    def test_register_with_role(self, client):
+    def test_register_ignores_role(self, client):
+        """Self-registration always produces chemist role regardless of input."""
         resp = client.post(
             "/api/v1/auth/register",
-            json={"email": "newadmin@example.com", "tier": "pro", "role": "admin"},
+            json={"email": "newadmin@example.com", "role": "admin"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["role"] == "chemist"
+        assert data["tier"] == "free"
+
+    def test_provision_with_role(self, client, admin_headers):
+        """Admin provision endpoint respects tier and role."""
+        resp = client.post(
+            "/api/v1/auth/provision",
+            json={"email": "prouser@example.com", "tier": "pro", "role": "admin"},
+            headers=admin_headers,
         )
         assert resp.status_code == 200
         data = resp.json()

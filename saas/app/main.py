@@ -13,13 +13,41 @@ from app.routers import auth, molecule, retrosynthesis, process, elements, analy
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import logging
+    logger = logging.getLogger("molbuilder.bootstrap")
+
     # Warm up molbuilder data structures by parsing a trivial molecule
     from molbuilder.smiles.parser import parse
     parse("C")
+
     # Load persisted API keys from SQLite
     from app.services.user_db import get_user_db
     from app.auth.api_keys import api_key_store
     api_key_store.load_from_db(get_user_db())
+
+    # Bootstrap admin account if configured and not already present
+    from app.config import settings, Tier
+    from app.auth.roles import Role
+    if settings.admin_bootstrap_email:
+        existing = [u for u in api_key_store.list_users()
+                    if u["email"] == settings.admin_bootstrap_email]
+        if not existing:
+            raw_key = api_key_store.create(
+                email=settings.admin_bootstrap_email,
+                tier=Tier.ENTERPRISE,
+                role=Role.ADMIN,
+            )
+            logger.warning(
+                "ADMIN BOOTSTRAP: Created admin key for %s: %s "
+                "(store this securely, it will not be shown again)",
+                settings.admin_bootstrap_email, raw_key,
+            )
+        else:
+            logger.info(
+                "Admin key for %s already exists, skipping bootstrap",
+                settings.admin_bootstrap_email,
+            )
+
     yield
 
 

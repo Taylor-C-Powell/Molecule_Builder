@@ -3,11 +3,12 @@
 from fastapi import APIRouter, Depends
 from app.auth.api_keys import api_key_store
 from app.auth.jwt_handler import create_token
-from app.config import settings
+from app.auth.roles import Role
+from app.config import Tier, settings
 from app.dependencies import UserContext, require_admin
 from app.exceptions import AuthenticationError
 from app.models.auth import (
-    APIKeyCreate, APIKeyResponse, TokenRequest, TokenResponse, UserInfo,
+    APIKeyCreate, AdminKeyCreate, APIKeyResponse, TokenRequest, TokenResponse, UserInfo,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -15,6 +16,16 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 @router.post("/register", response_model=APIKeyResponse)
 def register(body: APIKeyCreate):
+    """Public registration: always creates a free-tier chemist key."""
+    raw_key = api_key_store.create(email=body.email, tier=Tier.FREE, role=Role.CHEMIST)
+    return APIKeyResponse(
+        api_key=raw_key, email=body.email, tier=Tier.FREE, role=Role.CHEMIST,
+    )
+
+
+@router.post("/provision", response_model=APIKeyResponse)
+def provision(body: AdminKeyCreate, admin: UserContext = Depends(require_admin)):
+    """Admin-only: create an API key with any tier and role."""
     raw_key = api_key_store.create(email=body.email, tier=body.tier, role=body.role)
     return APIKeyResponse(
         api_key=raw_key, email=body.email, tier=body.tier, role=body.role,

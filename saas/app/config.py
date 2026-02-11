@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     audit_db_path: str = "molbuilder_audit.db"
     user_db_path: str = "molbuilder_users.db"
     cors_origins: str = "*"
+    admin_bootstrap_email: str = ""
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

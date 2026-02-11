@@ -12,13 +12,41 @@ def test_register_returns_key(client):
     assert data["tier"] == "free"
 
 
-def test_register_pro_tier(client):
+def test_register_ignores_tier(client):
+    """Self-registration always produces free-tier keys regardless of input."""
     resp = client.post(
         "/api/v1/auth/register", json={"email": "p@test.com", "tier": "pro"}
     )
     assert resp.status_code == 200
-    assert resp.json()["api_key"].startswith("mb_pro_")
-    assert resp.json()["tier"] == "pro"
+    assert resp.json()["api_key"].startswith("mb_free_")
+    assert resp.json()["tier"] == "free"
+
+
+def test_provision_requires_admin(client):
+    """The /provision endpoint rejects non-admin users."""
+    # Register a free user first
+    reg = client.post("/api/v1/auth/register", json={"email": "user@test.com"})
+    key = reg.json()["api_key"]
+    resp = client.post(
+        "/api/v1/auth/provision",
+        json={"email": "cust@test.com", "tier": "pro"},
+        headers={"X-API-Key": key},
+    )
+    assert resp.status_code == 403
+
+
+def test_provision_by_admin(client, admin_headers):
+    """Admins can provision keys with custom tiers and roles."""
+    resp = client.post(
+        "/api/v1/auth/provision",
+        json={"email": "cust@test.com", "tier": "pro", "role": "chemist"},
+        headers=admin_headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["api_key"].startswith("mb_pro_")
+    assert data["tier"] == "pro"
+    assert data["role"] == "chemist"
 
 
 def test_token_exchange(client):

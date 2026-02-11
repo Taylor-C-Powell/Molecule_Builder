@@ -6,6 +6,12 @@ from app.auth.roles import Role
 
 
 class APIKeyCreate(BaseModel):
+    """Public self-registration: always creates free/chemist keys."""
+    email: str = Field(..., description="Email for the API key owner")
+
+
+class AdminKeyCreate(BaseModel):
+    """Admin-only provisioning: can set any tier and role."""
     email: str = Field(..., description="Email for the API key owner")
     tier: Tier = Tier.FREE
     role: Role = Role.CHEMIST
