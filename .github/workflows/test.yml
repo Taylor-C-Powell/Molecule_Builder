@@ -34,10 +34,19 @@ jobs:
         run: ruff check molbuilder/ saas/app/ sdk/molbuilder_client/
 
       - name: Run core tests
-        run: python -m pytest tests/ -v
+        run: python -m pytest tests/ -v --cov=molbuilder --cov-report=xml:coverage-core.xml
 
       - name: Run SaaS tests
-        run: python -m pytest saas/tests/ -v
+        run: python -m pytest saas/tests/ -v --cov=app --cov-report=xml:coverage-saas.xml
+        working-directory: saas
 
       - name: Run SDK tests
-        run: python -m pytest sdk/tests/ -v
+        run: python -m pytest sdk/tests/ -v --cov=molbuilder_client --cov-report=xml:coverage-sdk.xml
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.13'
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage-core.xml,saas/coverage-saas.xml,coverage-sdk.xml
+          flags: core,saas,sdk
+          fail_ci_if_error: false
