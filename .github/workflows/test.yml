@@ -37,7 +37,7 @@ jobs:
         run: python -m pytest tests/ -v --cov=molbuilder --cov-report=xml:coverage-core.xml
 
       - name: Run SaaS tests
-        run: python -m pytest saas/tests/ -v --cov=app --cov-report=xml:coverage-saas.xml
+        run: python -m pytest tests/ -v --cov=app --cov-report=xml:coverage-saas.xml
         working-directory: saas
 
       - name: Run SDK tests
