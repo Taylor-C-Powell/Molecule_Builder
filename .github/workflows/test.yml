@@ -1,4 +1,5 @@
 name: Test
+# CI: lint + test across Python matrix
 
 on:
   push:
