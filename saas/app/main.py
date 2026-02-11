@@ -1,14 +1,19 @@
 """MolBuilder SaaS API - FastAPI application."""
 
 from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from app.exceptions import register_exception_handlers
 from app.middleware import UsageTrackingMiddleware
 from app.middleware_versioning import VersioningMiddleware
 from app.models.common import HealthResponse
 from app.routers import auth, billing, molecule, retrosynthesis, process, elements, analytics, audit, version
+
+_LANDING_HTML = (Path(__file__).parent / "landing.html").read_text(encoding="utf-8")
 
 
 @asynccontextmanager
@@ -81,6 +86,11 @@ app.include_router(elements.router)
 app.include_router(analytics.router)
 app.include_router(audit.router)
 app.include_router(version.router)
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def landing_page():
+    return _LANDING_HTML
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])

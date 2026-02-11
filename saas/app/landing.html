@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MolBuilder API | Molecular Engineering as a Service</title>
+    <meta name="description" content="REST API for computational chemistry. Parse SMILES, plan retrosynthesis, evaluate manufacturing processes.">
+    <meta property="og:title" content="MolBuilder API">
+    <meta property="og:description" content="REST API for molecular engineering: SMILES parsing, retrosynthesis, and process engineering.">
+    <meta property="og:type" content="website">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0a;
+            --bg-card: #141414;
+            --border: #262626;
+            --border-h: #404040;
+            --text: #ededed;
+            --text-2: #a1a1a1;
+            --text-3: #737373;
+            --accent: #3b82f6;
+            --accent-h: #2563eb;
+            --accent-glow: rgba(59,130,246,0.1);
+            --green: #22c55e;
+            --mono: 'SF Mono','Cascadia Code','Consolas','Courier New',monospace;
+            --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+            --radius: 8px;
+            --max-w: 1100px;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { color: var(--accent-h); }
+
+        .container {
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Nav */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10,10,10,0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-inner {
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+        .logo {
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo:hover { color: var(--text); }
+        .logo svg { width: 24px; height: 24px; }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        .nav-links a {
+            color: var(--text-2);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+        .nav-links a:hover { color: var(--text); }
+        .btn-nav {
+            padding: 0.5rem 1rem;
+            background: var(--accent);
+            color: #fff !important;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            transition: background 0.15s;
+        }
+        .btn-nav:hover { background: var(--accent-h); color: #fff !important; }
+        .menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-2);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            padding: 6rem 0 5rem;
+            text-align: center;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -40%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 600px;
+            background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            margin-bottom: 1.25rem;
+            position: relative;
+        }
+        .hero .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-2);
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+            position: relative;
+        }
+        .cta-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.15s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn.primary { background: var(--accent); color: #fff; }
+        .btn.primary:hover { background: var(--accent-h); color: #fff; }
+        .btn.secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn.secondary:hover { border-color: var(--border-h); }
+
+        /* Sections */
+        section { padding: 5rem 0; }
+        section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .section-sub {
+            text-align: center;
+            color: var(--text-2);
+            margin-bottom: 3rem;
+        }
+
+        /* Features */
+        .features { border-top: 1px solid var(--border); }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin-top: 3rem;
+        }
+        .feature-card {
+            padding: 1.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            transition: border-color 0.2s;
+        }
+        .feature-card:hover { border-color: var(--border-h); }
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-glow);
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+        .feature-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .feature-card p {
+            font-size: 0.875rem;
+            color: var(--text-2);
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+        .feature-card code {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--text-3);
+        }
+
+        /* Code example */
+        .code-section { border-top: 1px solid var(--border); }
+        .code-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-top: 3rem;
+        }
+        .code-block { position: relative; }
+        .code-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-3);
+            margin-bottom: 0.5rem;
+        }
+        pre {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            line-height: 1.8;
+            color: #e6edf3;
+        }
+        .kw { color: #ff7b72; }
+        .str { color: #a5d6ff; }
+        .fn { color: #d2a8ff; }
+        .num { color: #79c0ff; }
+        .cm { color: #8b949e; }
+        .key { color: #7ee787; }
+
+        /* Pricing */
+        .pricing { border-top: 1px solid var(--border); }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            max-width: 750px;
+            margin: 3rem auto 0;
+        }
+        .price-card {
+            padding: 2.5rem 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: center;
+        }
+        .price-card.featured {
+            border-color: var(--accent);
+            box-shadow: 0 0 50px var(--accent-glow);
+            position: relative;
+        }
+        .price-card.featured::before {
+            content: 'Popular';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+        }
+        .price-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+        .price {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.25rem;
+        }
+        .price span {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-3);
+        }
+        .price-note {
+            font-size: 0.8rem;
+            color: var(--text-3);
+            margin-bottom: 1.5rem;
+        }
+        .price-card ul {
+            list-style: none;
+            text-align: left;
+            margin: 1.5rem 0 2rem;
+        }
+        .price-card li {
+            font-size: 0.875rem;
+            color: var(--text-2);
+            padding: 0.4rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .price-card li::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2322c55e' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/%3E%3C/svg%3E") no-repeat center/contain;
+            flex-shrink: 0;
+        }
+        .price-card .btn { width: 100%; text-align: center; }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 3rem 0;
+        }
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-text {
+            font-size: 0.825rem;
+            color: var(--text-3);
+        }
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        .footer-links a {
+            font-size: 0.825rem;
+            color: var(--text-3);
+            transition: color 0.15s;
+        }
+        .footer-links a:hover { color: var(--text-2); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero { padding: 4rem 0 3rem; }
+            .hero h1 { font-size: 2.25rem; }
+            .hero .subtitle { font-size: 1rem; }
+            .cta-group { flex-direction: column; align-items: center; }
+            .features-grid { grid-template-columns: 1fr; }
+            .code-columns { grid-template-columns: 1fr; }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+            .nav-links.show {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 60px;
+                left: 0;
+                right: 0;
+                background: rgba(10,10,10,0.97);
+                border-bottom: 1px solid var(--border);
+                padding: 1.5rem;
+                gap: 1rem;
+            }
+            .menu-btn { display: block; }
+            .footer-inner { flex-direction: column; gap: 1rem; text-align: center; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-inner">
+        <a href="/" class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>
+                <line x1="12" y1="8" x2="6" y2="16"/><line x1="12" y1="8" x2="18" y2="16"/><line x1="8" y1="18" x2="16" y2="18"/>
+            </svg>
+            MolBuilder
+        </a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="/docs">Docs</a>
+            <a href="/docs#/auth/register_api_v1_auth_register_post" class="btn-nav">Get API Key</a>
+        </div>
+        <button class="menu-btn" aria-label="Menu">&#9776;</button>
+    </div>
+</nav>
+
+<section class="hero" id="hero">
+    <div class="container">
+        <h1>Molecular Engineering API</h1>
+        <p class="subtitle">
+            Parse SMILES strings, plan retrosynthesis routes, evaluate
+            manufacturing processes. One REST API for computational chemistry.
+        </p>
+        <div class="cta-group">
+            <a href="/docs#/auth/register_api_v1_auth_register_post" class="btn primary">Get API Key &mdash; Free</a>
+            <a href="/docs" class="btn secondary">View Documentation</a>
+        </div>
+    </div>
+</section>
+
+<section class="features" id="features">
+    <div class="container">
+        <h2>API Capabilities</h2>
+        <p class="section-sub">Everything you need for computational chemistry, accessible over HTTP.</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><line x1="7" y1="7" x2="10" y2="10"/><line x1="14" y1="10" x2="17" y2="7"/><line x1="7" y1="17" x2="10" y2="14"/><line x1="14" y1="14" x2="17" y2="17"/></svg>
+                </div>
+                <h3>SMILES Parsing</h3>
+                <p>Parse any SMILES string into a full molecular graph with atom counts, bond topology, and canonical normalization.</p>
+                <code>POST /api/v1/molecule/from-smiles</code>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <h3>Retrosynthetic Analysis</h3>
+                <p>Route planning with purchasable starting materials, yield predictions, and named reaction identification.</p>
+                <code>POST /api/v1/retrosynthesis/plan</code>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                </div>
+                <h3>Process Engineering</h3>
+                <p>Safety analysis, cost breakdown, reactor sizing, purification steps, and scale-up recommendations.</p>
+                <code>POST /api/v1/process/evaluate</code>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M3 12h18"/><path d="M3.5 5.5l17 13"/></svg>
+                </div>
+                <h3>3D Coordinates</h3>
+                <p>Optimized 3D atomic positions with hybridization states, formal charges, and bond geometry.</p>
+                <code>GET /api/v1/molecule/{id}/3d</code>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                </div>
+                <h3>Molecular Properties</h3>
+                <p>Formula, molecular weight, functional group detection, atom and bond counts from parsed molecules.</p>
+                <code>GET /api/v1/molecule/{id}/properties</code>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </div>
+                <h3>Element Lookup</h3>
+                <p>Instant periodic table data: atomic number, weight, symbol, and element name for any element.</p>
+                <code>GET /api/v1/elements/{symbol}</code>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="code-section" id="code">
+    <div class="container">
+        <h2>Try It</h2>
+        <p class="section-sub">Parse a molecule in one request.</p>
+        <div class="code-columns">
+            <div class="code-block">
+                <div class="code-label">Request</div>
+                <pre><span class="cm"># Parse caffeine from SMILES</span>
+<span class="fn">curl</span> <span class="str">-X POST</span> \
+  <span class="str">"https://molbuilder-api-production.up.railway.app/api/v1/molecule/from-smiles"</span> \
+  <span class="str">-H</span> <span class="str">"X-API-Key: YOUR_KEY"</span> \
+  <span class="str">-H</span> <span class="str">"Content-Type: application/json"</span> \
+  <span class="str">-d</span> <span class="str">'{"smiles": "CN1C=NC2=C1C(=O)N(C(=O)N2C)C"}'</span></pre>
+            </div>
+            <div class="code-block">
+                <div class="code-label">Response</div>
+                <pre>{
+  <span class="key">"id"</span>: <span class="str">"mol_a1b2c3"</span>,
+  <span class="key">"name"</span>: <span class="str">"caffeine"</span>,
+  <span class="key">"smiles"</span>: <span class="str">"CN1C=NC2=C1C(=O)N(C(=O)N2C)C"</span>,
+  <span class="key">"num_atoms"</span>: <span class="num">24</span>,
+  <span class="key">"num_bonds"</span>: <span class="num">25</span>
+}</pre>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="pricing" id="pricing">
+    <div class="container">
+        <h2>Pricing</h2>
+        <p class="section-sub">Start free. Upgrade when you need more throughput.</p>
+        <div class="pricing-grid">
+            <div class="price-card">
+                <h3>Free</h3>
+                <div class="price">$0<span>/month</span></div>
+                <div class="price-note">No credit card required</div>
+                <ul>
+                    <li>10 requests per minute</li>
+                    <li>5 expensive operations per hour</li>
+                    <li>All endpoints included</li>
+                    <li>Community support</li>
+                </ul>
+                <a href="/docs#/auth/register_api_v1_auth_register_post" class="btn secondary">Get Started</a>
+            </div>
+            <div class="price-card featured">
+                <h3>Pro</h3>
+                <div class="price">$49<span>/month</span></div>
+                <div class="price-note">or $490/year (save 17%)</div>
+                <ul>
+                    <li>60 requests per minute</li>
+                    <li>30 expensive operations per hour</li>
+                    <li>All endpoints included</li>
+                    <li>Priority support</li>
+                </ul>
+                <a href="/docs#/billing/create_checkout_api_v1_billing_checkout_post" class="btn primary">Upgrade to Pro</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <div class="footer-inner">
+            <div class="footer-text">MolBuilder API &mdash; Built by Materia Foundation</div>
+            <div class="footer-links">
+                <a href="/docs">Documentation</a>
+                <a href="https://github.com/Taylor-C-Powell/Molecule_Builder">GitHub</a>
+                <a href="/health">API Status</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+        var target = document.querySelector(a.getAttribute('href'));
+        if (target) { e.preventDefault(); target.scrollIntoView({behavior: 'smooth'}); }
+    });
+});
+var menuBtn = document.querySelector('.menu-btn');
+var navLinks = document.querySelector('.nav-links');
+if (menuBtn) {
+    menuBtn.addEventListener('click', function() {
+        navLinks.classList.toggle('show');
+    });
+}
+</script>
+
+</body>
+</html>
