@@ -11,15 +11,35 @@ interface MoleculeViewerProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Mol3D = any;
 
-/** Convert our API response to XYZ format string for 3Dmol.js */
-function toXyz(structure: Molecule3DResponse): string {
-  const lines = [
-    String(structure.atoms.length),
-    structure.id,
-    ...structure.atoms.map(
-      (a) => `${a.symbol} ${a.position[0]} ${a.position[1]} ${a.position[2]}`,
-    ),
+/** Convert our API response to SDF V2000 molfile for 3Dmol.js.
+ *  This preserves exact bond topology and bond orders from the API
+ *  rather than relying on 3Dmol.js distance-based bond inference. */
+function toSdf(structure: Molecule3DResponse): string {
+  const nAtoms = structure.atoms.length;
+  const nBonds = structure.bonds.length;
+  const lines: string[] = [
+    structure.id,              // molecule name
+    "  MolBuilder  3D",        // program/timestamp
+    "",                        // comment
+    // counts line: aaabbblllfffcccsssxxxrrrpppiiimmmvvvvvv
+    `${String(nAtoms).padStart(3)}${String(nBonds).padStart(3)}  0  0  0  0  0  0  0  0999 V2000`,
   ];
+  // Atom block: x(10.4) y(10.4) z(10.4) symbol(3) ...
+  for (const a of structure.atoms) {
+    const x = a.position[0].toFixed(4).padStart(10);
+    const y = a.position[1].toFixed(4).padStart(10);
+    const z = a.position[2].toFixed(4).padStart(10);
+    const sym = ` ${a.symbol.padEnd(2)}`;
+    lines.push(`${x}${y}${z}${sym} 0  0  0  0  0  0  0  0  0  0  0  0`);
+  }
+  // Bond block: iii(3) jjj(3) ttt(3) ...  (1-indexed atoms)
+  for (const b of structure.bonds) {
+    const i = String(b.atom_i + 1).padStart(3);
+    const j = String(b.atom_j + 1).padStart(3);
+    const t = String(Math.min(b.order, 3)).padStart(3);
+    lines.push(`${i}${j}${t}  0  0  0  0`);
+  }
+  lines.push("M  END", "$$$$");
   return lines.join("\n");
 }
 
@@ -74,9 +94,9 @@ export function MoleculeViewer({ structure, loading }: MoleculeViewerProps) {
 
     viewer.removeAllModels();
 
-    // Use XYZ format - the most reliable path in 3Dmol.js
-    const xyz = toXyz(structure);
-    viewer.addModel(xyz, "xyz");
+    // Use SDF V2000 format to preserve exact bond topology and orders
+    const sdf = toSdf(structure);
+    viewer.addModel(sdf, "sdf");
 
     viewer.setStyle({}, {
       stick: { radius: 0.12, colorscheme: "default" },
