@@ -97,7 +97,10 @@ export function LandingPage() {
             {isAuthenticated ? (
               <Link to="/dashboard"><Button size="sm">Dashboard</Button></Link>
             ) : (
-              <Link to="/register"><Button size="sm">Get API Key</Button></Link>
+              <>
+                <Link to="/login" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Login</Link>
+                <Link to="/register"><Button size="sm">Get API Key</Button></Link>
+              </>
             )}
           </div>
           <button className="md:hidden text-text-secondary text-2xl bg-transparent border-none cursor-pointer" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">&#9776;</button>
@@ -109,7 +112,10 @@ export function LandingPage() {
             {isAuthenticated ? (
               <Link to="/dashboard" onClick={() => setMenuOpen(false)}><Button size="sm">Dashboard</Button></Link>
             ) : (
-              <Link to="/register" onClick={() => setMenuOpen(false)}><Button size="sm">Get API Key</Button></Link>
+              <>
+                <Link to="/login" onClick={() => setMenuOpen(false)} className="text-sm text-text-secondary">Login</Link>
+                <Link to="/register" onClick={() => setMenuOpen(false)}><Button size="sm">Get API Key</Button></Link>
+              </>
             )}
           </div>
         )}

@@ -16,14 +16,21 @@ export function MoleculeViewer({ structure, loading }: MoleculeViewerProps) {
   const viewerRef = useRef<Mol3D>(null);
   const [lib, setLib] = useState<Mol3D>(null);
 
-  // Load 3Dmol.js once
+  // Load 3Dmol.js once - handle both ESM default and named export patterns
   useEffect(() => {
-    import("3dmol").then((mod) => setLib(mod));
+    import("3dmol").then((mod) => {
+      const $3Dmol = mod.default ?? mod;
+      setLib($3Dmol);
+    });
   }, []);
 
   // Create viewer once the lib is loaded and the container is mounted
   useEffect(() => {
     if (!lib || !containerRef.current || viewerRef.current) return;
+    if (typeof lib.createViewer !== "function") {
+      console.error("3Dmol.createViewer not found. Module keys:", Object.keys(lib));
+      return;
+    }
     containerRef.current.innerHTML = "";
     viewerRef.current = lib.createViewer(containerRef.current, {
       backgroundColor: "#0a0a0a",
