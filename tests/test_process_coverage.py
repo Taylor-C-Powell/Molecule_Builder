@@ -828,3 +828,241 @@ class TestScaleUpModes:
         recs = _generate_recommendations([_MockStep(t)], 5000.0, "batch", 500.0)
         joined = " ".join(recs)
         assert "catalyst recycling" in joined.lower() or "solvent recovery" in joined.lower()
+
+
+# =====================================================================
+#  11. Reactor branches
+# =====================================================================
+
+from molbuilder.process.reactor import (
+    ReactorType,
+    select_reactor,
+    _is_cryogenic,
+    _select_material,
+    _estimate_reactor_cost,
+)
+
+
+class TestReactorBranches:
+    """Cover internal helpers and decision-tree branches in reactor.py."""
+
+    # -- Internal helpers --
+
+    def test_is_cryogenic_true(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION, temperature_range=(-78, -60))
+        assert _is_cryogenic(t) is True
+
+    def test_is_cryogenic_false(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION, temperature_range=(20, 25))
+        assert _is_cryogenic(t) is False
+
+    def test_select_material_corrosive_hastelloy(self):
+        # HNO3 normalizes to "hno3" (no alias), which is in corrosive_keywords
+        t = _make_template(ReactionCategory.SUBSTITUTION, reagents=["HNO3"])
+        assert _select_material(t) == "hastelloy"
+
+    def test_select_material_high_temp_stainless(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION, temperature_range=(160, 180))
+        assert _select_material(t) == "stainless steel"
+
+    def test_select_material_default_glass(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        assert _select_material(t) == "glass"
+
+    def test_estimate_reactor_cost_zero_volume(self):
+        # volume_L <= 0 guard sets volume to 1.0
+        cost = _estimate_reactor_cost(ReactorType.BATCH, 0.0)
+        assert cost > 0
+
+    # -- Decision tree: Branch 1 (MICROREACTOR) --
+
+    def test_microreactor_high_temp_pressure_2(self):
+        # Exothermic + small scale + mean_t > 100 -> MICROREACTOR with pressure 2.0
+        t = _make_template(ReactionCategory.ADDITION, temperature_range=(110, 130))
+        spec = select_reactor(t, scale_kg=0.5)
+        assert spec.reactor_type == ReactorType.MICROREACTOR
+        assert spec.pressure_atm == 2.0
+
+    # -- Decision tree: Branch 2 (CSTR) --
+
+    def test_cstr_normal_temp_pressure_1(self):
+        # Exothermic + large scale + mean_t < 100 -> CSTR, pressure 1.0
+        t = _make_template(ReactionCategory.ADDITION, temperature_range=(20, 30))
+        spec = select_reactor(t, scale_kg=5.0)
+        assert spec.reactor_type == ReactorType.CSTR
+        assert spec.pressure_atm == 1.0
+
+    def test_cstr_high_temp_pressure_3(self):
+        # Exothermic + large scale + mean_t > 100 -> CSTR, pressure 3.0
+        t = _make_template(ReactionCategory.RADICAL, temperature_range=(110, 130))
+        spec = select_reactor(t, scale_kg=5.0)
+        assert spec.reactor_type == ReactorType.CSTR
+        assert spec.pressure_atm == 3.0
+
+    # -- Decision tree: Branch 3a (FIXED_BED) --
+
+    def test_fixed_bed_large_catalytic(self):
+        # Multiphase + catalyst + scale > 100 -> FIXED_BED
+        t = _make_template(
+            ReactionCategory.COUPLING, catalysts=["Pd(PPh3)4"],
+        )
+        spec = select_reactor(t, scale_kg=200.0)
+        assert spec.reactor_type == ReactorType.FIXED_BED
+        assert spec.pressure_atm == 3.0
+
+    # -- Decision tree: Branch 3b (BATCH multiphase) --
+
+    def test_batch_multiphase_no_catalyst(self):
+        # Multiphase + no catalyst + scale <= 100 -> BATCH
+        t = _make_template(ReactionCategory.COUPLING)
+        spec = select_reactor(t, scale_kg=10.0)
+        assert spec.reactor_type == ReactorType.BATCH
+        assert spec.mixing_type == "mechanical"
+
+    # -- Decision tree: Branch 5 (SEMI_BATCH) --
+
+    def test_semi_batch_carbonyl(self):
+        # CARBONYL + scale > 10 -> SEMI_BATCH
+        t = _make_template(ReactionCategory.CARBONYL)
+        spec = select_reactor(t, scale_kg=20.0)
+        assert spec.reactor_type == ReactorType.SEMI_BATCH
+
+    def test_semi_batch_substitution(self):
+        # SUBSTITUTION + scale > 10 -> SEMI_BATCH
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        spec = select_reactor(t, scale_kg=15.0)
+        assert spec.reactor_type == ReactorType.SEMI_BATCH
+
+    # -- Decision tree: Branch 6 (default BATCH) --
+
+    def test_default_batch_small_adiabatic(self):
+        # Non-exothermic, non-multiphase, small scale -> BATCH, adiabatic
+        # scale_kg=1 -> volume = round(1*5/0.75, 1) = 6.7 <= 20
+        t = _make_template(ReactionCategory.PERICYCLIC)
+        spec = select_reactor(t, scale_kg=1.0)
+        assert spec.reactor_type == ReactorType.BATCH
+        assert spec.heat_transfer == "adiabatic"
+
+    def test_default_batch_large_jacketed(self):
+        # Non-exothermic, non-multiphase, moderate scale -> BATCH, jacketed
+        # scale_kg=5 -> volume = round(5*5/0.75, 1) = 33.3 > 20
+        t = _make_template(ReactionCategory.PERICYCLIC)
+        spec = select_reactor(t, scale_kg=5.0)
+        assert spec.reactor_type == ReactorType.BATCH
+        assert spec.heat_transfer == "jacketed"
+
+    # -- TypeError guard --
+
+    def test_template_missing_temperature_range_raises(self):
+        class BadTemplate:
+            pass
+        with pytest.raises(TypeError, match="temperature_range"):
+            select_reactor(BadTemplate(), scale_kg=1.0)
+
+
+# =====================================================================
+#  12. Costing branches
+# =====================================================================
+
+from molbuilder.process.costing import (
+    _normalise_key,
+    _labor_cost_for_step,
+    _waste_cost_for_step,
+    estimate_cost,
+)
+
+
+class TestCostingBranches:
+    """Cover labor/waste/notes branches in costing.py."""
+
+    # -- _normalise_key direct call (line 80) --
+
+    def test_normalise_key_lowercases(self):
+        assert _normalise_key("HNO3") == "hno3"
+
+    # -- Labor cost branches --
+
+    def test_labor_baseline(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        cost = _labor_cost_for_step(t, scale_kg=1.0)
+        # Base 3h * $75/h = $225
+        assert cost == pytest.approx(225.0)
+
+    def test_labor_cryogenic_adds_hour(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION, temperature_range=(-78, -60))
+        cost = _labor_cost_for_step(t, scale_kg=1.0)
+        # 3h + 1h cryo = 4h * $75 = $300
+        assert cost == pytest.approx(300.0)
+
+    def test_labor_rearrangement_adds_hour(self):
+        t = _make_template(ReactionCategory.REARRANGEMENT)
+        cost = _labor_cost_for_step(t, scale_kg=1.0)
+        # 3h + 1h complexity = 4h * $75 = $300
+        assert cost == pytest.approx(300.0)
+
+    def test_labor_misc_adds_hour(self):
+        t = _make_template(ReactionCategory.MISC)
+        cost = _labor_cost_for_step(t, scale_kg=1.0)
+        assert cost == pytest.approx(300.0)
+
+    def test_labor_scale_over_50_adds_hour(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        cost = _labor_cost_for_step(t, scale_kg=60.0)
+        # 3h + 1h material handling = 4h * $75 = $300
+        assert cost == pytest.approx(300.0)
+
+    def test_labor_scale_over_200_adds_two_hours(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        cost = _labor_cost_for_step(t, scale_kg=250.0)
+        # 3h + 1h (>50) + 1h (>200) = 5h * $75 = $375
+        assert cost == pytest.approx(375.0)
+
+    # -- Waste cost branches --
+
+    def test_waste_hazardous_nacn(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION, reagents=["NaCN"])
+        cost = _waste_cost_for_step(t, scale_kg=1.0)
+        # hazardous: waste_kg = 1 * 8 = 8, disposal = $2.50 * 2 = $5.00
+        assert cost == pytest.approx(8.0 * 5.0)
+
+    def test_waste_non_hazardous(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION, reagents=["benzene"])
+        cost = _waste_cost_for_step(t, scale_kg=1.0)
+        # non-hazardous: waste_kg = 1 * 5 = 5, disposal = $2.50
+        assert cost == pytest.approx(5.0 * 2.50)
+
+    # -- estimate_cost edge cases --
+
+    def test_estimate_cost_scale_zero_guard(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        result = estimate_cost([_MockStep(t)], scale_kg=0.0)
+        # scale forced to 0.001, should not raise
+        assert result.scale_kg == 0.001
+        assert result.total_usd > 0
+
+    def test_estimate_cost_zero_yield_fallback(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION, typical_yield=(0, 0))
+        result = estimate_cost([_MockStep(t)], scale_kg=1.0)
+        # avg_yield forced to 0.5, should not error
+        assert result.total_usd > 0
+
+    def test_estimate_cost_lab_scale_note(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        result = estimate_cost([_MockStep(t)], scale_kg=0.05)
+        assert any("Lab-scale" in n for n in result.notes)
+
+    def test_estimate_cost_bulk_scale_note(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        result = estimate_cost([_MockStep(t)], scale_kg=200.0)
+        assert any("Bulk pricing" in n for n in result.notes)
+
+    def test_estimate_cost_expensive_reagent_note(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION, reagents=["OsO4"])
+        result = estimate_cost([_MockStep(t)], scale_kg=1.0)
+        assert any("expensive reagent" in n.lower() for n in result.notes)
+
+    def test_estimate_cost_step_without_template_raises(self):
+        class BadStep:
+            pass
+        with pytest.raises(TypeError, match="template"):
+            estimate_cost([BadStep()], scale_kg=1.0)
