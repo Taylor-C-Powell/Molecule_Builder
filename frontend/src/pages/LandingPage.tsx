@@ -93,7 +93,7 @@ export function LandingPage() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Features</a>
             <a href="#pricing" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Pricing</a>
-            <a href="https://molbuilder-api-production.up.railway.app/docs" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Docs</a>
+            <a href="https://github.com/Taylor-C-Powell/Molecule_Builder/tree/main/docs/tutorials" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Docs</a>
             {isAuthenticated ? (
               <Link to="/dashboard"><Button size="sm">Dashboard</Button></Link>
             ) : (
@@ -131,7 +131,7 @@ export function LandingPage() {
             ) : (
               <Link to="/register"><Button size="lg">Get API Key &mdash; Free</Button></Link>
             )}
-            <a href="https://molbuilder-api-production.up.railway.app/docs" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/Taylor-C-Powell/Molecule_Builder/tree/main/docs/tutorials" target="_blank" rel="noopener noreferrer">
               <Button variant="secondary" size="lg">View Documentation</Button>
             </a>
           </div>

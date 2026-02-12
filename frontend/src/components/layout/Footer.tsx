@@ -7,12 +7,20 @@ export function Footer() {
         </span>
         <div className="flex gap-6">
           <a
+            href="https://github.com/Taylor-C-Powell/Molecule_Builder/tree/main/docs/tutorials"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-text-muted hover:text-text-secondary transition-colors"
+          >
+            Docs
+          </a>
+          <a
             href="https://molbuilder-api-production.up.railway.app/docs"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-text-muted hover:text-text-secondary transition-colors"
           >
-            API Docs
+            API Reference
           </a>
           <a
             href="https://github.com/Taylor-C-Powell/Molecule_Builder"
