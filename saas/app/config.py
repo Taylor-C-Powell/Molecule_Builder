@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     admin_bootstrap_email: str = ""
 
     # Allowed hosts for Stripe checkout redirect URLs
-    allowed_redirect_hosts: str = "www.molbuilder.io,molbuilder.io,localhost"
+    allowed_redirect_hosts: str = "www.molbuilder.io,molbuilder.io,localhost,molbuilder-frontend.vercel.app,app.molbuilder.io"
 
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
