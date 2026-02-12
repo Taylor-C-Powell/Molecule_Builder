@@ -385,3 +385,233 @@ def lipinski_properties(mol: Molecule) -> LipinskiProperties:
         lipinski_violations=violations,
         lipinski_pass=(violations <= 1),
     )
+
+
+# =====================================================================
+#  pKa prediction
+# =====================================================================
+
+@dataclass
+class pKaPrediction:
+    """Predicted pKa for a single ionizable group in a molecule."""
+    group_name: str
+    atom_index: int
+    pka_value: float
+    acidic: bool
+
+
+# Base pKa values for ionizable functional groups
+_PKA_BASE: dict[str, float] = {
+    "carboxylic acid": 4.76,
+    "phenol": 10.0,
+    "alcohol": 16.0,
+    "thiol": 10.5,
+    "primary amine": 10.6,
+    "secondary amine": 11.0,
+    "amide": 15.0,
+    "sulfonamide": 10.0,
+}
+
+
+def _ewg_correction(mol: Molecule, idx: int, group_name: str = "") -> float:
+    """Additive correction for electron-withdrawing groups on neighbors.
+
+    Scans the alpha heavy-atom neighbors of atom *idx* and applies
+    stabilisation-based pKa shifts:
+      * halogen (F, Cl, Br) on an alpha carbon:  -1.0 each
+      * carbonyl (=O) on an alpha carbon:         -1.5 each
+
+    For carboxylic acids the C=O that defines the group is excluded so
+    that only *additional* EWGs contribute.
+    """
+    correction = 0.0
+    for nbr in _heavy_neighbors(mol, idx):
+        # For carboxylic acids, the direct C neighbor bearing the
+        # defining C=O is part of the functional group -- skip its
+        # carbonyl but still count halogens on that carbon.
+        skip_carbonyl_on_nbr = (
+            group_name == "carboxylic acid"
+            and _element(mol, nbr) == "C"
+            and _has_double_bond_to(mol, nbr, "O")
+        )
+        for sub in _neighbors(mol, nbr):
+            if sub == idx:
+                continue
+            sub_sym = _element(mol, sub)
+            if sub_sym in ("F", "Cl", "Br"):
+                correction -= 1.0
+            elif sub_sym == "O" and _bond_order(mol, nbr, sub) == 2:
+                if skip_carbonyl_on_nbr:
+                    # Skip the first (defining) carbonyl, then reset
+                    skip_carbonyl_on_nbr = False
+                    continue
+                correction -= 1.5
+    return correction
+
+
+def _classify_oxygen(mol: Molecule, o_idx: int) -> tuple[str, int, bool] | None:
+    """Classify an O-H oxygen as carboxylic acid, phenol, or alcohol.
+
+    Returns (group_name, ionizable_atom_index, acidic) or None.
+    """
+    if _h_count(mol, o_idx) < 1:
+        return None
+
+    # Look at the heavy neighbors of this oxygen
+    heavy = _heavy_neighbors(mol, o_idx)
+    if not heavy:
+        # Bare water-like O-H, treat as alcohol
+        return ("alcohol", o_idx, True)
+
+    for nbr in heavy:
+        sym = _element(mol, nbr)
+        if sym == "C":
+            # Carboxylic acid: O-H where the C also has a C=O
+            if _has_double_bond_to(mol, nbr, "O"):
+                return ("carboxylic acid", o_idx, True)
+            # Phenol: O-H where C is aromatic
+            if _is_aromatic_atom(mol, nbr):
+                return ("phenol", o_idx, True)
+    # Default: ordinary alcohol
+    return ("alcohol", o_idx, True)
+
+
+def _classify_nitrogen(mol: Molecule, n_idx: int) -> tuple[str, int, bool] | None:
+    """Classify an N-H nitrogen as amine, amide, or sulfonamide.
+
+    Amines are classified as conjugate-acid donors (acidic=False means the
+    protonated form is the acid, so they are base sites).
+    """
+    h = _h_count(mol, n_idx)
+    if h < 1:
+        return None
+
+    heavy = _heavy_neighbors(mol, n_idx)
+
+    # Sulfonamide: N-H bonded to S
+    for nbr in heavy:
+        if _element(mol, nbr) == "S":
+            return ("sulfonamide", n_idx, True)
+
+    # Amide: N-H bonded to C that bears C=O
+    for nbr in heavy:
+        if _element(mol, nbr) == "C" and _has_double_bond_to(mol, nbr, "O"):
+            return ("amide", n_idx, True)
+
+    # Primary or secondary amine
+    n_heavy = len(heavy)
+    if h >= 2 and n_heavy <= 1:
+        return ("primary amine", n_idx, False)
+    if h >= 1 and n_heavy == 2:
+        return ("secondary amine", n_idx, False)
+
+    # Fallback: treat as primary amine if it has H
+    return ("primary amine", n_idx, False)
+
+
+def _classify_sulfur(mol: Molecule, s_idx: int) -> tuple[str, int, bool] | None:
+    """Classify an S-H sulfur as a thiol."""
+    if _h_count(mol, s_idx) < 1:
+        return None
+    return ("thiol", s_idx, True)
+
+
+def _aromatic_ring_correction(mol: Molecule, idx: int, group: str) -> float:
+    """Correction when the ionizable atom is near an aromatic ring.
+
+    For most groups the check is on the direct heavy neighbors.  For
+    carboxylic acids the ionizable O-H is two bonds from the ring
+    (O-H -> C(=O) -> Ar), so we also check the beta (next-neighbor)
+    heavy atoms.
+    """
+    # Direct neighbors
+    for nbr in _heavy_neighbors(mol, idx):
+        if _is_aromatic_atom(mol, nbr):
+            if group in ("carboxylic acid", "phenol"):
+                return -1.0
+            if group in ("primary amine", "secondary amine"):
+                return -2.0
+    # Beta neighbors (one bond further) -- relevant for carboxylic acids
+    # and amines attached via a linker carbon
+    if group in ("carboxylic acid",):
+        for nbr in _heavy_neighbors(mol, idx):
+            for nbr2 in _heavy_neighbors(mol, nbr):
+                if nbr2 == idx:
+                    continue
+                if _is_aromatic_atom(mol, nbr2):
+                    return -1.0
+    return 0.0
+
+
+def _nitro_on_ring_correction(mol: Molecule, idx: int, group: str) -> float:
+    """Extra correction for nitro groups on a ring bearing a phenol."""
+    if group != "phenol":
+        return 0.0
+    # Walk: O -> aromatic C -> other aromatic C -> N(=O)(=O)
+    for c_nbr in _heavy_neighbors(mol, idx):
+        if not _is_aromatic_atom(mol, c_nbr):
+            continue
+        for ring_nbr in _heavy_neighbors(mol, c_nbr):
+            if ring_nbr == idx:
+                continue
+            if _is_aromatic_atom(mol, ring_nbr):
+                for sub in _heavy_neighbors(mol, ring_nbr):
+                    if _element(mol, sub) == "N":
+                        o_count = sum(
+                            1 for nn in _neighbors(mol, sub)
+                            if _element(mol, nn) == "O"
+                            and _bond_order(mol, sub, nn) == 2
+                        )
+                        if o_count >= 2:
+                            return -3.0
+    return 0.0
+
+
+def predict_pka(mol: Molecule) -> list[pKaPrediction]:
+    """Predict pKa values for all ionizable groups in *mol*.
+
+    Uses a Hammett-style additive approach with base pKa values and
+    corrections for electron-withdrawing substituents, aromatic rings,
+    and nitro groups.  Results are sorted from most acidic (lowest pKa)
+    to least acidic.
+    """
+    results: list[pKaPrediction] = []
+    seen: set[int] = set()
+
+    for idx in range(len(mol.atoms)):
+        sym = _element(mol, idx)
+        classification = None
+
+        if sym == "O":
+            classification = _classify_oxygen(mol, idx)
+        elif sym == "N":
+            classification = _classify_nitrogen(mol, idx)
+        elif sym == "S":
+            classification = _classify_sulfur(mol, idx)
+
+        if classification is None:
+            continue
+
+        group_name, atom_idx, acidic = classification
+
+        # Avoid double-counting the same atom
+        if atom_idx in seen:
+            continue
+        seen.add(atom_idx)
+
+        base = _PKA_BASE[group_name]
+        correction = 0.0
+        correction += _ewg_correction(mol, atom_idx, group_name)
+        correction += _aromatic_ring_correction(mol, atom_idx, group_name)
+        correction += _nitro_on_ring_correction(mol, atom_idx, group_name)
+
+        pka = round(base + correction, 1)
+
+        results.append(pKaPrediction(
+            group_name=group_name,
+            atom_index=atom_idx,
+            pka_value=pka,
+            acidic=acidic,
+        ))
+
+    return sorted(results, key=lambda p: p.pka_value)

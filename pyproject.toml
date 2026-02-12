@@ -56,6 +56,19 @@ include = ["molbuilder*"]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
 
+[tool.coverage.run]
+omit = [
+    "molbuilder/gui/*",
+    "molbuilder/cli/menu.py",
+    "molbuilder/cli/demos.py",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100

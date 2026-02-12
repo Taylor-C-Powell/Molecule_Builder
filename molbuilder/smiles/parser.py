@@ -211,7 +211,9 @@ def _add_implicit_hydrogens(
         if atom.bracket and atom.hcount is not None:
             n_h = atom.hcount
         else:
-            # Look up default valence for organic subset / aromatic atoms
+            # Look up default valence for organic subset atoms.
+            # Aromatic atoms use the same valence table after
+            # kekulization assigns proper bond orders.
             lookup_sym = atom.symbol.lower() if atom.aromatic else atom.symbol
             if lookup_sym not in DEFAULT_VALENCE and atom.symbol not in DEFAULT_VALENCE:
                 continue  # unknown atom -- no implicit H
@@ -229,11 +231,9 @@ def _add_implicit_hydrogens(
             if target is None:
                 target = max(valences)
 
-            # Aromatic atoms contribute one electron to the pi system,
-            # so reduce the target by 1.
-            if atom.aromatic:
-                target = max(0, target - 1)
-
+            # Kekulization has already assigned double bonds to aromatic
+            # atoms, so their explicit valence already reflects the pi
+            # electron.  No additional reduction needed.
             n_h = max(0, target - ev)
 
         # Add H atoms
@@ -455,6 +455,11 @@ def parse(smiles: str) -> Molecule:
     """
     tokens = tokenize(smiles)
     atoms, bonds = _build_graph(tokens)
+
+    # Kekulize: assign alternating single/double bonds to aromatic systems
+    from molbuilder.smiles.aromatic import kekulize
+    kekulize(atoms, bonds)
+
     atoms, bonds = _add_implicit_hydrogens(atoms, bonds)
 
     # Create molecule

@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     audit_db_path: str = "molbuilder_audit.db"
     user_db_path: str = "molbuilder_users.db"
+    molecule_db_path: str = "molbuilder_molecules.db"
     cors_origins: str = ""
     admin_bootstrap_email: str = ""
 

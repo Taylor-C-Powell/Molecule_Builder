@@ -33,6 +33,7 @@ RUN python -c "from molbuilder.smiles.parser import parse; parse('C'); print('mo
 
 ENV AUDIT_DB_PATH=/data/molbuilder_audit.db
 ENV USER_DB_PATH=/data/molbuilder_users.db
+ENV MOLECULE_DB_PATH=/data/molbuilder_molecules.db
 
 ENV PORT=8000
 EXPOSE ${PORT}

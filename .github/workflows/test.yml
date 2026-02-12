@@ -34,7 +34,7 @@ jobs:
         run: ruff check molbuilder/ saas/app/ sdk/molbuilder_client/
 
       - name: Run core tests
-        run: python -m pytest tests/ -v --cov=molbuilder --cov-report=xml:coverage-core.xml
+        run: python -m pytest tests/ -v --cov=molbuilder --cov-report=xml:coverage-core.xml --cov-fail-under=80
 
       - name: Run SaaS tests
         run: python -m pytest tests/ -v --cov=app --cov-report=xml:coverage-saas.xml
