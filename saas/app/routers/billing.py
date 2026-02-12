@@ -84,8 +84,10 @@ async def stripe_webhook(request: Request):
     try:
         result = stripe_service.handle_webhook_event(payload, sig_header)
         return result
-    except Exception as e:
+    except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "Webhook processing failed"})
 
 
 @router.get("/status", response_model=BillingStatus)

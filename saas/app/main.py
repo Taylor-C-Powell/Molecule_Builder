@@ -21,6 +21,21 @@ async def lifespan(app: FastAPI):
     import logging
     logger = logging.getLogger("molbuilder.bootstrap")
 
+    # Validate JWT secret
+    from app.config import settings as _cfg
+    if _cfg.jwt_secret_key == "dev-secret-change-in-production":
+        import os
+        if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("PRODUCTION"):
+            logger.critical(
+                "JWT_SECRET_KEY is the default value! Set a secure secret "
+                "in production via environment variable JWT_SECRET_KEY"
+            )
+            raise SystemExit(1)
+        else:
+            logger.warning(
+                "JWT_SECRET_KEY is the default value - acceptable for local dev only"
+            )
+
     # Warm up molbuilder data structures by parsing a trivial molecule
     from molbuilder.smiles.parser import parse
     parse("C")

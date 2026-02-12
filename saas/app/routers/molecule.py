@@ -22,7 +22,7 @@ def from_smiles(
 ):
     try:
         mol, canonical = parse_smiles(body.smiles, body.name)
-    except Exception as e:
+    except (ValueError, KeyError) as e:
         raise InvalidSMILES(body.smiles, str(e))
     mol_id = molecule_store.put(mol, canonical)
     return MoleculeResponse(

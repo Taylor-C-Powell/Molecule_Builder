@@ -1,5 +1,8 @@
 """FastAPI dependencies for auth and rate limiting."""
 
+import logging
+
+import jwt as pyjwt
 from fastapi import Depends, Header
 from app.auth.api_keys import api_key_store
 from app.auth.jwt_handler import decode_token
@@ -7,6 +10,8 @@ from app.auth.rate_limiter import rate_limiter
 from app.auth.roles import Role
 from app.config import Tier
 from app.exceptions import AuthenticationError, AuthorizationError, RateLimitExceeded
+
+logger = logging.getLogger("molbuilder.dependencies")
 
 
 class UserContext:
@@ -32,13 +37,14 @@ def get_current_user(
             try:
                 role = Role(role_str)
             except ValueError:
+                logger.warning("Invalid role %r in JWT, defaulting to CHEMIST", role_str)
                 role = Role.CHEMIST
             return UserContext(
                 email=payload["sub"],
                 tier=Tier(payload["tier"]),
                 role=role,
             )
-        except Exception:
+        except (pyjwt.PyJWTError, KeyError, ValueError):
             raise AuthenticationError("Invalid or expired JWT token")
 
     # Fall back to API key

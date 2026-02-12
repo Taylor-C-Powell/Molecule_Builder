@@ -21,5 +21,5 @@ def evaluate(
             max_depth=body.max_depth,
             beam_width=body.beam_width,
         )
-    except Exception as e:
+    except (ValueError, KeyError) as e:
         raise InvalidSMILES(body.smiles, str(e))

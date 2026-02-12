@@ -1,13 +1,17 @@
 """Usage tracking and audit middleware."""
 
 import json
+import logging
 import time
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+import jwt as pyjwt
 from app.auth.api_keys import api_key_store
 from app.auth.jwt_handler import decode_token
 from app.services.usage_tracker import usage_tracker, RequestRecord
+
+logger = logging.getLogger("molbuilder.middleware")
 
 
 def _extract_user(request: Request) -> tuple[str, str, str]:
@@ -22,7 +26,7 @@ def _extract_user(request: Request) -> tuple[str, str, str]:
                 payload.get("tier", ""),
                 payload.get("role", "chemist"),
             )
-        except Exception:
+        except pyjwt.PyJWTError:
             pass
 
     # Try API key
@@ -110,6 +114,6 @@ class UsageTrackingMiddleware(BaseHTTPMiddleware):
                     ip_address=ip,
                 )
             except Exception:
-                pass  # Audit failures must not break requests
+                logger.warning("Audit trail write failed", exc_info=True)
 
         return response

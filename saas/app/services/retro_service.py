@@ -1,5 +1,7 @@
 """Retrosynthesis service wrapping molbuilder's retro engine."""
 
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+
 from molbuilder.smiles.parser import parse
 from molbuilder.reactions.retrosynthesis import retrosynthesis
 from molbuilder.reactions.synthesis_route import extract_best_route
@@ -70,10 +72,15 @@ def _serialize_route(route) -> SynthesisRouteResponse:
     )
 
 
-def run_retrosynthesis(
-    smiles: str, max_depth: int = 5, beam_width: int = 5
+RETRO_TIMEOUT_SECONDS = 30
+
+_executor = ThreadPoolExecutor(max_workers=2)
+
+
+def _run_retro_sync(
+    smiles: str, max_depth: int, beam_width: int
 ) -> RetroResponse:
-    """Run retrosynthesis and return serialized response."""
+    """Core retrosynthesis logic (runs in thread pool)."""
     mol = parse(smiles)
     tree = retrosynthesis(mol, max_depth=max_depth, beam_width=beam_width)
 
@@ -89,3 +96,18 @@ def run_retrosynthesis(
         beam_width=tree.beam_width,
         best_route=best_route,
     )
+
+
+def run_retrosynthesis(
+    smiles: str, max_depth: int = 5, beam_width: int = 5
+) -> RetroResponse:
+    """Run retrosynthesis with timeout protection."""
+    future = _executor.submit(_run_retro_sync, smiles, max_depth, beam_width)
+    try:
+        return future.result(timeout=RETRO_TIMEOUT_SECONDS)
+    except FuturesTimeoutError:
+        future.cancel()
+        raise ValueError(
+            f"Retrosynthesis timed out after {RETRO_TIMEOUT_SECONDS}s "
+            f"for SMILES: {smiles}"
+        )

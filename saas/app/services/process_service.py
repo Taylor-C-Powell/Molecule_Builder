@@ -1,5 +1,7 @@
 """Process engineering service - full pipeline: retro + reactor/conditions/safety/cost/scaleup."""
 
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+
 from molbuilder.smiles.parser import parse
 from molbuilder.reactions.retrosynthesis import retrosynthesis
 from molbuilder.reactions.synthesis_route import extract_best_route
@@ -124,13 +126,18 @@ def _serialize_scaleup(su) -> ScaleUpResponse:
     )
 
 
-def evaluate_process(
+PROCESS_TIMEOUT_SECONDS = 60
+
+_executor = ThreadPoolExecutor(max_workers=2)
+
+
+def _evaluate_process_sync(
     smiles: str,
-    scale_kg: float = 1.0,
-    max_depth: int = 5,
-    beam_width: int = 5,
+    scale_kg: float,
+    max_depth: int,
+    beam_width: int,
 ) -> ProcessEvaluateResponse:
-    """Full pipeline: parse -> retro -> process engineering."""
+    """Core process evaluation logic (runs in thread pool)."""
     mol = parse(smiles)
     tree = retrosynthesis(mol, max_depth=max_depth, beam_width=beam_width)
 
@@ -175,3 +182,23 @@ def evaluate_process(
         cost=cost,
         scale_up=scaleup,
     )
+
+
+def evaluate_process(
+    smiles: str,
+    scale_kg: float = 1.0,
+    max_depth: int = 5,
+    beam_width: int = 5,
+) -> ProcessEvaluateResponse:
+    """Full pipeline with timeout protection: parse -> retro -> process engineering."""
+    future = _executor.submit(
+        _evaluate_process_sync, smiles, scale_kg, max_depth, beam_width
+    )
+    try:
+        return future.result(timeout=PROCESS_TIMEOUT_SECONDS)
+    except FuturesTimeoutError:
+        future.cancel()
+        raise ValueError(
+            f"Process evaluation timed out after {PROCESS_TIMEOUT_SECONDS}s "
+            f"for SMILES: {smiles}"
+        )
