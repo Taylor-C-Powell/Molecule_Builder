@@ -11,15 +11,48 @@ interface MoleculeViewerProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Mol3D = any;
 
+/** Convert our API response to XYZ format string for 3Dmol.js */
+function toXyz(structure: Molecule3DResponse): string {
+  const lines = [
+    String(structure.atoms.length),
+    structure.id,
+    ...structure.atoms.map(
+      (a) => `${a.symbol} ${a.position[0]} ${a.position[1]} ${a.position[2]}`,
+    ),
+  ];
+  return lines.join("\n");
+}
+
+/** Resolve the $3Dmol namespace from the import or window global */
+function resolve3Dmol(mod: Mol3D): Mol3D | null {
+  // Try module default export (CJS interop)
+  if (mod?.default?.createViewer) return mod.default;
+  // Try module directly (named exports)
+  if (mod?.createViewer) return mod;
+  // Fall back to window global (3Dmol.js sets this as a side effect)
+  if (typeof window !== "undefined" && (window as Mol3D).$3Dmol?.createViewer) {
+    return (window as Mol3D).$3Dmol;
+  }
+  return null;
+}
+
 export function MoleculeViewer({ structure, loading }: MoleculeViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Mol3D>(null);
   const [lib, setLib] = useState<Mol3D>(null);
 
-  // Load 3Dmol.js once - handle both ESM default and named export patterns
+  // Load 3Dmol.js once
   useEffect(() => {
     import("3dmol").then((mod) => {
-      const $3Dmol = mod.default ?? mod;
+      const $3Dmol = resolve3Dmol(mod);
+      if (!$3Dmol) {
+        console.error(
+          "3Dmol.js loaded but createViewer not found.",
+          "Module keys:", Object.keys(mod),
+          "default keys:", mod.default ? Object.keys(mod.default).slice(0, 10) : "none",
+          "window.$3Dmol:", typeof (window as Mol3D).$3Dmol,
+        );
+      }
       setLib($3Dmol);
     });
   }, []);
@@ -27,10 +60,6 @@ export function MoleculeViewer({ structure, loading }: MoleculeViewerProps) {
   // Create viewer once the lib is loaded and the container is mounted
   useEffect(() => {
     if (!lib || !containerRef.current || viewerRef.current) return;
-    if (typeof lib.createViewer !== "function") {
-      console.error("3Dmol.createViewer not found. Module keys:", Object.keys(lib));
-      return;
-    }
     containerRef.current.innerHTML = "";
     viewerRef.current = lib.createViewer(containerRef.current, {
       backgroundColor: "#0a0a0a",
@@ -45,31 +74,9 @@ export function MoleculeViewer({ structure, loading }: MoleculeViewerProps) {
 
     viewer.removeAllModels();
 
-    // Build atom specs with bond connectivity (3Dmol.js API)
-    // Each atom needs: elem, x, y, z, bonds (neighbor indices), bondOrder
-    const atoms = structure.atoms.map((a) => ({
-      elem: a.symbol,
-      x: a.position[0],
-      y: a.position[1],
-      z: a.position[2],
-      serial: a.index,
-      bonds: [] as number[],
-      bondOrder: [] as number[],
-    }));
-
-    for (const bond of structure.bonds) {
-      const a = atoms[bond.atom_i];
-      const b = atoms[bond.atom_j];
-      if (a && b) {
-        a.bonds.push(bond.atom_j);
-        a.bondOrder.push(bond.order);
-        b.bonds.push(bond.atom_i);
-        b.bondOrder.push(bond.order);
-      }
-    }
-
-    const model = viewer.addModel();
-    model.addAtoms(atoms);
+    // Use XYZ format - the most reliable path in 3Dmol.js
+    const xyz = toXyz(structure);
+    viewer.addModel(xyz, "xyz");
 
     viewer.setStyle({}, {
       stick: { radius: 0.12, colorscheme: "default" },
