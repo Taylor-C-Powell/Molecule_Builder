@@ -6,17 +6,22 @@ import { useAuthStore } from "@/stores/auth-store";
 
 export function useMolecule() {
   const client = useApiClient();
-  const store = useMoleculeStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Subscribe to store changes via selectors so React re-renders
+  const current = useMoleculeStore((s) => s.current);
+  const cache = useMoleculeStore((s) => s.cache);
+  const currentEntry = current ? cache.get(current) : undefined;
 
   const parseMolecule = useCallback(
     async (smiles: string) => {
       setLoading(true);
       setError(null);
 
+      const store = useMoleculeStore.getState();
+
       try {
-        // Ensure we have a valid JWT
         await useAuthStore.getState().getValidToken();
 
         // Check cache first
@@ -47,13 +52,13 @@ export function useMolecule() {
         setLoading(false);
       }
     },
-    [client, store],
+    [client],
   );
 
   return {
     parseMolecule,
     loading,
     error,
-    currentEntry: store.getCurrentEntry(),
+    currentEntry,
   };
 }
