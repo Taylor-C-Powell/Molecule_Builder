@@ -39,6 +39,14 @@ class MoleculePropertiesResponse(BaseModel):
     num_atoms: int
     num_bonds: int
     functional_groups: list[str]
+    logp: float | None = None
+    hbd: int | None = None
+    hba: int | None = None
+    rotatable_bonds: int | None = None
+    tpsa: float | None = None
+    heavy_atom_count: int | None = None
+    lipinski_violations: int | None = None
+    lipinski_pass: bool | None = None
 
 
 class Molecule3DResponse(BaseModel):

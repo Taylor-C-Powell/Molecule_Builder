@@ -78,3 +78,29 @@ def test_molecule_requires_auth(client):
         json={"smiles": "CCO"},
     )
     assert resp.status_code == 401
+
+
+def test_properties_lipinski_fields(client, auth_headers):
+    """Lipinski fields appear in properties response for ethanol (CCO)."""
+    create = client.post(
+        "/api/v1/molecule/from-smiles",
+        json={"smiles": "CCO"},
+        headers=auth_headers,
+    )
+    mol_id = create.json()["id"]
+    resp = client.get(f"/api/v1/molecule/{mol_id}/properties", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    # Check types
+    assert isinstance(data["logp"], float)
+    assert isinstance(data["hbd"], int)
+    assert isinstance(data["hba"], int)
+    assert isinstance(data["rotatable_bonds"], int)
+    assert isinstance(data["tpsa"], float)
+    assert isinstance(data["heavy_atom_count"], int)
+    assert isinstance(data["lipinski_violations"], int)
+    assert isinstance(data["lipinski_pass"], bool)
+    # Check expected values for ethanol
+    assert data["hba"] == 1
+    assert data["heavy_atom_count"] == 3
+    assert data["lipinski_pass"] is True
