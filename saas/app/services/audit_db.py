@@ -1,6 +1,7 @@
 """Immutable SQLite audit trail for 21 CFR Part 11 compliance."""
 
 import hashlib
+import hmac as hmac_mod
 import sqlite3
 import threading
 import time
@@ -48,8 +49,13 @@ class AuditDB:
 
     @staticmethod
     def compute_signature(user_email: str, timestamp: float, action: str, input_summary: str) -> str:
-        """Compute SHA-256 electronic signature hash."""
+        """Compute HMAC-SHA256 electronic signature using server secret."""
+        from app.config import settings
         data = f"{user_email}|{timestamp}|{action}|{input_summary}"
+        secret = settings.audit_hmac_secret
+        if secret:
+            return hmac_mod.new(secret.encode(), data.encode(), hashlib.sha256).hexdigest()
+        # Fallback for tests where config isn't fully initialized
         return hashlib.sha256(data.encode()).hexdigest()
 
     @staticmethod

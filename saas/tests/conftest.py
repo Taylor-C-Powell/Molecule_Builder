@@ -17,6 +17,7 @@ def _reset_rate_limiter():
     """Clear rate limiter state between tests."""
     rate_limiter._windows.clear()
     rate_limiter._expensive_windows.clear()
+    rate_limiter._ip_windows.clear()
 
 
 @pytest.fixture(autouse=True)

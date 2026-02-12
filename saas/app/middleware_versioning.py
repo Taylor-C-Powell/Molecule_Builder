@@ -1,4 +1,4 @@
-"""API versioning middleware — adds version headers to all responses."""
+"""API versioning middleware -- adds version headers to all responses."""
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -6,6 +6,14 @@ from starlette.responses import Response
 
 API_VERSION = "1.0.0"
 MIN_SUPPORTED_VERSION = "1.0.0"
+
+
+def _parse_version(v: str) -> tuple[int, ...]:
+    """Parse a semver string into a comparable tuple."""
+    try:
+        return tuple(int(x) for x in v.strip().split("."))
+    except (ValueError, AttributeError):
+        return (0,)
 
 
 class VersioningMiddleware(BaseHTTPMiddleware):
@@ -17,7 +25,7 @@ class VersioningMiddleware(BaseHTTPMiddleware):
 
         # If client sends an outdated version header, warn about deprecation
         client_version = request.headers.get("X-API-Version", "")
-        if client_version and client_version < MIN_SUPPORTED_VERSION:
+        if client_version and _parse_version(client_version) < _parse_version(MIN_SUPPORTED_VERSION):
             response.headers["X-Deprecation-Warning"] = (
                 f"API version {client_version} is deprecated. "
                 f"Minimum supported version is {MIN_SUPPORTED_VERSION}. "

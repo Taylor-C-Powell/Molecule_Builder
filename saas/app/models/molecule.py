@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 
 
 class ParseSmilesRequest(BaseModel):
-    smiles: str = Field(..., description="SMILES string to parse")
-    name: str = Field("", description="Optional molecule name")
+    smiles: str = Field(..., description="SMILES string to parse", min_length=1, max_length=2000)
+    name: str = Field("", description="Optional molecule name", max_length=200)
 
 
 class AtomResponse(BaseModel):

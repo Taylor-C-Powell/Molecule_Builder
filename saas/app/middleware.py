@@ -1,5 +1,6 @@
 """Usage tracking and audit middleware."""
 
+import hashlib
 import json
 import logging
 import time
@@ -9,9 +10,26 @@ from starlette.responses import Response
 import jwt as pyjwt
 from app.auth.api_keys import api_key_store
 from app.auth.jwt_handler import decode_token
+from app.auth.roles import Role, check_permission
 from app.services.usage_tracker import usage_tracker, RequestRecord
 
 logger = logging.getLogger("molbuilder.middleware")
+
+# Paths exempt from RBAC checks (public, health, auth)
+_RBAC_EXEMPT_PREFIXES = (
+    "/",
+    "/health",
+    "/docs",
+    "/openapi.json",
+    "/api/v1/auth/register",
+    "/api/v1/auth/token",
+    "/api/v1/billing/webhook",
+)
+
+
+def _hash_ip(ip: str) -> str:
+    """One-way hash of IP address for privacy-preserving audit trail."""
+    return hashlib.sha256(ip.encode()).hexdigest()[:16]
 
 
 def _extract_user(request: Request) -> tuple[str, str, str]:
@@ -40,7 +58,7 @@ def _extract_user(request: Request) -> tuple[str, str, str]:
 
 
 def _extract_body_summary(body: bytes, path: str) -> dict:
-    """Extract key fields from request body for tracking."""
+    """Extract key fields from request body for tracking (no PII)."""
     if not body:
         return {}
     try:
@@ -53,11 +71,16 @@ def _extract_body_summary(body: bytes, path: str) -> dict:
         summary["smiles"] = data["smiles"]
     if "scale_kg" in data:
         summary["scale_kg"] = data["scale_kg"]
-    if "email" in data:
-        summary["email"] = data["email"]
-    if "tier" in data:
-        summary["tier"] = data["tier"]
+    # Deliberately omit email and other PII from tracking summaries
     return summary
+
+
+def _is_rbac_exempt(path: str) -> bool:
+    """Check if a path is exempt from RBAC enforcement."""
+    for prefix in _RBAC_EXEMPT_PREFIXES:
+        if path == prefix or (prefix != "/" and path.startswith(prefix)):
+            return True
+    return False
 
 
 class UsageTrackingMiddleware(BaseHTTPMiddleware):
@@ -71,6 +94,19 @@ class UsageTrackingMiddleware(BaseHTTPMiddleware):
 
         email, tier, role = _extract_user(request)
         body_summary = _extract_body_summary(body, request.url.path)
+
+        # RBAC enforcement for authenticated requests
+        if email and role and not _is_rbac_exempt(request.url.path):
+            try:
+                role_enum = Role(role)
+            except ValueError:
+                role_enum = Role.CHEMIST
+            if not check_permission(role_enum, request.method, request.url.path):
+                from starlette.responses import JSONResponse
+                return JSONResponse(
+                    status_code=403,
+                    content={"error": "Insufficient permissions for this resource"},
+                )
 
         response = await call_next(request)
 
@@ -101,7 +137,9 @@ class UsageTrackingMiddleware(BaseHTTPMiddleware):
                 db = get_audit_db()
                 action = f"{request.method} {path}"
                 input_str = json.dumps(body_summary) if body_summary else ""
-                ip = request.client.host if request.client else ""
+                # Hash IP for privacy
+                raw_ip = request.client.host if request.client else ""
+                ip_hash = _hash_ip(raw_ip) if raw_ip else ""
                 db.record(
                     user_email=email,
                     user_role=role,
@@ -111,7 +149,7 @@ class UsageTrackingMiddleware(BaseHTTPMiddleware):
                     output_hash="",
                     status_code=response.status_code,
                     latency_ms=latency_ms,
-                    ip_address=ip,
+                    ip_address=ip_hash,
                 )
             except Exception:
                 logger.warning("Audit trail write failed", exc_info=True)

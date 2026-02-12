@@ -1,6 +1,7 @@
 """API key generation, hashing, and validation."""
 
 import hashlib
+import hmac
 import secrets
 import threading
 from app.config import Tier
@@ -36,6 +37,17 @@ class APIKeyStore:
 
     @staticmethod
     def _hash(key: str) -> str:
+        """HMAC-SHA256 hash of an API key using the server secret."""
+        from app.config import settings
+        secret = settings.api_key_hmac_secret
+        if secret:
+            return hmac.new(secret.encode(), key.encode(), hashlib.sha256).hexdigest()
+        # Fallback for tests/bootstrap before secret is set
+        return hashlib.sha256(key.encode()).hexdigest()
+
+    @staticmethod
+    def _legacy_hash(key: str) -> str:
+        """Plain SHA256 for backward compatibility with pre-HMAC keys."""
         return hashlib.sha256(key.encode()).hexdigest()
 
     def load_from_db(self, db) -> None:
@@ -66,7 +78,30 @@ class APIKeyStore:
     def validate(self, key: str) -> APIKeyRecord | None:
         h = self._hash(key)
         with self._lock:
-            return self._keys.get(h)
+            record = self._keys.get(h)
+            if record is not None:
+                return record
+            # Backward compatibility: try legacy hash for pre-HMAC keys
+            legacy_h = self._legacy_hash(key)
+            return self._keys.get(legacy_h)
+
+    def revoke_key(self, key: str) -> bool:
+        """Revoke a specific API key. Returns True if found and revoked."""
+        h = self._hash(key)
+        with self._lock:
+            if h in self._keys:
+                record = self._keys.pop(h)
+                if self._db is not None:
+                    self._db.delete_by_hash(h)
+                return True
+            # Try legacy hash
+            legacy_h = self._legacy_hash(key)
+            if legacy_h in self._keys:
+                self._keys.pop(legacy_h)
+                if self._db is not None:
+                    self._db.delete_by_hash(legacy_h)
+                return True
+        return False
 
     def find_by_email(self, email: str) -> list[APIKeyRecord]:
         """Return all key records for a given email."""

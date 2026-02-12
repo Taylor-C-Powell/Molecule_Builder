@@ -122,12 +122,17 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
         status = subscription.status
         db = get_user_db()
         user = db.get_by_stripe_customer(customer_id)
-        if user and status == "active":
-            db.update_subscription(
-                user["email"], subscription.id, "active", Tier.PRO.value
-            )
-            api_key_store.update_tier(user["email"], Tier.PRO)
-            return {"action": "subscription_updated", "status": status}
+        if user:
+            if status == "active":
+                db.update_subscription(
+                    user["email"], subscription.id, "active", Tier.PRO.value
+                )
+                api_key_store.update_tier(user["email"], Tier.PRO)
+                return {"action": "subscription_updated", "status": status}
+            elif status in ("unpaid", "past_due", "canceled", "incomplete_expired"):
+                # Downgrade to free tier when subscription is no longer active
+                downgrade_user(user["email"])
+                return {"action": "downgraded", "email": user["email"], "reason": status}
         return {"action": "subscription_updated", "status": status}
 
     return {"action": "ignored", "event_type": event.type}

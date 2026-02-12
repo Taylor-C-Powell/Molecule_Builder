@@ -49,6 +49,7 @@ class TestCheckout:
         mock_settings.stripe_webhook_secret = "whsec_fake"
         mock_settings.stripe_pro_monthly_price_id = "price_monthly"
         mock_settings.stripe_pro_yearly_price_id = "price_yearly"
+        mock_settings.allowed_redirect_hosts = "www.molbuilder.io,molbuilder.io,localhost"
 
         # Mock Stripe Customer.list and Customer.create
         mock_stripe.Customer.list.return_value = MagicMock(data=[])

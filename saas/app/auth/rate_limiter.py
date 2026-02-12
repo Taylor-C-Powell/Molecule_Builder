@@ -1,4 +1,4 @@
-"""Sliding-window rate limiter (per-user, in-memory)."""
+"""Sliding-window rate limiter (per-user and per-IP, in-memory)."""
 
 import threading
 import time
@@ -13,6 +13,8 @@ class SlidingWindowLimiter:
         # email -> list of request timestamps
         self._windows: dict[str, list[float]] = {}
         self._expensive_windows: dict[str, list[float]] = {}
+        # IP -> list of timestamps (for unauthenticated endpoints)
+        self._ip_windows: dict[str, dict[str, list[float]]] = {}
 
     def _prune(self, timestamps: list[float], window_seconds: float) -> list[float]:
         cutoff = time.monotonic() - window_seconds
@@ -44,6 +46,20 @@ class SlidingWindowLimiter:
                 return False
             ts.append(now)
             self._expensive_windows[email] = ts
+            return True
+
+    def check_ip(self, ip: str, endpoint: str, limit: int) -> bool:
+        """Per-IP rate limit for unauthenticated endpoints (per minute)."""
+        now = time.monotonic()
+        with self._lock:
+            ep_windows = self._ip_windows.setdefault(endpoint, {})
+            ts = ep_windows.get(ip, [])
+            ts = self._prune(ts, 60.0)
+            if len(ts) >= limit:
+                ep_windows[ip] = ts
+                return False
+            ts.append(now)
+            ep_windows[ip] = ts
             return True
 
 

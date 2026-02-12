@@ -1,10 +1,13 @@
 """Billing endpoints: Stripe checkout, portal, webhooks, status."""
 
+from urllib.parse import urlparse
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.dependencies import UserContext, get_current_user
+from app.dependencies import UserContext, get_current_user, require_admin
+from app.exceptions import MolBuilderAPIError
 from app.models.billing import (
     BillingStatus, CheckoutRequest, CheckoutResponse, PortalResponse,
 )
@@ -25,10 +28,32 @@ def _stripe_not_configured():
     return HTTPException(status_code=501, detail="Billing not configured")
 
 
+def _validate_redirect_url(url: str) -> str:
+    """Validate that a redirect URL points to an allowed host."""
+    allowed = {h.strip().lower() for h in settings.allowed_redirect_hosts.split(",")}
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("https", "http"):
+            raise MolBuilderAPIError(422, f"Redirect URL must use https: {url}")
+        if parsed.hostname and parsed.hostname.lower() not in allowed:
+            raise MolBuilderAPIError(
+                422,
+                f"Redirect URL host '{parsed.hostname}' not in allowed list. "
+                f"Allowed: {', '.join(sorted(allowed))}",
+            )
+    except ValueError:
+        raise MolBuilderAPIError(422, f"Invalid redirect URL: {url}")
+    return url
+
+
 @router.post("/checkout", response_model=CheckoutResponse)
 def create_checkout(body: CheckoutRequest, user: UserContext = Depends(get_current_user)):
     """Create a Stripe Checkout session for upgrading to Pro."""
     _require_stripe()
+
+    # Validate redirect URLs to prevent open redirect
+    success_url = _validate_redirect_url(body.success_url)
+    cancel_url = _validate_redirect_url(body.cancel_url)
 
     price_id = (
         settings.stripe_pro_monthly_price_id
@@ -48,8 +73,8 @@ def create_checkout(body: CheckoutRequest, user: UserContext = Depends(get_curre
     checkout_url = stripe_service.create_checkout_session(
         customer_id=customer_id,
         price_id=price_id,
-        success_url=body.success_url,
-        cancel_url=body.cancel_url,
+        success_url=success_url,
+        cancel_url=cancel_url,
     )
     return CheckoutResponse(checkout_url=checkout_url)
 
@@ -92,9 +117,11 @@ async def stripe_webhook(request: Request):
 
 @router.get("/status", response_model=BillingStatus)
 def billing_status(user: UserContext = Depends(get_current_user)):
-    """Get current billing/subscription status."""
+    """Get current billing/subscription status. Stripe IDs only visible to admins."""
     db = get_user_db()
     info = db.get_stripe_info(user.email)
+
+    is_admin = user.role.value == "admin"
 
     if not info:
         return BillingStatus(
@@ -107,6 +134,7 @@ def billing_status(user: UserContext = Depends(get_current_user)):
         email=user.email,
         tier=info["tier"],
         subscription_status=info.get("subscription_status") or "none",
-        stripe_customer_id=info.get("stripe_customer_id"),
-        stripe_subscription_id=info.get("stripe_subscription_id"),
+        # Only expose Stripe IDs to admin users
+        stripe_customer_id=info.get("stripe_customer_id") if is_admin else None,
+        stripe_subscription_id=info.get("stripe_subscription_id") if is_admin else None,
     )

@@ -68,6 +68,16 @@ class UserDB:
         conn.commit()
         return cursor.rowcount
 
+    def delete_by_hash(self, key_hash: str) -> int:
+        """Soft-delete a specific key by its hash. Returns number affected."""
+        conn = self._get_conn()
+        cursor = conn.execute(
+            "UPDATE api_keys SET active = 0 WHERE key_hash = ? AND active = 1",
+            (key_hash,),
+        )
+        conn.commit()
+        return cursor.rowcount
+
     def update_tier(self, email: str, tier: str) -> int:
         """Update the tier for all active keys belonging to an email."""
         conn = self._get_conn()

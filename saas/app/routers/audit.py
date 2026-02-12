@@ -66,7 +66,7 @@ def verify_audit_record(
 
 @router.get("/export")
 def export_audit_log(
-    limit: int = Query(10000, ge=1, le=100000),
+    limit: int = Query(10000, ge=1, le=10000),
     admin: UserContext = Depends(require_admin),
 ):
     db = get_audit_db()

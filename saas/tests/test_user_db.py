@@ -9,7 +9,8 @@ from app.auth.roles import Role
 
 
 def _hash(key: str) -> str:
-    return hashlib.sha256(key.encode()).hexdigest()
+    """Compute hash using the same method as APIKeyStore."""
+    return APIKeyStore._hash(key)
 
 
 class TestUserDB:
