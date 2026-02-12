@@ -45,21 +45,31 @@ export function MoleculeViewer({ structure, loading }: MoleculeViewerProps) {
 
     viewer.removeAllModels();
 
-    const model = viewer.addModel();
-
-    for (const atom of structure.atoms) {
-      model.addAtom({
-        elem: atom.symbol,
-        x: atom.position[0],
-        y: atom.position[1],
-        z: atom.position[2],
-        serial: atom.index,
-      });
-    }
+    // Build atom specs with bond connectivity (3Dmol.js API)
+    // Each atom needs: elem, x, y, z, bonds (neighbor indices), bondOrder
+    const atoms = structure.atoms.map((a) => ({
+      elem: a.symbol,
+      x: a.position[0],
+      y: a.position[1],
+      z: a.position[2],
+      serial: a.index,
+      bonds: [] as number[],
+      bondOrder: [] as number[],
+    }));
 
     for (const bond of structure.bonds) {
-      model.addBond(bond.atom_i, bond.atom_j, bond.order);
+      const a = atoms[bond.atom_i];
+      const b = atoms[bond.atom_j];
+      if (a && b) {
+        a.bonds.push(bond.atom_j);
+        a.bondOrder.push(bond.order);
+        b.bonds.push(bond.atom_i);
+        b.bondOrder.push(bond.order);
+      }
     }
+
+    const model = viewer.addModel();
+    model.addAtoms(atoms);
 
     viewer.setStyle({}, {
       stick: { radius: 0.12, colorscheme: "default" },
