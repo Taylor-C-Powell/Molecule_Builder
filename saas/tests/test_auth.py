@@ -60,6 +60,8 @@ def test_token_exchange(client):
     assert data["token_type"] == "bearer"
     assert "access_token" in data
     assert data["expires_in"] == 3600
+    assert data["email"] == "tok@test.com"
+    assert data["tier"] == "free"
 
 
 def test_token_invalid_key(client):

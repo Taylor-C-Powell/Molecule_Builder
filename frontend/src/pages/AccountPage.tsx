@@ -15,9 +15,15 @@ export default function AccountPage() {
   const [searchParams] = useSearchParams();
   const checkoutResult = searchParams.get("checkout");
 
+  const refreshToken = useAuthStore((s) => s.refreshToken);
+
   useEffect(() => {
-    fetchStatus();
-  }, [fetchStatus]);
+    if (checkoutResult === "success") {
+      refreshToken().then(() => fetchStatus());
+    } else {
+      fetchStatus();
+    }
+  }, [fetchStatus, checkoutResult, refreshToken]);
 
   return (
     <div className="space-y-6">

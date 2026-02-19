@@ -11,7 +11,6 @@ export interface RegisterResponse {
   message: string;
 }
 
-// Note: /auth/token accepts API key in X-API-Key header, not body
 export interface TokenRequest {
   api_key: string;
 }
@@ -247,30 +246,6 @@ export interface ProcessEvaluateResponse {
   safety: SafetyAssessmentResponse[];
   cost: CostEstimateResponse | null;
   scale_up: ScaleUpResponse | null;
-}
-
-// ---- Billing ----
-export interface CheckoutRequest {
-  plan: "pro_monthly" | "pro_yearly";
-  success_url: string;
-  cancel_url: string;
-}
-
-export interface CheckoutResponse {
-  checkout_url: string;
-}
-
-export interface PortalResponse {
-  portal_url: string;
-}
-
-export interface BillingStatusResponse {
-  email: string;
-  tier: string;
-  subscription_status: string;
-  has_billing: boolean;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
 }
 
 // ---- Common ----

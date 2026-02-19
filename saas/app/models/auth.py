@@ -32,6 +32,8 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in: int = Field(..., description="Seconds until expiry")
+    email: str = Field(..., description="Account email")
+    tier: str = Field(..., description="Current subscription tier")
 
 
 class UserInfo(BaseModel):

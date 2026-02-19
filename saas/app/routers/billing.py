@@ -9,7 +9,7 @@ from app.config import settings
 from app.dependencies import UserContext, get_current_user, require_admin
 from app.exceptions import MolBuilderAPIError
 from app.models.billing import (
-    BillingStatus, CheckoutRequest, CheckoutResponse, PortalResponse,
+    BillingStatus, CheckoutRequest, CheckoutResponse, PortalRequest, PortalResponse,
 )
 from app.services import stripe_service
 from app.services.user_db import get_user_db
@@ -80,9 +80,14 @@ def create_checkout(body: CheckoutRequest, user: UserContext = Depends(get_curre
 
 
 @router.post("/portal", response_model=PortalResponse)
-def create_portal(user: UserContext = Depends(get_current_user)):
+def create_portal(
+    body: PortalRequest = PortalRequest(),
+    user: UserContext = Depends(get_current_user),
+):
     """Create a Stripe Customer Portal session for managing subscription."""
     _require_stripe()
+
+    return_url = _validate_redirect_url(body.return_url)
 
     db = get_user_db()
     info = db.get_stripe_info(user.email)
@@ -92,7 +97,7 @@ def create_portal(user: UserContext = Depends(get_current_user)):
 
     portal_url = stripe_service.create_portal_session(
         customer_id=info["stripe_customer_id"],
-        return_url="https://www.molbuilder.io/docs",
+        return_url=return_url,
     )
     return PortalResponse(portal_url=portal_url)
 
@@ -134,6 +139,7 @@ def billing_status(user: UserContext = Depends(get_current_user)):
         email=user.email,
         tier=info["tier"],
         subscription_status=info.get("subscription_status") or "none",
+        has_billing=bool(info.get("stripe_customer_id")),
         # Only expose Stripe IDs to admin users
         stripe_customer_id=info.get("stripe_customer_id") if is_admin else None,
         stripe_subscription_id=info.get("stripe_subscription_id") if is_admin else None,

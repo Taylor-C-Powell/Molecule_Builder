@@ -14,6 +14,8 @@ export function getBillingStatusApi(client: ApiClient) {
   return client.get<BillingStatusResponse>("/v1/billing/status");
 }
 
-export function createPortalSessionApi(client: ApiClient) {
-  return client.post<PortalResponse>("/v1/billing/portal");
+export function createPortalSessionApi(client: ApiClient, returnUrl?: string) {
+  return client.post<PortalResponse>("/v1/billing/portal", {
+    return_url: returnUrl ?? "https://www.molbuilder.io/account",
+  });
 }

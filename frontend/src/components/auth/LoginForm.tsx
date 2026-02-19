@@ -10,7 +10,7 @@ export function LoginForm() {
   const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { setApiKey: storeKey, login } = useAuthStore();
+  const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -18,9 +18,7 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
     try {
-      // Verify the key works by exchanging for JWT
       await login(apiKey);
-      storeKey(apiKey, "", "free");
       navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid API key");

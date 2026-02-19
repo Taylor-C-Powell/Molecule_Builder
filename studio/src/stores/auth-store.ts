@@ -16,7 +16,7 @@ interface AuthState {
   getValidToken: () => Promise<string | null>;
 }
 
-const STORAGE_KEY = "molbuilder_auth";
+const STORAGE_KEY = "molbuilder_studio_auth";
 
 function loadPersistedState() {
   try {
@@ -98,14 +98,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         tier: res.tier,
       });
     } catch {
-      // API key might be revoked
       get().logout();
     }
   },
 
   async getValidToken() {
     const { jwt, jwtExpiresAt, apiKey } = get();
-    // Refresh if expiring within 5 minutes
     if (jwt && jwtExpiresAt && jwtExpiresAt - Date.now() > 5 * 60 * 1000) {
       return jwt;
     }

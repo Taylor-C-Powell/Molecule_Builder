@@ -32,7 +32,7 @@ export function BillingStatus({ status, onManage }: BillingStatusProps) {
           </Badge>
         </div>
       </div>
-      {status.stripe_customer_id && (
+      {status.has_billing && (
         <Button variant="secondary" size="sm" className="mt-4" onClick={onManage}>
           Manage Subscription
         </Button>

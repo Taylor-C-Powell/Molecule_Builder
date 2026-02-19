@@ -23,6 +23,13 @@ class TestBillingStatus:
         assert resp.status_code == 200
         assert "email" in resp.json()
 
+    def test_status_has_billing_false_for_free_user(self, client, auth_headers):
+        """Free users without Stripe accounts have has_billing=False."""
+        resp = client.get("/api/v1/billing/status", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["has_billing"] is False
+
 
 class TestCheckout:
     def test_checkout_requires_auth(self, client):

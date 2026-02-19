@@ -22,6 +22,13 @@ class CheckoutResponse(BaseModel):
     checkout_url: str = Field(..., description="Stripe Checkout URL to redirect user")
 
 
+class PortalRequest(BaseModel):
+    return_url: str = Field(
+        "https://www.molbuilder.io/account",
+        description="URL to return to after managing subscription",
+    )
+
+
 class PortalResponse(BaseModel):
     portal_url: str = Field(..., description="Stripe Customer Portal URL")
 
@@ -31,6 +38,9 @@ class BillingStatus(BaseModel):
     tier: str
     subscription_status: str = Field(
         ..., description="none, active, past_due, or canceled"
+    )
+    has_billing: bool = Field(
+        False, description="Whether user has a Stripe billing account"
     )
     stripe_customer_id: str | None = None
     stripe_subscription_id: str | None = None

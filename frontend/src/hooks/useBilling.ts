@@ -39,7 +39,10 @@ export function useBilling() {
 
   const openPortal = useCallback(async () => {
     await useAuthStore.getState().getValidToken();
-    const res = await createPortalSessionApi(client);
+    const res = await createPortalSessionApi(
+      client,
+      `${window.location.origin}/account`,
+    );
     window.location.href = res.portal_url;
   }, [client]);
 

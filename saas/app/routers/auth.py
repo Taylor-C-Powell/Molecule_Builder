@@ -78,6 +78,8 @@ def get_token(body: TokenRequest, request: Request):
     return TokenResponse(
         access_token=token,
         expires_in=settings.jwt_expiry_minutes * 60,
+        email=record.email,
+        tier=record.tier.value,
     )
 
 

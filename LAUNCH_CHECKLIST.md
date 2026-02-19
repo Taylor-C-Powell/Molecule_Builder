@@ -58,17 +58,17 @@ Derived from MolBuilder_GTM_Strategy.md. Track progress by checking items as com
 - [x] 88 SaaS API tests passing (2026-02-10)
 
 ### Web Frontend
-- [ ] React project scaffold
-- [ ] SMILES input component with validation
-- [ ] 3D molecule viewer (Three.js or 3Dmol.js)
-- [ ] Properties display panel
-- [ ] Retrosynthesis tree visualization
-- [ ] User account and billing pages
+- [x] React project scaffold (Vite + React 19 + TypeScript + Tailwind CSS 4, 2026-02-18)
+- [x] SMILES input component with validation (2026-02-18)
+- [x] 3D molecule viewer (3Dmol.js, 2026-02-18)
+- [x] Properties display panel (2026-02-18)
+- [x] Retrosynthesis tree visualization (2026-02-18)
+- [x] User account and billing pages (2026-02-18)
 
 ### Billing
 - [ ] Stripe account setup
-- [ ] Free tier: no payment required, rate-limited API key
-- [ ] Pro tier: $49/month or $490/year via Stripe Checkout
+- [x] Free tier: no payment required, rate-limited API key (code-complete, 2026-02-18)
+- [x] Pro tier: $49/month or $490/year via Stripe Checkout (code-complete, 2026-02-18)
 - [ ] Team tier: $199/month per seat via Stripe Billing
 - [ ] Academic verification: email domain check (.edu, .ac.uk, etc.)
 
