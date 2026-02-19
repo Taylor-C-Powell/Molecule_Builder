@@ -220,14 +220,18 @@ class TestBracketAtomRoundTrip(unittest.TestCase):
         self.assertEqual(n_atoms[0].formal_charge, 1)
 
     def test_negative_charge_round_trip(self):
-        """[O-] should round-trip preserving negative charge."""
+        """[O-] is a bare oxide ion: 1 atom, no implicit H per OpenSMILES."""
         mol = parse("[O-]")
+        self.assertEqual(len(mol.atoms), 1)
+        self.assertEqual(mol.atoms[0].formal_charge, -1)
         smi = to_smiles(mol)
         self.assertIn("-", smi)
 
     def test_isotope_round_trip(self):
-        """[13C] should round-trip preserving isotope number."""
+        """[13C] is a bare carbon-13: 1 atom, no implicit H per OpenSMILES."""
         mol = parse("[13C]")
+        self.assertEqual(len(mol.atoms), 1)
+        self.assertEqual(mol.atoms[0].isotope, 13)
         smi = to_smiles(mol)
         self.assertIn("13", smi)
         mol2 = parse(smi)

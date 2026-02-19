@@ -100,8 +100,9 @@ def _build_graph(tokens: list[Token]) -> tuple[list[_AtomInfo], list[_BondInfo]]
             idx = len(atoms)
             is_bracket = (tok.hcount is not None or tok.charge != 0
                           or tok.isotope is not None
-                          or tok.value not in ORGANIC_SUBSET
-                          and tok.value not in AROMATIC_ATOMS)
+                          or tok.chirality is not None
+                          or (tok.value not in ORGANIC_SUBSET
+                              and tok.value not in AROMATIC_ATOMS))
             # Canonical symbol: aromatic lowercase -> titlecase for storage
             symbol = tok.value
             if tok.aromatic and symbol.islower():
@@ -207,9 +208,10 @@ def _add_implicit_hydrogens(
         atom = atoms[ai]
         ev = _explicit_valence(ai, bonds)
 
-        # Bracket atom with explicit H count
-        if atom.bracket and atom.hcount is not None:
-            n_h = atom.hcount
+        # Bracket atom: use explicit H count, or 0 if none specified
+        # (per OpenSMILES spec, bracket atoms with no H get zero implicit H)
+        if atom.bracket:
+            n_h = atom.hcount if atom.hcount is not None else 0
         else:
             # Look up default valence for organic subset atoms.
             # Aromatic atoms use the same valence table after
@@ -487,5 +489,9 @@ def parse(smiles: str) -> Molecule:
 
     # Assign 3D coordinates via BFS
     _assign_3d_coordinates(mol)
+
+    # Correct ring geometry (planar aromatic rings, chair cyclohexane, etc.)
+    from molbuilder.smiles.ring_geometry import correct_ring_geometry
+    correct_ring_geometry(mol)
 
     return mol

@@ -115,11 +115,12 @@ def _estimate_reaction_time(template: ReactionTemplate, scale_kg: float) -> floa
     _, yield_hi = template.typical_yield
     base_hours = 0.5 + (yield_hi / 100.0) * 2.0  # higher yield -> longer time
 
-    # Temperature effect: cryogenic reactions are faster but need hold time
+    # Temperature effect: cryogenic reactions need cool-down, slow addition,
+    # and warm-up time (Arrhenius: lower T -> slower kinetics)
     mean_t = (template.temperature_range[0] + template.temperature_range[1]) / 2.0
     if mean_t < -40:
-        base_hours *= 0.5   # fast at cryo, but add hold time
-        base_hours += 0.5
+        base_hours *= 1.5   # slower kinetics + thermal management overhead
+        base_hours += 1.0   # cool-down and warm-up time
     elif mean_t > 120:
         base_hours *= 0.7   # faster at high temp
 
@@ -229,10 +230,13 @@ def optimize_conditions(
         pressure = 3.0
     if template.category == ReactionCategory.REDUCTION:
         # Check for hydrogenation reagents
-        h2_reagents = {"h2_pd_c", "pd_c_10", "lindlar"}
+        h2_autoclave = {"h2_pd_c", "pd_c_10"}   # standard Pd/C: 3-5 atm
+        h2_balloon = {"lindlar"}                  # poisoned catalyst: 1 atm
         reagent_keys = {normalize_reagent_name(r) for r in template.reagents}
-        if reagent_keys & h2_reagents:
-            pressure = 4.0  # typical balloon to autoclave
+        if reagent_keys & h2_autoclave:
+            pressure = 4.0  # typical Parr shaker / autoclave
+        elif reagent_keys & h2_balloon:
+            pressure = 1.0  # balloon pressure for selective semi-reduction
 
     notes_parts: list[str] = []
     if scale_kg > 100:

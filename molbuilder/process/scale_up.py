@@ -90,9 +90,10 @@ def _estimate_cycle_time(steps: list[Any]) -> float:
         _, yield_hi = template.typical_yield
         rxn_hours = 1.0 + (100.0 - yield_hi) * 0.04
 
-        # Temperature correction
+        # Temperature correction: cryogenic requires cool-down, slow
+        # addition, and warm-up (Arrhenius: lower T -> slower kinetics)
         if mean_t < -20:
-            rxn_hours *= 0.8
+            rxn_hours *= 1.8
         elif mean_t > 120:
             rxn_hours *= 0.6
 

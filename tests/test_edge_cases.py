@@ -591,16 +591,14 @@ class TestVSEPRAnglesValidation(unittest.TestCase):
             self.assertAlmostEqual(a, 180.0, delta=2.0)
 
     def test_h2o_bent_angle(self):
-        """H2O bent angle: VSEPR model uses tetrahedral electron geometry,
-        so the computed bond angle is ~109.5 deg (ideal), not the
-        experimental 104.5 deg.  This validates the model is consistent."""
+        """H2O bent angle: VSEPR predicts ~104.5 deg for AX2E2 (bent).
+        Lone pairs compress the bond angle below the ideal tetrahedral."""
         from molbuilder.bonding.vsepr import VSEPRMolecule
         mol = VSEPRMolecule("H2O")
         angles = mol.computed_bond_angles()
         self.assertTrue(len(angles) > 0, "No angles computed for H2O")
         for a in angles:
-            # VSEPR places all electron groups at tetrahedral positions
-            self.assertAlmostEqual(a, 109.5, delta=2.0)
+            self.assertAlmostEqual(a, 104.5, delta=3.0)
 
 
 # ===================================================================

@@ -162,7 +162,9 @@ def build_cyclohexane(
         else:
             ax_dir = -up
 
-        eq_dir = normalize(radial + ax_dir * 0.2)
+        # Equatorial H: tetrahedral angle (~109.5 deg) from axial direction,
+        # projected outward.  Weight chosen so H-C-H ~ 107 deg.
+        eq_dir = normalize(radial + ax_dir * (-0.33))
 
         # Axial hydrogen
         h_ax_pos = c_pos + CH * normalize(ax_dir)

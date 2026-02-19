@@ -951,7 +951,7 @@ _t(
 _t(
     name="Claisen rearrangement",
     named_reaction="Claisen rearrangement",
-    category=ReactionCategory.CARBONYL,
+    category=ReactionCategory.REARRANGEMENT,
     reagents=[],
     solvents=["toluene", "decalin", "neat"],
     temperature_range=(150.0, 250.0),
@@ -966,7 +966,7 @@ _t(
 _t(
     name="Diels-Alder reaction",
     named_reaction="Diels-Alder",
-    category=ReactionCategory.CARBONYL,
+    category=ReactionCategory.PERICYCLIC,
     reagents=["diene", "dienophile"],
     solvents=["toluene", "DCM", "neat"],
     temperature_range=(25.0, 200.0),
@@ -981,7 +981,7 @@ _t(
 _t(
     name="Beckmann rearrangement",
     named_reaction="Beckmann rearrangement",
-    category=ReactionCategory.CARBONYL,
+    category=ReactionCategory.REARRANGEMENT,
     reagents=["hydroxylamine (to form oxime)", "H2SO4 (or PCl5, SOCl2)"],
     solvents=["AcOH", "DCM"],
     temperature_range=(25.0, 130.0),
@@ -1054,20 +1054,9 @@ _t(
     reverse_transform="Disconnect the cyclohexenone ring into a 1,5-diketone, then further into the ketone + MVK.",
 )
 
-_t(
-    name="Baeyer-Villiger oxidation (carbonyl section)",
-    named_reaction="Baeyer-Villiger oxidation",
-    category=ReactionCategory.CARBONYL,
-    reagents=["mCPBA"],
-    solvents=["DCM"],
-    temperature_range=(0.0, 40.0),
-    typical_yield=(60.0, 90.0),
-    functional_group_required=["ketone"],
-    functional_group_produced=["ester"],
-    functional_group_incompatible=["primary_amine"],
-    mechanism="Peracid attacks the ketone; Criegee intermediate undergoes 1,2-alkyl migration (migratory aptitude: tert > sec > aryl > pri > methyl) to insert oxygen.",
-    reverse_transform="Disconnect the ester oxygen; recombine as ketone.",
-)
+
+# Baeyer-Villiger duplicate removed: the canonical entry under OXIDATION
+# (line ~514) is the correct categorization.
 
 # -----------------------------------------------------------------
 #  PROTECTION  (~8)

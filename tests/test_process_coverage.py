@@ -392,11 +392,16 @@ class TestConditionsScaleEffects:
         cond = optimize_conditions(t, scale_kg=1.0)
         assert cond.pressure_atm == 3.0
 
-    def test_hydrogenation_sets_pressure_4_atm(self):
-        # "Lindlar" normalizes to "lindlar" which is in h2_reagents set
-        t = _make_template(ReactionCategory.REDUCTION, reagents=["Lindlar"])
+    def test_pd_c_hydrogenation_sets_pressure_4_atm(self):
+        t = _make_template(ReactionCategory.REDUCTION, reagents=["H2 Pd C"])
         cond = optimize_conditions(t, scale_kg=1.0)
         assert cond.pressure_atm == 4.0
+
+    def test_lindlar_hydrogenation_sets_pressure_1_atm(self):
+        # Lindlar catalyst: poisoned Pd, balloon pressure (1 atm)
+        t = _make_template(ReactionCategory.REDUCTION, reagents=["Lindlar"])
+        cond = optimize_conditions(t, scale_kg=1.0)
+        assert cond.pressure_atm == 1.0
 
     def test_normal_conditions_pressure_1_atm(self):
         t = _make_template(ReactionCategory.SUBSTITUTION)
@@ -702,7 +707,7 @@ class TestScaleUpModes:
 
     # -- Cycle time --
 
-    def test_cycle_time_cryogenic_faster(self):
+    def test_cycle_time_cryogenic_slower(self):
         cryo = _make_template(
             ReactionCategory.SUBSTITUTION, temperature_range=(-78, -60)
         )
@@ -711,7 +716,7 @@ class TestScaleUpModes:
         )
         ct_cryo = _estimate_cycle_time([_MockStep(cryo)])
         ct_normal = _estimate_cycle_time([_MockStep(normal)])
-        assert ct_cryo < ct_normal
+        assert ct_cryo > ct_normal
 
     def test_cycle_time_high_temp_faster(self):
         hot = _make_template(

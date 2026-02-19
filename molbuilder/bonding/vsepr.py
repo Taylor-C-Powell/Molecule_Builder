@@ -200,6 +200,39 @@ def _assign_positions(steric_number: int, num_lone_pairs: int):
     bonding_dirs = [all_dirs[i] for i in range(len(all_dirs)) if i not in lp_indices]
     lone_pair_dirs = [all_dirs[i] for i in lp_indices]
 
+    # Apply lone-pair compression: when lone pairs are present, bonding
+    # groups are pushed closer together.  Use the ideal bond angles from
+    # MOLECULAR_GEOMETRY to compute the compression.
+    if num_lone_pairs > 0 and len(bonding_dirs) >= 2:
+        key = (steric_number, num_lone_pairs)
+        if key in MOLECULAR_GEOMETRY:
+            target_angle_deg = MOLECULAR_GEOMETRY[key][1][0]
+            # Current angle between first two bonding directions
+            d0 = bonding_dirs[0] / np.linalg.norm(bonding_dirs[0])
+            d1 = bonding_dirs[1] / np.linalg.norm(bonding_dirs[1])
+            cos_current = float(np.clip(np.dot(d0, d1), -1.0, 1.0))
+            current_angle = math.degrees(math.acos(cos_current))
+            if abs(current_angle - target_angle_deg) > 0.5:
+                # Centroid of bonding directions
+                centroid = sum(bonding_dirs) / len(bonding_dirs)
+                c_norm = np.linalg.norm(centroid)
+                if c_norm > 1e-8:
+                    centroid = centroid / c_norm
+                    # Iteratively scale compression toward centroid
+                    half_target = math.radians(target_angle_deg / 2.0)
+                    half_current = math.radians(current_angle / 2.0)
+                    # Blend factor: how much to move toward centroid
+                    # sin(half_target)/sin(half_current) gives the
+                    # ratio needed, but a simple slerp-like blend works
+                    t = 1.0 - math.sin(half_target) / max(math.sin(half_current), 1e-8)
+                    t = max(0.0, min(t, 0.5))
+                    compressed = []
+                    for d in bonding_dirs:
+                        blended = d * (1.0 - t) + centroid * t
+                        blended = blended / np.linalg.norm(blended)
+                        compressed.append(blended)
+                    bonding_dirs = compressed
+
     return bonding_dirs, lone_pair_dirs
 
 
