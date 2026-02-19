@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export function Footer() {
   return (
     <footer className="border-t border-border py-8 mt-auto">
@@ -30,6 +32,12 @@ export function Footer() {
           >
             GitHub
           </a>
+          <Link to="/terms" className="text-sm text-text-muted hover:text-text-secondary transition-colors">
+            Terms
+          </Link>
+          <Link to="/privacy" className="text-sm text-text-muted hover:text-text-secondary transition-colors">
+            Privacy
+          </Link>
         </div>
       </div>
     </footer>

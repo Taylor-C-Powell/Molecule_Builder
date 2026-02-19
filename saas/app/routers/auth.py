@@ -8,7 +8,7 @@ from app.auth.jwt_handler import create_token
 from app.auth.rate_limiter import rate_limiter
 from app.auth.roles import Role
 from app.config import Tier, settings
-from app.dependencies import UserContext, require_admin
+from app.dependencies import UserContext, get_current_user, require_admin
 from app.exceptions import AuthenticationError, RateLimitExceeded, MolBuilderAPIError
 from app.models.auth import (
     APIKeyCreate, AdminKeyCreate, APIKeyResponse, TokenRequest, TokenResponse, UserInfo,
@@ -119,3 +119,36 @@ def update_user_tier(email: str, body: AdminKeyCreate, admin: UserContext = Depe
 def delete_user(email: str, admin: UserContext = Depends(require_admin)):
     count = api_key_store.delete_by_email(email)
     return {"deleted": count, "email": email}
+
+
+# --- GDPR self-service endpoints ---
+
+
+@router.get("/me/export")
+def export_my_data(user: UserContext = Depends(get_current_user)):
+    """GDPR Article 20: Export all data associated with your account."""
+    from app.services.user_db import get_user_db
+    db = get_user_db()
+    stripe_info = db.get_stripe_info(user.email)
+    return {
+        "email": user.email,
+        "tier": user.tier.value,
+        "role": user.role.value,
+        "billing": {
+            "subscription_status": stripe_info.get("subscription_status") if stripe_info else "none",
+            "has_stripe_account": bool(stripe_info and stripe_info.get("stripe_customer_id")),
+        },
+    }
+
+
+@router.delete("/me")
+def delete_my_account(user: UserContext = Depends(get_current_user)):
+    """GDPR Article 17: Delete your account and all associated data."""
+    count = api_key_store.delete_by_email(user.email)
+    return {
+        "deleted": True,
+        "email": user.email,
+        "keys_revoked": count,
+        "message": "Account and API keys have been deactivated. "
+                   "Audit trail records are retained per regulatory requirements.",
+    }

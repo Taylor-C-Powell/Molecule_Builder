@@ -10,6 +10,8 @@ const ProcessPage = lazy(() => import("./pages/ProcessPage"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
+const TermsPage = lazy(() => import("./pages/TermsPage"));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 
 function PageLoader() {
   return (
@@ -26,6 +28,8 @@ export function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/register" element={<Layout><RegisterPage /></Layout>} />
         <Route path="/login" element={<Layout><LoginPage /></Layout>} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route
           path="/dashboard"
           element={

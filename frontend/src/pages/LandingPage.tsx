@@ -126,10 +126,10 @@ export function LandingPage() {
         <div className="absolute top-[-40%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse,var(--color-accent-glow)_0%,transparent_70%)] pointer-events-none" />
         <div className="max-w-[1100px] mx-auto px-6 relative">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight mb-5">
-            Molecular Engineering Platform
+            From Molecule to Manufacturing
           </h1>
           <p className="text-lg md:text-xl text-text-secondary max-w-[600px] mx-auto mb-10">
-            Parse SMILES strings, visualize molecules in 3D, plan retrosynthesis routes, and evaluate manufacturing processes.
+            The API for computational chemistry. Plan retrosynthesis routes, estimate costs, assess safety, and size reactors &mdash; all from a single SMILES string.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             {isAuthenticated ? (

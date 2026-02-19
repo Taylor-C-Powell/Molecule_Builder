@@ -53,12 +53,17 @@ class Settings(BaseSettings):
     admin_bootstrap_email: str = ""
 
     # Allowed hosts for Stripe checkout redirect URLs
-    allowed_redirect_hosts: str = "www.molbuilder.io,molbuilder.io,localhost,molecule-builder-one.vercel.app,molbuilder-frontend.vercel.app,app.molbuilder.io"
+    allowed_redirect_hosts: str = "www.molbuilder.io,molbuilder.io,localhost,molecule-builder-one.vercel.app,molbuilder-frontend.vercel.app,app.molbuilder.io,molbuilder.studio,www.molbuilder.studio"
 
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_pro_monthly_price_id: str = ""
     stripe_pro_yearly_price_id: str = ""
+
+    # Sentry error monitoring (set SENTRY_DSN in environment)
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.1
+    sentry_environment: str = "production"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

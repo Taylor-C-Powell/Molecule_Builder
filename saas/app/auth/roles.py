@@ -20,11 +20,21 @@ _ADMIN_ONLY_PREFIXES = (
     "/api/v1/auth/users",
 )
 
+# Self-service paths: any authenticated user, any method
+_SELF_SERVICE_PREFIXES = (
+    "/api/v1/auth/me",
+)
+
 
 def check_permission(role: Role, method: str, path: str) -> bool:
     """Return True if the given role is allowed to perform method on path."""
     if role == Role.ADMIN:
         return True
+
+    # Self-service endpoints are open to all authenticated users
+    for prefix in _SELF_SERVICE_PREFIXES:
+        if path.startswith(prefix):
+            return True
 
     # Admin-only paths
     for prefix in _ADMIN_ONLY_PREFIXES:

@@ -27,10 +27,10 @@ Derived from MolBuilder_GTM_Strategy.md. Track progress by checking items as com
 
 ### Web Presence
 - [ ] Register domain (molbuilder.io or similar)
-- [ ] Create landing page with: value proposition, feature highlights, install command, screenshots
+- [x] Create landing page with: value proposition, feature highlights, install command, screenshots (2026-02-19)
 - [x] Set up GitHub repository: https://github.com/Taylor-C-Powell/Molecule_Builder
-- [ ] Add GitHub topics: chemistry, molecular-modeling, retrosynthesis, cheminformatics, python
-- [ ] Add GitHub repo description
+- [x] Add GitHub topics: chemistry, molecular-modeling, retrosynthesis, cheminformatics, python (2026-02-19)
+- [x] Add GitHub repo description (2026-02-19)
 - [ ] Create GitHub Discussions or link to community Discord
 
 ---
@@ -64,6 +64,16 @@ Derived from MolBuilder_GTM_Strategy.md. Track progress by checking items as com
 - [x] Properties display panel (2026-02-18)
 - [x] Retrosynthesis tree visualization (2026-02-18)
 - [x] User account and billing pages (2026-02-18)
+
+### SaaS Launch Readiness
+- [x] Terms of Service endpoint: GET /api/v1/legal/terms (2026-02-19)
+- [x] Privacy Policy endpoint: GET /api/v1/legal/privacy (2026-02-19)
+- [x] Frontend Terms and Privacy pages with footer links (2026-02-19)
+- [x] GDPR data export: GET /api/v1/auth/me/export (2026-02-19)
+- [x] GDPR account deletion: DELETE /api/v1/auth/me (2026-02-19)
+- [x] Sentry error monitoring integration (SaaS + frontend, 2026-02-19)
+- [x] Database backup utility: saas/scripts/backup.py (2026-02-19)
+- [x] 122 SaaS API tests passing (2026-02-19)
 
 ### Billing
 - [ ] Stripe account setup

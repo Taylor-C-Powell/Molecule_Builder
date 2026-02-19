@@ -15,7 +15,7 @@ from app.exceptions import register_exception_handlers
 from app.middleware import UsageTrackingMiddleware
 from app.middleware_versioning import VersioningMiddleware
 from app.models.common import HealthResponse
-from app.routers import auth, billing, molecule, retrosynthesis, process, elements, analytics, audit, version
+from app.routers import auth, billing, legal, molecule, retrosynthesis, process, elements, analytics, audit, version
 
 logger = logging.getLogger("molbuilder.startup")
 
@@ -40,6 +40,21 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.config import settings as _cfg
+
+    # --- Sentry initialization ---
+    if _cfg.sentry_dsn:
+        try:
+            import sentry_sdk
+            sentry_sdk.init(
+                dsn=_cfg.sentry_dsn,
+                traces_sample_rate=_cfg.sentry_traces_sample_rate,
+                environment=_cfg.sentry_environment,
+                release=f"molbuilder-api@{app.version}",
+                send_default_pii=False,
+            )
+            logger.info("Sentry error monitoring initialized")
+        except ImportError:
+            logger.warning("sentry-sdk not installed, skipping error monitoring")
 
     # --- JWT secret validation ---
     import os
@@ -162,6 +177,7 @@ register_exception_handlers(app)
 
 app.include_router(auth.router)
 app.include_router(billing.router)
+app.include_router(legal.router)
 app.include_router(molecule.router)
 app.include_router(retrosynthesis.router)
 app.include_router(process.router)
