@@ -638,7 +638,7 @@ def score_disconnection(
     cc_keywords = ("coupling", "grignard", "aldol", "wittig", "suzuki",
                    "heck", "sonogashira", "stille", "negishi",
                    "horner", "claisen condensation", "michael",
-                   "robinson")
+                   "robinson", "traube", "methylation")
     name_lower = template.name.lower()
     named_lower = (template.named_reaction or "").lower()
     if any(kw in name_lower or kw in named_lower for kw in cc_keywords):
@@ -653,6 +653,7 @@ def score_disconnection(
     category_bonus = {
         ReactionCategory.COUPLING: 10.0,
         ReactionCategory.CARBONYL: 8.0,
+        ReactionCategory.PERICYCLIC: 7.0,
         ReactionCategory.ADDITION: 6.0,
         ReactionCategory.SUBSTITUTION: 5.0,
         ReactionCategory.REDUCTION: 4.0,
@@ -738,8 +739,54 @@ def _generate_precursors_for_template(
             ))
         return precursors
 
+    # PERICYCLIC (heterocyclic ring formation): look up purchasable
+    # precursors directly, since ring-forming reactions have well-
+    # defined starting materials that are hard to generate by
+    # graph-manipulation heuristics.
+    if cat == ReactionCategory.PERICYCLIC:
+        # Try purchasable-database lookup for known precursors
+        for smi, (name, cost) in PURCHASABLE_MATERIALS.items():
+            p_heavy = _heavy_atom_count_from_smiles(smi)
+            if p_heavy <= 0:
+                continue
+            # Precursor should be simpler than target but not trivially
+            # small (at least 40% of target heavy atoms).
+            t_heavy = _count_heavy_atoms(target_mol)
+            ratio = p_heavy / t_heavy if t_heavy > 0 else 0
+            if 0.4 <= ratio < 1.0:
+                precursors.append(Precursor(
+                    smiles=smi, molecule=None,
+                    name=name, cost_per_kg=cost,
+                ))
+            if len(precursors) >= 3:
+                break
+        # Also add reagents as precursors
+        for reagent in template.reagents:
+            rp = _reagent_to_precursor(reagent)
+            if rp is not None:
+                precursors.append(rp)
+        return precursors
+
     # SUBSTITUTION: replace the produced FG with the required one
     if cat == ReactionCategory.SUBSTITUTION:
+        # Special case: N-methylation retro-transform (demethylation)
+        if "methylation" in template.name.lower():
+            demeth = _methylation_retro(target_smiles, target_mol)
+            if demeth:
+                known = get_purchasable(demeth)
+                if known is not None:
+                    precursors.append(known)
+                else:
+                    precursors.append(Precursor(
+                        smiles=demeth, molecule=None,
+                        name=f"demethylated precursor ({template.name})",
+                        cost_per_kg=_estimate_cost(demeth),
+                    ))
+                # Add methyl iodide as reagent
+                if is_purchasable("CI"):
+                    precursors.append(get_purchasable("CI"))
+                return precursors
+
         precursor_smi = _substitute_fg(
             target_smiles, target_mol, fg, template)
         if precursor_smi:
@@ -1068,6 +1115,77 @@ def _substitute_fg(
         candidate = target_smiles.replace("O", "Br", 1)
         return _validate_smiles_transform(target_smiles, candidate)
     return None
+
+
+def _methylation_retro(
+    target_smiles: str,
+    target_mol: Molecule,
+) -> str | None:
+    """Generate the demethylated precursor for N-methylation retro-transforms.
+
+    Finds an N-CH3 (nitrogen bonded to a methyl carbon) in the molecule
+    and replaces N(C) with N or n(C) with n[nH] to produce the N-H
+    precursor.  Tries each N-Me site and returns the first result that
+    is purchasable; if none is purchasable, returns the first valid one.
+    """
+    candidates: list[str] = []
+
+    # Strategy: graph-based approach.  Find N atoms bonded to a
+    # terminal C (CH3 = carbon with only one heavy-atom neighbour).
+    for n_idx, atom in enumerate(target_mol.atoms):
+        if atom.symbol != "N":
+            continue
+        for nb in target_mol.neighbors(n_idx):
+            if target_mol.atoms[nb].symbol != "C":
+                continue
+            # Check if this C is a methyl group (only one heavy neighbour)
+            heavy_nbrs = [
+                x for x in target_mol.neighbors(nb)
+                if target_mol.atoms[x].symbol != "H"
+            ]
+            if len(heavy_nbrs) != 1:
+                continue  # Not a terminal methyl
+
+            # Build the demethylated molecule: remove the methyl C
+            # and cap the N with H (implicit).
+            sub = Molecule(name="demethylated")
+            old_to_new: dict[int, int] = {}
+            removed = {nb}
+            # Also remove explicit H on the methyl C
+            for h_nb in target_mol.neighbors(nb):
+                if target_mol.atoms[h_nb].symbol == "H":
+                    removed.add(h_nb)
+
+            for old_idx, a in enumerate(target_mol.atoms):
+                if old_idx in removed:
+                    continue
+                if a.symbol == "H":
+                    # Skip H atoms -- let SMILES writer add them implicitly
+                    continue
+                new_idx = sub.add_atom(a.symbol, a.position.copy(),
+                                       a.hybridization)
+                old_to_new[old_idx] = new_idx
+
+            for bond in target_mol.bonds:
+                if bond.atom_i in old_to_new and bond.atom_j in old_to_new:
+                    ni = old_to_new[bond.atom_i]
+                    nj = old_to_new[bond.atom_j]
+                    if sub.get_bond(ni, nj) is None:
+                        sub.add_bond(ni, nj, order=bond.order,
+                                     rotatable=bond.rotatable)
+
+            try:
+                demeth_smi = to_smiles(sub)
+                if demeth_smi and demeth_smi != target_smiles:
+                    candidates.append(demeth_smi)
+            except Exception:
+                continue
+
+    # Prefer purchasable candidates
+    for c in candidates:
+        if is_purchasable(c):
+            return c
+    return candidates[0] if candidates else None
 
 
 def _add_across_double_bond(

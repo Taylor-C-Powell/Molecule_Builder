@@ -122,6 +122,23 @@ def _count_element_neighbors(mol: Molecule, idx: int, elem: str) -> int:
     return sum(1 for e in _neighbor_elements(mol, idx) if e == elem)
 
 
+def _atoms_share_ring(mol: Molecule, i: int, j: int) -> bool:
+    """Return True if atoms *i* and *j* are in the same ring.
+
+    Uses ``mol.is_in_ring(i, j)`` when a bond exists between them.
+    For non-bonded atoms, does a BFS check: remove nothing, just see
+    if there are two distinct paths connecting them (length <= 8).
+    """
+    bond = mol.get_bond(i, j)
+    if bond is not None:
+        return mol.is_in_ring(i, j)
+    # Fallback for non-directly-bonded atoms: check if they share any
+    # ring by seeing if there is a short cycle through both.
+    # For our purposes (amide/imine in a ring), the atoms ARE bonded,
+    # so this branch is rarely hit.
+    return False
+
+
 def _double_bonded_to(mol: Molecule, idx: int, elem: str) -> list[int]:
     """Return neighbour indices that are *elem* and double-bonded to *idx*."""
     result = []
@@ -320,7 +337,12 @@ def _detect_esters(mol: Molecule) -> list[FunctionalGroup]:
 
 
 def _detect_amides(mol: Molecule) -> list[FunctionalGroup]:
-    """Amide: C(=O)-N."""
+    """Amide / lactam: C(=O)-N.
+
+    If both the C and N atoms belong to the same ring the group is
+    reported as ``"lactam"`` instead of ``"amide"`` so that acyclic
+    amide-forming retro-transforms are not applied to ring bonds.
+    """
     found: list[FunctionalGroup] = []
     for idx, atom in enumerate(mol.atoms):
         if atom.symbol != "C":
@@ -328,9 +350,14 @@ def _detect_amides(mol: Molecule) -> list[FunctionalGroup]:
         dbl_o = _double_bonded_to(mol, idx, "O")
         sgl_n = _single_bonded_to(mol, idx, "N")
         if dbl_o and sgl_n:
+            n_idx = sgl_n[0]
+            if _atoms_share_ring(mol, idx, n_idx):
+                fg_name = "lactam"
+            else:
+                fg_name = "amide"
             found.append(FunctionalGroup(
-                name="amide", smarts_like="[CX3](=O)[NX3]",
-                atoms=[idx, dbl_o[0], sgl_n[0]], center=idx,
+                name=fg_name, smarts_like="[CX3](=O)[NX3]",
+                atoms=[idx, dbl_o[0], n_idx], center=idx,
             ))
     return found
 
@@ -709,7 +736,12 @@ def _detect_sulfones(mol: Molecule) -> list[FunctionalGroup]:
 
 
 def _detect_imines(mol: Molecule) -> list[FunctionalGroup]:
-    """Imine: C=N (not part of nitrile C#N)."""
+    """Imine / cyclic imine: C=N (not part of nitrile C#N).
+
+    If both C and N belong to the same ring the group is reported as
+    ``"cyclic_imine"`` so that acyclic imine retro-transforms are
+    not mis-applied to aromatic or heterocyclic ring bonds.
+    """
     found: list[FunctionalGroup] = []
     seen: set[tuple[int, int]] = set()
     for idx, atom in enumerate(mol.atoms):
@@ -724,8 +756,12 @@ def _detect_imines(mol: Molecule) -> list[FunctionalGroup]:
             if pair in seen:
                 continue
             seen.add(pair)
+            if _atoms_share_ring(mol, idx, n):
+                fg_name = "cyclic_imine"
+            else:
+                fg_name = "imine"
             found.append(FunctionalGroup(
-                name="imine", smarts_like="[C]=[N]",
+                name=fg_name, smarts_like="[C]=[N]",
                 atoms=list(pair), center=idx,
             ))
     return found

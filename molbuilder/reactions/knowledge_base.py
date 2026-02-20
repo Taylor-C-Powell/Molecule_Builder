@@ -3080,6 +3080,87 @@ _t(
 )
 
 
+# -----------------------------------------------------------------
+#  HETEROCYCLIC RING FORMATION / METHYLATION  (~6)
+# -----------------------------------------------------------------
+
+_t(
+    name="N-methylation of theobromine to caffeine",
+    named_reaction="N-methylation",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["CH3I", "K2CO3"],
+    solvents=["DMF", "DMSO"],
+    temperature_range=(60.0, 100.0),
+    typical_yield=(70.0, 90.0),
+    functional_group_required=["lactam"],
+    functional_group_produced=["lactam"],
+    functional_group_incompatible=[],
+    mechanism="Deprotonation of N-H by base generates a nitrogen anion that displaces iodide from methyl iodide in an SN2 fashion.",
+    reverse_transform="Remove N-methyl group; restore N-H (demethylation).",
+)
+
+_t(
+    name="N-methylation of theophylline to caffeine",
+    named_reaction="N-methylation",
+    category=ReactionCategory.SUBSTITUTION,
+    reagents=["CH3I", "K2CO3"],
+    solvents=["DMF", "DMSO"],
+    temperature_range=(60.0, 100.0),
+    typical_yield=(70.0, 90.0),
+    functional_group_required=["lactam"],
+    functional_group_produced=["lactam"],
+    functional_group_incompatible=[],
+    mechanism="Base-mediated N-alkylation of the remaining N-H in the xanthine ring system.",
+    reverse_transform="Remove N-methyl group; restore N-H (demethylation).",
+)
+
+_t(
+    name="Traube purine synthesis (imidazole ring closure)",
+    named_reaction="Traube synthesis",
+    category=ReactionCategory.PERICYCLIC,
+    reagents=["formic acid", "formamide"],
+    solvents=["formamide", "DMF"],
+    temperature_range=(100.0, 200.0),
+    typical_yield=(40.0, 70.0),
+    functional_group_required=["cyclic_imine"],
+    functional_group_produced=["cyclic_imine", "lactam"],
+    functional_group_incompatible=[],
+    mechanism="Cyclisation of a 4,5-diaminopyrimidine with a one-carbon source (formic acid, formamide, or orthoester) to close the imidazole ring of the purine scaffold.",
+    reverse_transform="Open the imidazole ring; generate diaminopyrimidine + formic acid.",
+)
+
+_t(
+    name="Lactam formation (intramolecular amidation)",
+    named_reaction="Lactamisation",
+    category=ReactionCategory.CARBONYL,
+    reagents=[],
+    solvents=["toluene", "xylene", "DMF"],
+    temperature_range=(80.0, 200.0),
+    typical_yield=(50.0, 85.0),
+    functional_group_required=["lactam"],
+    functional_group_produced=["lactam"],
+    functional_group_incompatible=[],
+    mechanism="Intramolecular condensation of an amino acid precursor: the amine nitrogen attacks the carboxylic acid (or activated derivative) to form the cyclic amide with loss of water.",
+    reverse_transform="Open the lactam ring to give the linear amino acid precursor.",
+)
+
+_t(
+    name="Pyrimidine construction from urea + 1,3-dicarbonyl",
+    named_reaction="Pyrimidine synthesis",
+    category=ReactionCategory.PERICYCLIC,
+    reagents=["urea (or substituted urea)", "1,3-dicarbonyl compound"],
+    solvents=["EtOH", "AcOH"],
+    catalysts=["HCl"],
+    temperature_range=(60.0, 150.0),
+    typical_yield=(40.0, 75.0),
+    functional_group_required=["lactam"],
+    functional_group_produced=["lactam", "cyclic_imine"],
+    functional_group_incompatible=[],
+    mechanism="Condensation of urea (or thiourea) with a 1,3-dicarbonyl compound, with double dehydration to form the pyrimidine ring.",
+    reverse_transform="Open the pyrimidine ring; generate urea + 1,3-dicarbonyl precursor.",
+)
+
+
 # =====================================================================
 #  Lookup helpers
 # =====================================================================
