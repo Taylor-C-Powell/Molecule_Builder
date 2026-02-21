@@ -388,6 +388,25 @@ class ForceField:
         )
         return cls(params)
 
+    @classmethod
+    def from_molecule_ideal(cls, mol: Molecule) -> ForceField:
+        """Auto-parameterize using ideal equilibrium angles from hybridization.
+
+        Unlike ``from_molecule()`` which reads ``angle_theta0`` from the
+        current (possibly wrong) geometry, this classmethod uses ideal angles
+        based on the atom's hybridization state:
+
+            - SP3 -> 109.47 deg
+            - SP2 -> 120.0 deg
+            - SP  -> 180.0 deg
+
+        This is used by the geometry optimization pipeline to avoid
+        reinforcing bad initial coordinates.
+        """
+        from molbuilder.coords._optimize import _build_ideal_forcefield
+        ff = _build_ideal_forcefield(mol)
+        return ff
+
     def compute(self, positions: np.ndarray) -> ForceResult:
         """Compute forces and energies at the given atomic positions.
 
