@@ -15,7 +15,7 @@ from app.exceptions import register_exception_handlers
 from app.middleware import UsageTrackingMiddleware
 from app.middleware_versioning import VersioningMiddleware
 from app.models.common import HealthResponse
-from app.routers import auth, billing, legal, molecule, retrosynthesis, process, elements, analytics, audit, version
+from app.routers import auth, billing, legal, molecule, retrosynthesis, process, elements, analytics, audit, version, feasibility
 
 logger = logging.getLogger("molbuilder.startup")
 
@@ -185,6 +185,7 @@ app.include_router(elements.router)
 app.include_router(analytics.router)
 app.include_router(audit.router)
 app.include_router(version.router)
+app.include_router(feasibility.router)
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
