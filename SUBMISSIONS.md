@@ -54,7 +54,7 @@ Latest feature: substrate-aware condition prediction. It analyzes steric/electro
 
 The install story is the differentiator: `pip install molbuilder` vs. RDKit's conda/C++ compilation maze. It's not trying to replace RDKit's computational accuracy -- it's solving a different problem: going from "I have a molecule" to "here's how to make it at scale."
 
-1,280+ tests, MIT license, Python 3.11+. Also available as a REST API.
+1,280+ tests, Apache 2.0 license, Python 3.11+. Also available as a REST API.
 
 ---
 
@@ -72,7 +72,7 @@ The install story is the differentiator: `pip install molbuilder` vs. RDKit's co
 
 **PR Body:**
 
-MolBuilder is an open-source (MIT) molecular engineering toolkit in pure Python. It's unique in covering the full pipeline from molecular structure through process engineering:
+MolBuilder is an open-source (Apache 2.0) molecular engineering toolkit in pure Python. It's unique in covering the full pipeline from molecular structure through process engineering:
 
 - SMILES parser/writer with chirality and stereochemistry
 - 91 reaction templates with beam-search retrosynthesis
@@ -99,7 +99,7 @@ GitHub: https://github.com/Taylor-C-Powell/Molecule_Builder
 
 **PR Body:**
 
-Adding MolBuilder, an MIT-licensed Python package for molecular engineering and process chemistry. Key features:
+Adding MolBuilder, an Apache 2.0-licensed Python package for molecular engineering and process chemistry. Key features:
 
 - Pure Python (numpy/scipy/matplotlib only) -- no RDKit or C++ required
 - SMILES parser/writer, 21 functional group detectors
@@ -126,7 +126,7 @@ MolBuilder automates that full pipeline. Give it a SMILES string:
 5. Estimates costs (materials, labor, equipment, energy, waste)
 6. Analyzes scale-up (batch sizing, capital costs, annual capacity)
 
-Pure Python, pip-installable, no RDKit needed. MIT licensed with 1,280+ tests.
+Pure Python, pip-installable, no RDKit needed. Apache 2.0 licensed with 1,280+ tests.
 
 Especially interested in feedback from process development teams at CDMOs and small biotechs -- does this match your workflow needs?
 
@@ -169,6 +169,6 @@ print(result.overall_confidence)  # high
 - Lipinski Ro5, logP, TPSA, pKa prediction
 - File I/O: XYZ, MOL/SDF, PDB, JSON
 
-1,280+ tests, Python 3.11+, numpy/scipy/matplotlib only. MIT licensed.
+1,280+ tests, Python 3.11+, numpy/scipy/matplotlib only. Apache 2.0 licensed.
 
 Jupyter tutorials are in the repo if you want to try it: https://github.com/Taylor-C-Powell/Molecule_Builder/tree/main/tutorials

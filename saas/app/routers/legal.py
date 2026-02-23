@@ -54,7 +54,7 @@ TERMS_OF_SERVICE = {
                 "You retain all rights to molecular structures, SMILES strings, and data you "
                 "submit to the Service. MolBuilder does not claim ownership of your input data "
                 "or the results generated from it. The MolBuilder core library is open source "
-                "under the MIT License. The API service, web dashboard, and studio editor are "
+                "under the Apache License 2.0. The API service, web dashboard, and studio editor are "
                 "proprietary to Materia Foundation."
             ),
         },

@@ -7,14 +7,14 @@ name = "molbuilder-client"
 version = "0.1.1"
 description = "Python SDK for the MolBuilder REST API"
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 requires-python = ">=3.11"
 authors = [{ name = "Wedge Dev Co", email = "taylorp661@gmail.com" }]
 keywords = ["chemistry", "molecule", "smiles", "retrosynthesis", "api-client"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

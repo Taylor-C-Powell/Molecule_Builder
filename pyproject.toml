@@ -7,7 +7,7 @@ name = "molbuilder"
 version = "1.2.0"
 description = "Professional-grade molecular engineering toolkit: atoms to retrosynthesis to process engineering"
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 requires-python = ">=3.11"
 authors = [
     {name = "Taylor C. Powell"},

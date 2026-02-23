@@ -149,6 +149,6 @@ python -m pytest tests/ -q
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+Apache License 2.0. See [LICENSE](LICENSE) for details.
 
-Copyright (c) 2025-2026 Taylor C. Powell.
+Copyright 2025-2026 Taylor C. Powell.
