@@ -112,3 +112,50 @@ class ProcessEvaluateResponse(BaseModel):
     safety: list[SafetyAssessmentResponse] = []
     cost: CostEstimateResponse | None = None
     scale_up: ScaleUpResponse | None = None
+
+
+# -----------------------------------------------------------------
+#  Condition prediction models
+# -----------------------------------------------------------------
+
+class PredictConditionsRequest(BaseModel):
+    smiles: str = Field(..., description="Substrate SMILES")
+    reaction_name: str | None = Field(None, description="Optional reaction type hint")
+    scale_kg: float = Field(1.0, gt=0, description="Production scale in kg")
+    max_candidates: int = Field(5, ge=1, le=20, description="Max ranked results")
+
+
+class SolventScoreResponse(BaseModel):
+    solvent_name: str
+    composite_score: float
+    green_score: int
+    reasons: list[str]
+
+
+class SubstrateAnalysisResponse(BaseModel):
+    detected_functional_groups: list[str]
+    molecular_weight: float
+    heavy_atom_count: int
+    steric_class: str
+    electronic_character: str
+    sensitive_groups: list[str]
+
+
+class TemplateMatchResponse(BaseModel):
+    template_name: str
+    named_reaction: str | None
+    category: str
+    match_score: float
+    match_reasons: list[str]
+    conditions: ConditionsResponse
+    recommended_solvents: list[SolventScoreResponse]
+    adjusted_yield_range: list[float]
+    warnings: list[str]
+
+
+class PredictConditionsResponse(BaseModel):
+    smiles: str
+    substrate_analysis: SubstrateAnalysisResponse
+    candidates: list[TemplateMatchResponse]
+    best_match: TemplateMatchResponse | None
+    overall_confidence: str
