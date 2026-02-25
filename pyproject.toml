@@ -42,7 +42,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-rdkit = ["rdkit-pypi>=2023.9.1"]
+rdkit = ["rdkit>=2024.3.1"]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",

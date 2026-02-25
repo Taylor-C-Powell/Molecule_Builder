@@ -45,7 +45,7 @@ couldn't find in a single open package when I needed it. The highlights:
 - **Substrate-aware condition prediction** (steric/electronic classification)
 - **Process engineering pipeline**: reactor selection, safety assessment, cost
   estimation, scale-up analysis
-- Pure Python -- `pip install molbuilder`, no C++ compilation, no RDKit required
+- Pure Python -- `pip install molbuilder`, no RDKit required
 - 1,280+ tests, Apache 2.0 licensed
 
 I've included Jupyter tutorials that walk through SMILES-to-synthesis and
@@ -97,7 +97,7 @@ Students can pip install immediately. Strong fit for computational labs.
 
 ---
 
-**Subject:** Pure-Python molecular engineering toolkit -- no RDKit compile needed
+**Subject:** Pure-Python molecular engineering toolkit -- retrosynthesis to manufacturing
 
 **Body:**
 

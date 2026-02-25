@@ -58,14 +58,15 @@ scaleup = analyze_scale_up(route.steps, 10000.0)  # Batch sizing, capex, annual 
 
 ## Why not RDKit?
 
+RDKit is a mature, excellent cheminformatics toolkit. MolBuilder is a different tool for a different job.
+
 | | MolBuilder | RDKit |
 |---|---|---|
-| **Install** | `pip install molbuilder` | Requires conda or C++ compilation |
-| **Dependencies** | numpy, scipy, matplotlib | C++ toolchain, Boost, many system libs |
-| **Scope** | Atoms to manufacturing | Cheminformatics only |
+| **Scope** | Atoms to manufacturing | Cheminformatics (descriptors, fingerprints, substructure) |
 | **Process engineering** | Reactor, costing, safety, scale-up | Not available |
-| **Retrosynthesis** | 91 templates, beam search | Not included |
-| **Learning curve** | Pure Python, readable source | C++ bindings, opaque internals |
+| **Retrosynthesis** | 185 templates, beam search | Not included |
+| **Source language** | Pure Python (readable, hackable) | C++ with Python bindings |
+| **Dependencies** | numpy, scipy, matplotlib | Larger compiled package |
 
 MolBuilder is not a replacement for RDKit's computational accuracy. It's a different tool for a different job: **when you need to go from a molecule to a production plan**, not just compute descriptors. If you need RDKit's 3D coordinate generation, MolBuilder can use it as an optional backend: `pip install molbuilder[rdkit]`.
 

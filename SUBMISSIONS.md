@@ -26,7 +26,7 @@ print(result.overall_confidence)            # high
 It analyzes the substrate's steric environment and electronic character, searches 91 reaction templates, scores candidates, and computes optimized conditions for your target scale.
 
 **What makes it different from RDKit:**
-- `pip install molbuilder` -- no conda, no C++ compilation
+- `pip install molbuilder` -- pure Python, no RDKit required
 - Goes beyond cheminformatics into process engineering (reactor sizing, GHS safety, cost estimation, scale-up)
 - 1,280+ tests, pure Python + numpy/scipy/matplotlib
 - 91 reaction templates with retrosynthetic planning
@@ -52,7 +52,7 @@ MolBuilder is a pure-Python molecular engineering toolkit. Give it a molecule as
 
 Latest feature: substrate-aware condition prediction. It analyzes steric/electronic properties of your molecule and ranks compatible reaction templates with optimized conditions.
 
-The install story is the differentiator: `pip install molbuilder` vs. RDKit's conda/C++ compilation maze. It's not trying to replace RDKit's computational accuracy -- it's solving a different problem: going from "I have a molecule" to "here's how to make it at scale."
+The scope is the differentiator: RDKit handles cheminformatics (descriptors, fingerprints, substructure search). MolBuilder covers the downstream pipeline -- retrosynthesis, reactor selection, safety, costing, scale-up. It's not trying to replace RDKit's computational accuracy, it's solving a different problem: going from "I have a molecule" to "here's how to make it at scale."
 
 1,280+ tests, Apache 2.0 license, Python 3.11+. Also available as a REST API.
 
@@ -159,7 +159,7 @@ print(result.best_match.conditions.temperature_C)  # 5.0 C
 print(result.overall_confidence)  # high
 ```
 
-**Why I built it:** RDKit is great for cheminformatics but it's hard to install (conda/C++ compilation) and doesn't cover process engineering. I needed something that could go from "here's a molecule" to "here's how to manufacture it" in pure Python.
+**Why I built it:** RDKit is great for cheminformatics but doesn't cover process engineering. I needed something that could go from "here's a molecule" to "here's how to manufacture it" -- retrosynthesis, reactor selection, safety, costing, and scale-up in one package.
 
 **What it covers:**
 - SMILES parsing with chirality/stereochemistry

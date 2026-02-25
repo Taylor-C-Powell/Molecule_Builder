@@ -1,7 +1,7 @@
 """Optional RDKit backend for high-quality 3D coordinate generation.
 
 Uses RDKit's ETKDG + MMFF94 for superior geometry. Only available when
-rdkit-pypi is installed. Converts MolBuilder topology to RDKit mol
+rdkit is installed. Converts MolBuilder topology to RDKit mol
 via explicit atom/bond construction (not SMILES round-trip) to preserve
 atom ordering.
 """
@@ -41,7 +41,7 @@ def generate_rdkit(mol: Molecule, seed: int = 42) -> None:
     except ImportError:
         raise ImportError(
             "RDKit is required for the 'rdkit' backend. "
-            "Install with: pip install rdkit-pypi"
+            "Install with: pip install rdkit"
         )
 
     rd_mol = Chem.RWMol()

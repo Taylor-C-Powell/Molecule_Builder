@@ -24,18 +24,20 @@ the way.
 
 ## The Problem with "Just Use RDKit"
 
-RDKit is the standard. It's also a C++ library with Python bindings that
-requires compilation or conda. On a fresh Ubuntu box that's fine. On a
-locked-down university computer, a Windows laptop without admin rights, or a
-Jupyter Hub instance with no conda -- it's a wall.
+RDKit is the standard for cheminformatics -- molecular descriptors, fingerprints,
+substructure search, conformer generation. It's excellent at what it does. But it
+doesn't do what I needed: plan a synthesis, pick a reactor, estimate costs, flag
+safety hazards, and analyze scale-up. That pipeline from molecule to manufacturing
+didn't exist in a single open-source package.
 
-I know this because I hit that wall. Multiple times. In different contexts. The
-friction wasn't the chemistry, it was the toolchain.
+I also wanted something where the source code itself was a teaching tool. RDKit is
+a C++ library with Python bindings -- powerful, but you can't walk a student through
+the retrosynthesis scoring function by reading the source. I wanted pure Python
+that a grad student could read, modify, and learn from.
 
 MolBuilder's constraint from day one was: **numpy, scipy, matplotlib, and
-nothing else.** If it runs `pip install`, it works. No compiled extensions, no
-system dependencies, no environment headaches. This constraint shaped every
-technical decision that followed.
+nothing else.** Pure Python, readable source, minimal dependencies. This
+constraint shaped every technical decision that followed.
 
 ## Decision 1: Pure-Python 3D Coordinates
 
