@@ -131,3 +131,47 @@ async def test_async_context_manager(mock_api: respx.Router) -> None:
     async with AsyncMolBuilder(api_key="mb_test") as client:
         result = await client.get_element("H")
         assert result.symbol == "H"
+
+
+async def test_async_library_save(
+    async_client: AsyncMolBuilder, mock_api: respx.Router
+) -> None:
+    mock_api.post("/library/").mock(
+        return_value=httpx.Response(200, json={
+            "id": 1, "smiles": "CCO", "name": "ethanol", "tags": [],
+            "notes": None, "properties": {}, "created_at": "2026-01-01T00:00:00",
+            "updated_at": "2026-01-01T00:00:00",
+        })
+    )
+    from molbuilder_client import LibraryMolecule
+    result = await async_client.library_save("CCO", name="ethanol")
+    assert isinstance(result, LibraryMolecule)
+    assert result.id == 1
+
+
+async def test_async_batch_submit(
+    async_client: AsyncMolBuilder, mock_api: respx.Router
+) -> None:
+    mock_api.post("/batch/submit").mock(
+        return_value=httpx.Response(200, json={
+            "job_id": "job_x", "status": "pending", "created_at": "2026-01-01T00:00:00",
+        })
+    )
+    from molbuilder_client import BatchSubmit
+    result = await async_client.batch_submit(["CCO"], "properties")
+    assert isinstance(result, BatchSubmit)
+    assert result.job_id == "job_x"
+
+
+async def test_async_library_list(
+    async_client: AsyncMolBuilder, mock_api: respx.Router
+) -> None:
+    mock_api.get("/library/").mock(
+        return_value=httpx.Response(200, json={
+            "molecules": [], "total": 0, "page": 1, "per_page": 20,
+        })
+    )
+    from molbuilder_client import LibraryList
+    result = await async_client.library_list()
+    assert isinstance(result, LibraryList)
+    assert result.total == 0

@@ -10,6 +10,8 @@ const ProcessPage = lazy(() => import("./pages/ProcessPage"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
+const LibraryPage = lazy(() => import("./pages/LibraryPage"));
+const BatchPage = lazy(() => import("./pages/BatchPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 
@@ -51,6 +53,22 @@ export function App() {
           element={
             <AuthGuard>
               <Layout><ProcessPage /></Layout>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/library"
+          element={
+            <AuthGuard>
+              <Layout><LibraryPage /></Layout>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/batch"
+          element={
+            <AuthGuard>
+              <Layout><BatchPage /></Layout>
             </AuthGuard>
           }
         />

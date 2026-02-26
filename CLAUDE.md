@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MolBuilder is a professional-grade molecular engineering toolkit with five components:
 
-- **`molbuilder/`** -- Core Python library (PyPI: `molbuilder` v1.1.1). Pure Python + numpy/scipy/matplotlib. Optional RDKit backend for 3D coords (`pip install molbuilder[rdkit]`).
+- **`molbuilder/`** -- Core Python library (PyPI: `molbuilder` v1.2.0). Pure Python + numpy/scipy/matplotlib. Optional RDKit backend for 3D coords (`pip install molbuilder[rdkit]`).
 - **`saas/`** -- FastAPI REST API (PyPI: `molbuilder-api`). JWT auth, tiered API keys, RBAC, Stripe billing. Deployed to Railway.
 - **`frontend/`** -- React SPA web dashboard (Vite + TypeScript + Tailwind CSS 4 + 3Dmol.js). Deployed to Vercel.
 - **`studio/`** -- React SPA 3D molecule editor (Vite + TypeScript + Three.js/R3F). Deployed to Vercel.
@@ -34,12 +34,12 @@ cd studio && npm ci
 ## Running Tests
 
 ```bash
-# Core library (1312 tests across 23 files, CI enforces --cov-fail-under=80)
+# Core library (1435 tests across 30 files, CI enforces --cov-fail-under=80)
 python -m pytest tests/ -v
 python -m pytest tests/test_smiles.py -v          # single file
 python -m pytest tests/ --cov=molbuilder --cov-report=term-missing
 
-# SaaS API (131 tests, uses FastAPI TestClient with temp SQLite DBs)
+# SaaS API (151 tests across 18 files, uses FastAPI TestClient with temp SQLite DBs)
 cd saas && python -m pytest tests/ -v
 
 # SDK (uses respx for HTTP mocking, pytest-asyncio with asyncio_mode=auto)
@@ -75,7 +75,7 @@ core/  <-- everything depends on this
   |     +-- io/      (XYZ, MOL/SDF V2000, PDB, JSON)
   +-- coords/      (3D coordinate generation -- DG+FF builtin or RDKit backend)
   +-- dynamics/    (MD engine: force field, Verlet integrator, reaction mechanisms)
-  +-- reactions/   (91 templates, 21 FG detectors, retrosynthesis engine)
+  +-- reactions/   (185 templates, 24 FG detectors, retrosynthesis engine, RetroCast adapter)
   |     +-- process/  (reactor, conditions, costing, safety, scale-up)
   +-- reports/     (ASCII report generators)
   +-- visualization/, gui/, cli/

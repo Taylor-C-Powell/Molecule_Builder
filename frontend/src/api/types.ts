@@ -273,6 +273,89 @@ export interface BillingStatusResponse {
   stripe_subscription_id: string | null;
 }
 
+// ---- Library ----
+export interface LibrarySaveRequest {
+  smiles: string;
+  name?: string | null;
+  tags?: string[];
+  notes?: string | null;
+}
+
+export interface LibraryUpdateRequest {
+  name?: string | null;
+  tags?: string[] | null;
+  notes?: string | null;
+}
+
+export interface LibraryMoleculeResponse {
+  id: number;
+  smiles: string;
+  name: string | null;
+  tags: string[];
+  notes: string | null;
+  properties: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LibraryListResponse {
+  molecules: LibraryMoleculeResponse[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface LibraryImportRequest {
+  smiles_list: string[];
+  tag?: string | null;
+}
+
+export interface LibraryImportResponse {
+  saved: number;
+  duplicates: number;
+  errors: string[];
+}
+
+// ---- Batch ----
+export interface BatchSubmitRequest {
+  smiles_list: string[];
+  job_type: "properties" | "retrosynthesis" | "conditions" | "evaluate";
+  params?: Record<string, unknown> | null;
+}
+
+export interface BatchSubmitResponse {
+  job_id: string;
+  status: string;
+  created_at: string;
+}
+
+export interface BatchStatusResponse {
+  job_id: string;
+  status: string;
+  job_type: string;
+  progress_pct: number;
+  result: Record<string, unknown> | null;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BatchJobSummary {
+  job_id: string;
+  status: string;
+  job_type: string;
+  progress_pct: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BatchListResponse {
+  jobs: BatchJobSummary[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
 // ---- Common ----
 export interface ApiError {
   detail: string;

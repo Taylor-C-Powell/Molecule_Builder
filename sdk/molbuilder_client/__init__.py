@@ -24,6 +24,10 @@ from molbuilder_client._exceptions import (
 from molbuilder_client._models import (
     APIKeyInfo,
     Atom3D,
+    BatchJobSummary,
+    BatchList,
+    BatchStatus,
+    BatchSubmit,
     BestRoute,
     BillingStatus,
     Bond3D,
@@ -34,6 +38,9 @@ from molbuilder_client._models import (
     Disconnection,
     Element,
     Hazard,
+    LibraryImport,
+    LibraryList,
+    LibraryMolecule,
     Molecule3D,
     MoleculeInfo,
     MoleculeProperties,
@@ -90,6 +97,13 @@ __all__ = [
     "ProcessEvaluation",
     "CheckoutSession",
     "BillingStatus",
+    "BatchJobSummary",
+    "BatchList",
+    "BatchStatus",
+    "BatchSubmit",
+    "LibraryImport",
+    "LibraryList",
+    "LibraryMolecule",
 ]
 
 __version__ = "0.1.0"

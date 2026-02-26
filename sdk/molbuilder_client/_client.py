@@ -15,9 +15,15 @@ from molbuilder_client._base import (
 )
 from molbuilder_client._models import (
     APIKeyInfo,
+    BatchList,
+    BatchStatus,
+    BatchSubmit,
     BillingStatus,
     CheckoutSession,
     Element,
+    LibraryImport,
+    LibraryList,
+    LibraryMolecule,
     Molecule3D,
     MoleculeInfo,
     MoleculeProperties,
@@ -78,6 +84,16 @@ class MolBuilder:
 
     def _post(self, path: str, *, json: dict[str, Any] | None = None) -> dict[str, Any]:
         resp = self._client.post(self._url(path), json=json)
+        raise_for_status(resp)
+        return resp.json()
+
+    def _put(self, path: str, *, json: dict[str, Any] | None = None) -> dict[str, Any]:
+        resp = self._client.put(self._url(path), json=json)
+        raise_for_status(resp)
+        return resp.json()
+
+    def _delete(self, path: str) -> dict[str, Any]:
+        resp = self._client.delete(self._url(path))
         raise_for_status(resp)
         return resp.json()
 
@@ -173,3 +189,116 @@ class MolBuilder:
         """Return the current billing / subscription status."""
         data = self._get("billing/status")
         return from_dict(BillingStatus, data)
+
+    # -- Library ---------------------------------------------------------------
+
+    def library_save(
+        self,
+        smiles: str,
+        *,
+        name: str | None = None,
+        tags: list[str] | None = None,
+        notes: str | None = None,
+    ) -> LibraryMolecule:
+        """Save a molecule to the personal library."""
+        payload: dict[str, Any] = {"smiles": smiles}
+        if name is not None:
+            payload["name"] = name
+        if tags is not None:
+            payload["tags"] = tags
+        if notes is not None:
+            payload["notes"] = notes
+        data = self._post("library/", json=payload)
+        return from_dict(LibraryMolecule, data)
+
+    def library_get(self, mol_id: int) -> LibraryMolecule:
+        """Retrieve a single library molecule by ID."""
+        data = self._get(f"library/{mol_id}")
+        return from_dict(LibraryMolecule, data)
+
+    def library_list(
+        self,
+        *,
+        tag: str | None = None,
+        search: str | None = None,
+        page: int = 1,
+        per_page: int = 20,
+    ) -> LibraryList:
+        """List molecules in the personal library."""
+        params: dict[str, Any] = {"page": page, "per_page": per_page}
+        if tag is not None:
+            params["tag"] = tag
+        if search is not None:
+            params["search"] = search
+        data = self._get("library/", params=params)
+        return from_dict(LibraryList, data)
+
+    def library_update(
+        self,
+        mol_id: int,
+        *,
+        name: str | None = None,
+        tags: list[str] | None = None,
+        notes: str | None = None,
+    ) -> LibraryMolecule:
+        """Update metadata on a library molecule."""
+        payload: dict[str, Any] = {}
+        if name is not None:
+            payload["name"] = name
+        if tags is not None:
+            payload["tags"] = tags
+        if notes is not None:
+            payload["notes"] = notes
+        data = self._put(f"library/{mol_id}", json=payload)
+        return from_dict(LibraryMolecule, data)
+
+    def library_delete(self, mol_id: int) -> None:
+        """Delete a molecule from the library."""
+        self._delete(f"library/{mol_id}")
+
+    def library_import(
+        self,
+        smiles_list: list[str],
+        *,
+        tag: str | None = None,
+    ) -> LibraryImport:
+        """Bulk-import SMILES into the library."""
+        payload: dict[str, Any] = {"smiles_list": smiles_list}
+        if tag is not None:
+            payload["tag"] = tag
+        data = self._post("library/import", json=payload)
+        return from_dict(LibraryImport, data)
+
+    # -- Batch -----------------------------------------------------------------
+
+    def batch_submit(
+        self,
+        smiles_list: list[str],
+        job_type: str,
+        *,
+        params: dict[str, Any] | None = None,
+    ) -> BatchSubmit:
+        """Submit a batch processing job."""
+        payload: dict[str, Any] = {
+            "smiles_list": smiles_list,
+            "job_type": job_type,
+        }
+        if params is not None:
+            payload["params"] = params
+        data = self._post("batch/submit", json=payload)
+        return from_dict(BatchSubmit, data)
+
+    def batch_status(self, job_id: str) -> BatchStatus:
+        """Check the status of a batch job."""
+        data = self._get(f"batch/{job_id}")
+        return from_dict(BatchStatus, data)
+
+    def batch_list(self, *, page: int = 1, per_page: int = 20) -> BatchList:
+        """List batch jobs."""
+        data = self._get("batch/", params={"page": page, "per_page": per_page})
+        return from_dict(BatchList, data)
+
+    def batch_cancel(self, job_id: str) -> bool:
+        """Cancel a running batch job. Returns True on success."""
+        self._delete(f"batch/{job_id}")
+        return True

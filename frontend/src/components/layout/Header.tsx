@@ -8,6 +8,8 @@ const NAV_LINKS = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/retrosynthesis", label: "Retrosynthesis" },
   { to: "/process", label: "Process" },
+  { to: "/library", label: "Library" },
+  { to: "/batch", label: "Batch" },
   { to: "/account", label: "Account" },
 ];
 

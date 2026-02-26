@@ -56,6 +56,14 @@ export class ApiClient {
   post<T>(path: string, body?: unknown, opts?: { apiKey?: string }) {
     return this.request<T>("POST", path, body, opts);
   }
+
+  put<T>(path: string, body?: unknown) {
+    return this.request<T>("PUT", path, body);
+  }
+
+  delete<T>(path: string) {
+    return this.request<T>("DELETE", path);
+  }
 }
 
 export class ApiRequestError extends Error {

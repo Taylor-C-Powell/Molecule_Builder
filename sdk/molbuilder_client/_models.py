@@ -273,3 +273,71 @@ class BillingStatus:
     subscription_status: str
     stripe_customer_id: str | None = None
     stripe_subscription_id: str | None = None
+
+
+# -- Library ------------------------------------------------------------------
+
+@dataclass(frozen=True, slots=True)
+class LibraryMolecule:
+    id: int
+    smiles: str
+    name: str | None
+    tags: list[str]
+    notes: str | None
+    properties: dict
+    created_at: str
+    updated_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class LibraryList:
+    molecules: list[LibraryMolecule]
+    total: int
+    page: int
+    per_page: int
+
+
+@dataclass(frozen=True, slots=True)
+class LibraryImport:
+    saved: int
+    duplicates: int
+    errors: list[str] = field(default_factory=list)
+
+
+# -- Batch --------------------------------------------------------------------
+
+@dataclass(frozen=True, slots=True)
+class BatchSubmit:
+    job_id: str
+    status: str
+    created_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class BatchStatus:
+    job_id: str
+    status: str
+    job_type: str
+    progress_pct: float
+    result: dict | None = None
+    error: str | None = None
+    created_at: str = ""
+    updated_at: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class BatchJobSummary:
+    job_id: str
+    status: str
+    job_type: str
+    progress_pct: float
+    created_at: str
+    updated_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class BatchList:
+    jobs: list[BatchJobSummary]
+    total: int
+    page: int
+    per_page: int
