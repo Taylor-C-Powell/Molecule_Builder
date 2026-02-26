@@ -50,3 +50,19 @@ frontend/.env.local
 # Distribution
 *.tar.gz
 *.whl
+
+# Claude Code
+.claude/
+
+# Internal documents (not for public repo)
+SUBMISSIONS.md
+OUTREACH_EMAILS.md
+LAUNCH_CHECKLIST.md
+LAUNCH_POSTS.md
+BLOG_HOW_I_BUILT_THIS.md
+
+# Scratch scripts
+run_water_collision.py
+
+# Studio build artifacts
+studio/*.tsbuildinfo
