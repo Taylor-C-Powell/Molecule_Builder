@@ -33,6 +33,7 @@ class ConditionsResponse(BaseModel):
     atmosphere: str
     workup_procedure: str
     notes: str
+    data_source: str = "heuristic"
 
 
 class PurificationStepResponse(BaseModel):
@@ -151,6 +152,7 @@ class TemplateMatchResponse(BaseModel):
     recommended_solvents: list[SolventScoreResponse]
     adjusted_yield_range: list[float]
     warnings: list[str]
+    data_source: str = "heuristic"
 
 
 class PredictConditionsResponse(BaseModel):

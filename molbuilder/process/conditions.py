@@ -2,11 +2,16 @@
 
 Provides :func:`optimize_conditions` which returns a fully populated
 :class:`ReactionConditions` dataclass tuned for the target production scale.
+
+When the bundled Open Reaction Database (ORD) summary is available,
+temperature, solvent, and atmosphere are sourced from empirical data.
+Otherwise the function falls back to rule-based heuristics.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
 from molbuilder.reactions.reagent_data import normalize_reagent_name
@@ -29,6 +34,7 @@ class ReactionConditions:
     atmosphere: str             # "air", "N2", "Ar"
     workup_procedure: str
     notes: str
+    data_source: str = "heuristic"  # "heuristic" or "ORD (n=...)"
 
 
 # =====================================================================
@@ -192,6 +198,40 @@ def _select_solvent(template: ReactionTemplate) -> str:
 
 
 # =====================================================================
+#  ORD data lookup
+# =====================================================================
+
+def _get_ord_stats(template: ReactionTemplate) -> dict[str, Any] | None:
+    """Look up ORD aggregated statistics for *template*.
+
+    Returns the ORD entry dict if found, otherwise ``None``.
+    Tries the template's ``named_reaction`` first, then falls back to
+    a category-level aggregate (only if the template has a named_reaction).
+    Templates with ``named_reaction=None`` always fall back to heuristics.
+    """
+    if not template.named_reaction:
+        return None
+
+    from molbuilder.data import load_ord_conditions
+    from molbuilder.data.template_ord_mapping import TEMPLATE_TO_ORD_KEY, CATEGORY_FALLBACK
+
+    ord_data = load_ord_conditions()
+    reactions = ord_data.get("reactions", {})
+
+    # Try named_reaction -> ORD key
+    ord_key = TEMPLATE_TO_ORD_KEY.get(template.named_reaction)
+    if ord_key and ord_key in reactions:
+        return reactions[ord_key]
+
+    # Fallback: category-level aggregate
+    cat_key = CATEGORY_FALLBACK.get(template.category.name)
+    if cat_key and cat_key in reactions:
+        return reactions[cat_key]
+
+    return None
+
+
+# =====================================================================
 #  Public API
 # =====================================================================
 
@@ -200,6 +240,11 @@ def optimize_conditions(
     scale_kg: float,
 ) -> ReactionConditions:
     """Return optimised :class:`ReactionConditions` for *template* at *scale_kg*.
+
+    When ORD data is available for the template's named reaction, the
+    median temperature, top solvent, and dominant atmosphere are sourced
+    from empirical data.  Scale-dependent adjustments (concentration,
+    addition rate, reaction time, workup) still use heuristics.
 
     Scale-dependent adjustments include:
     * Slower addition at larger scale for thermal control
@@ -213,7 +258,24 @@ def optimize_conditions(
             f"got {type(template).__name__}"
         )
 
-    mean_t = (template.temperature_range[0] + template.temperature_range[1]) / 2.0
+    # --- Check ORD data ---
+    ord_stats = _get_ord_stats(template)
+
+    if ord_stats:
+        mean_t = float(ord_stats["temperature_C"]["median"])
+        solvent = (
+            ord_stats["solvents"][0]["name"]
+            if ord_stats.get("solvents")
+            else _select_solvent(template)
+        )
+        atmo = ord_stats.get("atmosphere", {})
+        atmosphere = max(atmo, key=atmo.get) if atmo else _select_atmosphere(template)
+        data_source = f"ORD (n={ord_stats['n']})"
+    else:
+        mean_t = (template.temperature_range[0] + template.temperature_range[1]) / 2.0
+        solvent = _select_solvent(template)
+        atmosphere = _select_atmosphere(template)
+        data_source = "heuristic"
 
     # Concentration adjustment: dilute slightly at large scale for mixing
     base_conc = _DEFAULT_CONCENTRATIONS.get(template.category, 0.3)
@@ -253,11 +315,12 @@ def optimize_conditions(
     return ReactionConditions(
         temperature_C=round(mean_t, 1),
         pressure_atm=pressure,
-        solvent=_select_solvent(template),
+        solvent=solvent,
         concentration_M=round(concentration, 2),
         addition_rate=_addition_rate(template, scale_kg),
         reaction_time_hours=_estimate_reaction_time(template, scale_kg),
-        atmosphere=_select_atmosphere(template),
+        atmosphere=atmosphere,
         workup_procedure=_workup_procedure(template, scale_kg),
         notes="  ".join(notes_parts) if notes_parts else "No special notes.",
+        data_source=data_source,
     )

@@ -43,6 +43,7 @@ dependencies = [
 
 [project.optional-dependencies]
 rdkit = ["rdkit>=2024.3.1"]
+ord = ["ord-schema>=0.3.99"]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -59,6 +60,9 @@ molbuilder = "molbuilder.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["molbuilder*"]
+
+[tool.setuptools.package-data]
+"molbuilder.data" = ["*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

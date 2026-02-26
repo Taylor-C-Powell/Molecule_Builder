@@ -51,6 +51,7 @@ def _serialize_conditions(cond) -> ConditionsResponse:
         atmosphere=cond.atmosphere,
         workup_procedure=cond.workup_procedure,
         notes=cond.notes,
+        data_source=cond.data_source,
     )
 
 

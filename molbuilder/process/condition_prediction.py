@@ -68,6 +68,7 @@ class TemplateMatch:
     recommended_solvents: list[SolventScore]
     adjusted_yield_range: tuple[float, float]
     warnings: list[str]
+    data_source: str = "heuristic"  # "heuristic" or "ORD (n=...)"
 
 
 @dataclass
@@ -538,6 +539,7 @@ def predict_conditions(
             recommended_solvents=solvents,
             adjusted_yield_range=adj_yield,
             warnings=warnings,
+            data_source=conditions.data_source,
         ))
 
     best = matches[0] if matches else None

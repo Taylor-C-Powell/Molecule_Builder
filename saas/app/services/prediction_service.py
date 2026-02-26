@@ -31,6 +31,7 @@ def _serialize_match(m: TemplateMatch) -> TemplateMatchResponse:
             atmosphere=m.conditions.atmosphere,
             workup_procedure=m.conditions.workup_procedure,
             notes=m.conditions.notes,
+            data_source=m.conditions.data_source,
         ),
         recommended_solvents=[
             SolventScoreResponse(
@@ -43,6 +44,7 @@ def _serialize_match(m: TemplateMatch) -> TemplateMatchResponse:
         ],
         adjusted_yield_range=list(m.adjusted_yield_range),
         warnings=m.warnings,
+        data_source=m.data_source,
     )
 
 
