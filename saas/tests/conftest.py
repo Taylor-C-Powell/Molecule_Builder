@@ -45,6 +45,43 @@ def _temp_user_db(tmp_path):
 
 
 @pytest.fixture(autouse=True)
+def _temp_job_db(tmp_path):
+    """Use a temporary job DB for each test."""
+    from app.services.job_db import JobDB, set_job_db
+    db_path = str(tmp_path / "test_jobs.db")
+    db = JobDB(db_path)
+    set_job_db(db)
+    yield db
+    db.close()
+    set_job_db(None)
+
+
+@pytest.fixture(autouse=True)
+def _temp_library_db(tmp_path):
+    """Use a temporary library DB for each test."""
+    from app.services.library_db import LibraryDB, set_library_db
+    db_path = str(tmp_path / "test_library.db")
+    db = LibraryDB(db_path)
+    set_library_db(db)
+    yield db
+    db.close()
+    set_library_db(None)
+
+
+@pytest.fixture(autouse=True)
+def _reset_batch_worker():
+    """Reset batch worker between tests to prevent thread leaks."""
+    from app.services.batch_worker import get_batch_worker, set_batch_worker
+    yield
+    try:
+        worker = get_batch_worker()
+        worker.shutdown()
+    except Exception:
+        pass
+    set_batch_worker(None)
+
+
+@pytest.fixture(autouse=True)
 def _reset_api_key_store():
     """Reset API key store between tests."""
     api_key_store._keys.clear()

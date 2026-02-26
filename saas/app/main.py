@@ -15,7 +15,7 @@ from app.exceptions import register_exception_handlers
 from app.middleware import UsageTrackingMiddleware
 from app.middleware_versioning import VersioningMiddleware
 from app.models.common import HealthResponse
-from app.routers import auth, billing, legal, molecule, retrosynthesis, process, elements, analytics, audit, version, feasibility
+from app.routers import auth, batch, billing, legal, library, molecule, retrosynthesis, process, elements, analytics, audit, version, feasibility
 
 logger = logging.getLogger("molbuilder.startup")
 
@@ -89,6 +89,17 @@ async def lifespan(app: FastAPI):
     from molbuilder.smiles.parser import parse
     parse("C")
 
+    # Initialize job and library databases
+    from app.services.job_db import JobDB, set_job_db
+    from app.services.library_db import LibraryDB, set_library_db
+    from app.services.batch_worker import BatchWorker, set_batch_worker
+    _job_db = JobDB(_cfg.job_db_path)
+    set_job_db(_job_db)
+    _library_db = LibraryDB(_cfg.library_db_path)
+    set_library_db(_library_db)
+    _batch_worker = BatchWorker()
+    set_batch_worker(_batch_worker)
+
     # Load persisted API keys from SQLite
     from app.services.user_db import get_user_db
     from app.auth.api_keys import api_key_store
@@ -139,6 +150,11 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    # Shutdown batch worker
+    _batch_worker.shutdown()
+    _job_db.close()
+    _library_db.close()
+
 
 app = FastAPI(
     title="MolBuilder API",
@@ -176,7 +192,9 @@ app.add_middleware(
 register_exception_handlers(app)
 
 app.include_router(auth.router)
+app.include_router(batch.router)
 app.include_router(billing.router)
+app.include_router(library.router)
 app.include_router(legal.router)
 app.include_router(molecule.router)
 app.include_router(retrosynthesis.router)

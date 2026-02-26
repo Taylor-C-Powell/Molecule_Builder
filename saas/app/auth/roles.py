@@ -21,8 +21,11 @@ _ADMIN_ONLY_PREFIXES = (
 )
 
 # Self-service paths: any authenticated user, any method
+# These endpoints are user-scoped (operations on the user's own data)
 _SELF_SERVICE_PREFIXES = (
     "/api/v1/auth/me",
+    "/api/v1/library",
+    "/api/v1/batch",
 )
 
 

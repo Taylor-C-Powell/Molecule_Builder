@@ -34,12 +34,12 @@ cd studio && npm ci
 ## Running Tests
 
 ```bash
-# Core library (1156+ tests across 22 files, CI enforces --cov-fail-under=80)
+# Core library (1312 tests across 23 files, CI enforces --cov-fail-under=80)
 python -m pytest tests/ -v
 python -m pytest tests/test_smiles.py -v          # single file
 python -m pytest tests/ --cov=molbuilder --cov-report=term-missing
 
-# SaaS API (109+ tests, uses FastAPI TestClient with temp SQLite DBs)
+# SaaS API (131 tests, uses FastAPI TestClient with temp SQLite DBs)
 cd saas && python -m pytest tests/ -v
 
 # SDK (uses respx for HTTP mocking, pytest-asyncio with asyncio_mode=auto)

@@ -505,6 +505,10 @@ def predict_conditions(
     ValueError
         If the SMILES string cannot be parsed.
     """
+    # Check ML predictor first (returns None if no model loaded)
+    from molbuilder.process.ml_predict import get_predictor
+    ml_conditions = get_predictor().predict(smiles, reaction_name, scale_kg)
+
     mol = parse(smiles)
     fgs = detect_functional_groups(mol)
     substrate = _analyze_substrate(mol, fgs)
@@ -523,8 +527,14 @@ def predict_conditions(
 
     # Build TemplateMatch for each top candidate
     matches: list[TemplateMatch] = []
-    for sc, reasons, tmpl in top:
-        conditions = optimize_conditions(tmpl, scale_kg)
+    for idx, (sc, reasons, tmpl) in enumerate(top):
+        # Use ML-predicted conditions for best match if available
+        if idx == 0 and ml_conditions is not None:
+            conditions = ml_conditions
+            data_source = "ML model"
+        else:
+            conditions = optimize_conditions(tmpl, scale_kg)
+            data_source = conditions.data_source
         solvents = _score_solvents(tmpl, mol, substrate, scale_kg)
         adj_yield = _adjust_yield_range(tmpl, substrate)
         warnings = _build_warnings(tmpl, substrate)
@@ -539,7 +549,7 @@ def predict_conditions(
             recommended_solvents=solvents,
             adjusted_yield_range=adj_yield,
             warnings=warnings,
-            data_source=conditions.data_source,
+            data_source=data_source,
         ))
 
     best = matches[0] if matches else None
