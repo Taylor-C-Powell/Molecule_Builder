@@ -621,7 +621,7 @@ class TestSafetyIncompatibilities:
         # CrO3 -> "cro3" (in oxidizers), DIBAL_H -> "dibal_h" (in reducers)
         t = _make_template(ReactionCategory.MISC, reagents=["CrO3", "DIBAL_H"])
         incompat = _determine_incompatibilities(t)
-        joined = " ".join(incompat)
+        joined = " ".join(str(w) for w in incompat)
         assert "CRITICAL" in joined
         assert "Oxidizer" in joined
 
@@ -629,35 +629,35 @@ class TestSafetyIncompatibilities:
         # HNO3 -> "hno3" (in acids), NaCN -> "nacn" (in cyanides)
         t = _make_template(ReactionCategory.MISC, reagents=["HNO3", "NaCN"])
         incompat = _determine_incompatibilities(t)
-        joined = " ".join(incompat)
+        joined = " ".join(str(w) for w in incompat)
         assert "HCN" in joined
 
     def test_acid_plus_azide_hn3(self):
         # HNO3 -> "hno3" (in acids), NaN3 -> "nan3" (in azides)
         t = _make_template(ReactionCategory.MISC, reagents=["HNO3", "NaN3"])
         incompat = _determine_incompatibilities(t)
-        joined = " ".join(incompat)
+        joined = " ".join(str(w) for w in incompat)
         assert "HN3" in joined
 
     def test_water_reactive_anhydrous_warning(self):
         # SOCl2 -> "socl2" (in water_reactive)
         t = _make_template(ReactionCategory.MISC, reagents=["SOCl2"])
         incompat = _determine_incompatibilities(t)
-        joined = " ".join(incompat)
+        joined = " ".join(str(w) for w in incompat)
         assert "anhydrous" in joined
 
     def test_permanganate_plus_organic_fire(self):
         # NaMnO4 -> "namno4" (in permanganates), acetone -> "acetone" (in flammable_organics)
         t = _make_template(ReactionCategory.MISC, reagents=["NaMnO4", "acetone"])
         incompat = _determine_incompatibilities(t)
-        joined = " ".join(incompat)
+        joined = " ".join(str(w) for w in incompat)
         assert "fire" in joined.lower() or "explosion" in joined.lower()
 
     def test_acid_plus_base_exothermic(self):
         # HNO3 -> "hno3" (in conc_acids), NaOH_aq -> "naoh_aq" (in bases)
         t = _make_template(ReactionCategory.MISC, reagents=["HNO3", "NaOH_aq"])
         incompat = _determine_incompatibilities(t)
-        joined = " ".join(incompat)
+        joined = " ".join(str(w) for w in incompat)
         assert "exothermic" in joined
 
     def test_no_incompatible_empty(self):
@@ -669,7 +669,7 @@ class TestSafetyIncompatibilities:
         # MeMgBr -> "memgbr" (in organometallics), MeOH -> "meoh" (in protic_solvents)
         t = _make_template(ReactionCategory.MISC, reagents=["MeMgBr", "MeOH"])
         incompat = _determine_incompatibilities(t)
-        joined = " ".join(incompat)
+        joined = " ".join(str(w) for w in incompat)
         assert "Organometallic" in joined or "protic" in joined
 
 
@@ -974,6 +974,7 @@ from molbuilder.process.costing import (
     _labor_cost_for_step,
     _waste_cost_for_step,
     estimate_cost,
+    CostParameters,
 )
 
 
@@ -989,36 +990,36 @@ class TestCostingBranches:
 
     def test_labor_baseline(self):
         t = _make_template(ReactionCategory.SUBSTITUTION)
-        cost = _labor_cost_for_step(t, scale_kg=1.0)
+        cost = _labor_cost_for_step(t, scale_kg=1.0, params=CostParameters())
         # Base 3h * $75/h = $225
         assert cost == pytest.approx(225.0)
 
     def test_labor_cryogenic_adds_hour(self):
         t = _make_template(ReactionCategory.SUBSTITUTION, temperature_range=(-78, -60))
-        cost = _labor_cost_for_step(t, scale_kg=1.0)
+        cost = _labor_cost_for_step(t, scale_kg=1.0, params=CostParameters())
         # 3h + 1h cryo = 4h * $75 = $300
         assert cost == pytest.approx(300.0)
 
     def test_labor_rearrangement_adds_hour(self):
         t = _make_template(ReactionCategory.REARRANGEMENT)
-        cost = _labor_cost_for_step(t, scale_kg=1.0)
+        cost = _labor_cost_for_step(t, scale_kg=1.0, params=CostParameters())
         # 3h + 1h complexity = 4h * $75 = $300
         assert cost == pytest.approx(300.0)
 
     def test_labor_misc_adds_hour(self):
         t = _make_template(ReactionCategory.MISC)
-        cost = _labor_cost_for_step(t, scale_kg=1.0)
+        cost = _labor_cost_for_step(t, scale_kg=1.0, params=CostParameters())
         assert cost == pytest.approx(300.0)
 
     def test_labor_scale_over_50_adds_hour(self):
         t = _make_template(ReactionCategory.SUBSTITUTION)
-        cost = _labor_cost_for_step(t, scale_kg=60.0)
+        cost = _labor_cost_for_step(t, scale_kg=60.0, params=CostParameters())
         # 3h + 1h material handling = 4h * $75 = $300
         assert cost == pytest.approx(300.0)
 
     def test_labor_scale_over_200_adds_two_hours(self):
         t = _make_template(ReactionCategory.SUBSTITUTION)
-        cost = _labor_cost_for_step(t, scale_kg=250.0)
+        cost = _labor_cost_for_step(t, scale_kg=250.0, params=CostParameters())
         # 3h + 1h (>50) + 1h (>200) = 5h * $75 = $375
         assert cost == pytest.approx(375.0)
 
@@ -1026,13 +1027,13 @@ class TestCostingBranches:
 
     def test_waste_hazardous_nacn(self):
         t = _make_template(ReactionCategory.SUBSTITUTION, reagents=["NaCN"])
-        cost = _waste_cost_for_step(t, scale_kg=1.0)
+        cost = _waste_cost_for_step(t, scale_kg=1.0, params=CostParameters())
         # hazardous: waste_kg = 1 * 8 = 8, disposal = $2.50 * 2 = $5.00
         assert cost == pytest.approx(8.0 * 5.0)
 
     def test_waste_non_hazardous(self):
         t = _make_template(ReactionCategory.SUBSTITUTION, reagents=["benzene"])
-        cost = _waste_cost_for_step(t, scale_kg=1.0)
+        cost = _waste_cost_for_step(t, scale_kg=1.0, params=CostParameters())
         # non-hazardous: waste_kg = 1 * 5 = 5, disposal = $2.50
         assert cost == pytest.approx(5.0 * 2.50)
 
@@ -1071,3 +1072,135 @@ class TestCostingBranches:
             pass
         with pytest.raises(TypeError, match="template"):
             estimate_cost([BadStep()], scale_kg=1.0)
+
+
+# =====================================================================
+#  13. CostParameters
+# =====================================================================
+
+class TestCostParameters:
+    """Test configurable costing model."""
+
+    def test_default_matches_hardcoded(self):
+        p = CostParameters()
+        assert p.labor_rate_usd_h == 75.0
+        assert p.base_labor_hours_per_step == 3.0
+        assert p.energy_cost_kwh == 0.10
+        assert p.waste_disposal_per_kg == 2.50
+        assert p.overhead_fraction == 0.25
+        assert p.equipment_depreciation_per_batch == 0.002
+        assert p.default_reagent_equiv == 1.2
+        assert p.solvent_l_per_kg == 7.0
+
+    def test_us_default_is_identical(self):
+        us = CostParameters.us_default()
+        default = CostParameters()
+        assert us == default
+
+    def test_eu_different_from_us(self):
+        eu = CostParameters.eu_default()
+        us = CostParameters.us_default()
+        assert eu.labor_rate_usd_h > us.labor_rate_usd_h
+        assert eu.waste_disposal_per_kg > us.waste_disposal_per_kg
+
+    def test_india_lower_labor(self):
+        india = CostParameters.india_default()
+        us = CostParameters.us_default()
+        assert india.labor_rate_usd_h < us.labor_rate_usd_h
+
+    def test_china_lower_labor(self):
+        china = CostParameters.china_default()
+        us = CostParameters.us_default()
+        assert china.labor_rate_usd_h < us.labor_rate_usd_h
+
+    def test_region_presets_produce_different_totals(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        step = _MockStep(t)
+        us_cost = estimate_cost([step], scale_kg=10.0, params=CostParameters.us_default())
+        eu_cost = estimate_cost([step], scale_kg=10.0, params=CostParameters.eu_default())
+        assert us_cost.total_usd != eu_cost.total_usd
+
+    def test_custom_params_override(self):
+        p = CostParameters(labor_rate_usd_h=200.0)
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        step = _MockStep(t)
+        expensive = estimate_cost([step], scale_kg=1.0, params=p)
+        default = estimate_cost([step], scale_kg=1.0)
+        assert expensive.breakdown.labor_usd > default.breakdown.labor_usd
+
+    def test_params_none_uses_default(self):
+        t = _make_template(ReactionCategory.SUBSTITUTION)
+        step = _MockStep(t)
+        r1 = estimate_cost([step], scale_kg=1.0, params=None)
+        r2 = estimate_cost([step], scale_kg=1.0)
+        assert r1.total_usd == r2.total_usd
+
+
+# =====================================================================
+#  14. New safety incompatibility pairs
+# =====================================================================
+
+from molbuilder.process.safety import IncompatibilityWarning  # noqa: E402
+
+
+class TestNewIncompatibilities:
+    """Test the 10 new incompatibility pairs added in Tier 1."""
+
+    def test_azide_plus_heavy_metal(self):
+        t = _make_template(ReactionCategory.MISC, reagents=["NaN3", "AgNO3"])
+        incompat = _determine_incompatibilities(t)
+        joined = " ".join(str(w) for w in incompat)
+        assert "detonation" in joined.lower() or "metal azide" in joined.lower()
+
+    def test_nitric_acid_plus_alcohol(self):
+        t = _make_template(ReactionCategory.MISC, reagents=["HNO3", "MeOH"])
+        incompat = _determine_incompatibilities(t)
+        joined = " ".join(str(w) for w in incompat)
+        assert "nitrate" in joined.lower()
+
+    def test_chloroform_plus_strong_base(self):
+        t = _make_template(ReactionCategory.MISC, reagents=["CHCl3", "NaOH"])
+        incompat = _determine_incompatibilities(t)
+        joined = " ".join(str(w) for w in incompat)
+        assert "phosgene" in joined.lower()
+
+    def test_dmso_plus_acyl_halide(self):
+        t = _make_template(ReactionCategory.MISC, reagents=["DMSO", "SOCl2"])
+        incompat = _determine_incompatibilities(t)
+        joined = " ".join(str(w) for w in incompat)
+        assert "DMSO" in joined or "decomposition" in joined.lower()
+
+    def test_h2o2_plus_acetone(self):
+        t = _make_template(ReactionCategory.MISC, reagents=["H2O2", "acetone"])
+        incompat = _determine_incompatibilities(t)
+        joined = " ".join(str(w) for w in incompat)
+        assert "TATP" in joined or "explosive" in joined.lower()
+
+    def test_ether_plus_strong_oxidizer(self):
+        t = _make_template(ReactionCategory.MISC, reagents=["diethyl_ether", "CrO3"])
+        incompat = _determine_incompatibilities(t)
+        joined = " ".join(str(w) for w in incompat)
+        assert "peroxide" in joined.lower() or "ether" in joined.lower()
+
+    def test_severity_on_warning(self):
+        t = _make_template(ReactionCategory.MISC, reagents=["CrO3", "DIBAL_H"])
+        incompat = _determine_incompatibilities(t)
+        assert len(incompat) > 0
+        assert all(isinstance(w, IncompatibilityWarning) for w in incompat)
+        assert all(w.severity in ("critical", "high", "medium") for w in incompat)
+
+    def test_mitigation_text_present(self):
+        t = _make_template(ReactionCategory.MISC, reagents=["HNO3", "NaCN"])
+        incompat = _determine_incompatibilities(t)
+        for w in incompat:
+            assert w.mitigation, f"Missing mitigation on {w}"
+
+    def test_str_compatibility(self):
+        """IncompatibilityWarning.__str__ should contain the hazard text."""
+        w = IncompatibilityWarning(
+            reagent_a="A", reagent_b="B",
+            hazard="Test hazard", severity="critical",
+            mitigation="Fix it",
+        )
+        assert "Test hazard" in str(w)
+        assert "CRITICAL" in str(w)

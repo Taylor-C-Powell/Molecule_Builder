@@ -125,6 +125,29 @@ class HazardInfo:
 
 
 @dataclass
+class IncompatibilityWarning:
+    """A chemical incompatibility with severity and mitigation guidance.
+
+    Backwards-compatible: ``str(warning)`` returns the same format as the
+    old plain-string incompatibility messages, so code that iterates
+    ``incompatible_materials`` and calls ``str()`` keeps working.
+    """
+    reagent_a: str
+    reagent_b: str
+    hazard: str
+    severity: str       # "critical", "high", "medium"
+    mitigation: str
+
+    def __str__(self) -> str:
+        prefix = self.severity.upper() + ": " if self.severity == "critical" else ""
+        return f"{prefix}{self.hazard}"
+
+    def __repr__(self) -> str:
+        return (f"IncompatibilityWarning({self.severity}: "
+                f"{self.reagent_a} + {self.reagent_b})")
+
+
+@dataclass
 class SafetyAssessment:
     """Complete safety assessment for one synthesis step."""
 
@@ -134,9 +157,22 @@ class SafetyAssessment:
     ppe_required: list[str]
     engineering_controls: list[str]
     emergency_procedures: list[str]
-    incompatible_materials: list[str]
+    incompatible_materials: list[IncompatibilityWarning]
     waste_classification: str
     risk_level: str             # "low", "medium", "high"
+
+    @property
+    def overall_severity(self) -> str | None:
+        """Highest severity across all incompatibility warnings, or None."""
+        order = {"critical": 3, "high": 2, "medium": 1}
+        best = 0
+        best_label = None
+        for w in self.incompatible_materials:
+            rank = order.get(w.severity, 0)
+            if rank > best:
+                best = rank
+                best_label = w.severity
+        return best_label
 
 
 # =====================================================================
@@ -290,97 +326,210 @@ def _determine_emergency_procedures(
     return procedures
 
 
-def _determine_incompatibilities(template: ReactionTemplate) -> list[str]:
+def _determine_incompatibilities(
+    template: ReactionTemplate,
+) -> list[IncompatibilityWarning]:
     """List known incompatible material pairs in the step."""
-    incompatibilities: list[str] = []
+    warnings: list[IncompatibilityWarning] = []
 
     reagent_keys = {normalize_reagent_name(r) for r in template.reagents}
 
-    # Oxidizer + organic / reducer
+    def _warn(a: str, b: str, hazard: str, severity: str, mitigation: str):
+        warnings.append(IncompatibilityWarning(
+            reagent_a=a, reagent_b=b, hazard=hazard,
+            severity=severity, mitigation=mitigation,
+        ))
+
+    # -- Original 14 pairs (unchanged logic) ---------------------------------
+
+    # Oxidizer + reducer
     oxidizers = {"kmno4", "cro3", "h2o2", "naocl", "mcpba", "hno3", "naio4"}
     reducers = {"nabh4", "lialh4", "dibal_h", "na_nh3", "red_al", "nah"}
     if reagent_keys & oxidizers and reagent_keys & reducers:
-        incompatibilities.append("CRITICAL: Oxidizer and reducer present -- do NOT mix directly")
+        _warn("oxidizer", "reducer",
+              "Oxidizer and reducer present -- do NOT mix directly",
+              "critical", "Add reducer to substrate first, then introduce oxidizer slowly")
 
     # Acid + cyanide
     acids = {"hcl", "h2so4", "hno3", "tfa", "acoh", "bf3_oet2"}
     cyanides = {"nacn"}
     if reagent_keys & acids and reagent_keys & cyanides:
-        incompatibilities.append("CRITICAL: Acid + cyanide can liberate HCN gas (fatal)")
+        _warn("acid", "cyanide",
+              "Acid + cyanide can liberate HCN gas (fatal)",
+              "critical", "Use cyanide only in basic or neutral pH; HCN detector required")
 
     # Acid + azide
     azides = {"nan3"}
     if reagent_keys & acids and reagent_keys & azides:
-        incompatibilities.append("CRITICAL: Acid + azide can liberate HN3 (explosive/toxic)")
+        _warn("acid", "azide",
+              "Acid + azide can liberate HN3 (explosive/toxic)",
+              "critical", "Maintain basic pH; blast shield required")
 
     # Water-reactive + aqueous
     water_reactive = {"lialh4", "nah", "n_buli", "memgbr", "etmgbr", "phmgbr",
                       "meli", "phli", "socl2", "accl", "ticl4", "pcl5"}
     if reagent_keys & water_reactive:
-        incompatibilities.append(
-            "Water-reactive reagent(s) present: ensure strictly anhydrous conditions"
-        )
+        _warn("water-reactive", "moisture",
+              "Water-reactive reagent(s) present: ensure strictly anhydrous conditions",
+              "high", "Use oven-dried glassware, Schlenk technique, molecular sieves")
 
     # Peroxides + metals
     peroxides = {"h2o2", "mcpba", "tbhp", "dtbp", "benzoyl_peroxide"}
     metals = {"ticl4", "alcl3", "zncl2", "cui", "fecl3", "fecl2"}
     if reagent_keys & peroxides and reagent_keys & metals:
-        incompatibilities.append("Peroxide + metal salt: risk of uncontrolled decomposition")
+        _warn("peroxide", "metal salt",
+              "Peroxide + metal salt: risk of uncontrolled decomposition",
+              "high", "Add peroxide slowly with temperature monitoring")
 
     # Hypochlorite + acids -> chlorine gas
     hypochlorites = {"naocl", "bleach", "calcium_hypochlorite"}
     if reagent_keys & hypochlorites and reagent_keys & acids:
-        incompatibilities.append("CRITICAL: Hypochlorite + acid liberates Cl2 gas (toxic)")
+        _warn("hypochlorite", "acid",
+              "Hypochlorite + acid liberates Cl2 gas (toxic)",
+              "critical", "Never acidify hypochlorite solutions; Cl2 detector required")
 
     # Permanganate + concentrated organics -> fire/explosion
     permanganates = {"kmno4", "namno4"}
     flammable_organics = {"acetone", "diethyl_ether", "thf", "ethanol", "methanol",
                           "toluene", "hexane", "pentane", "dcm", "dmf", "dmso"}
     if reagent_keys & permanganates and reagent_keys & flammable_organics:
-        incompatibilities.append("Permanganate + flammable organic: fire/explosion risk")
+        _warn("permanganate", "flammable organic",
+              "Permanganate + flammable organic: fire/explosion risk",
+              "high", "Use dilute permanganate in aqueous medium; keep organic solvent volume minimal")
 
     # Alkali metals + water -> violent reaction
     alkali_metals = {"na", "k", "li", "cs", "nah", "kh"}
     aqueous = {"h2o", "water", "naoh_aq", "hcl_aq"}
     if reagent_keys & alkali_metals and reagent_keys & aqueous:
-        incompatibilities.append("CRITICAL: Alkali metal/hydride + water -> violent H2 evolution")
+        _warn("alkali metal/hydride", "water",
+              "Alkali metal/hydride + water -> violent H2 evolution",
+              "critical", "Use anhydrous solvents; quench slowly with IPA/ice if needed")
 
     # Chlorine/halogens + ammonia -> toxic gases
     halogens = {"cl2", "br2", "i2", "ncs"}
     ammonia = {"nh3", "nh4oh", "nh4cl"}
     if reagent_keys & halogens and reagent_keys & ammonia:
-        incompatibilities.append("CRITICAL: Halogen + ammonia -> toxic NCl3/NBr3")
+        _warn("halogen", "ammonia",
+              "Halogen + ammonia -> toxic NCl3/NBr3",
+              "critical", "Do not mix; use separate vessels and transfer lines")
 
     # Strong oxidizers + flammable solvents
     strong_oxidizers = {"kmno4", "cro3", "k2cr2o7", "hno3_conc", "h2o2_conc",
                         "naio4", "oxone", "dmp"}
     if reagent_keys & strong_oxidizers and reagent_keys & flammable_organics:
-        incompatibilities.append("Strong oxidizer + flammable solvent: fire risk -- use compatible solvent")
+        _warn("strong oxidizer", "flammable solvent",
+              "Strong oxidizer + flammable solvent: fire risk -- use compatible solvent",
+              "high", "Switch to water or acetic acid as solvent where possible")
 
     # Nitrates + organics -> explosion risk
     nitrates = {"nano3", "kno3", "agno3", "nh4no3"}
     if reagent_keys & nitrates and reagent_keys & flammable_organics:
-        incompatibilities.append("Nitrate salt + organic solvent: explosion risk at elevated temperature")
+        _warn("nitrate salt", "organic solvent",
+              "Nitrate salt + organic solvent: explosion risk at elevated temperature",
+              "high", "Keep temperature below 100 C; avoid confinement")
 
     # Concentrated acids + concentrated bases -> exothermic
     bases = {"naoh", "koh", "lioh", "naoh_conc", "koh_conc", "nah", "naoh_aq"}
     conc_acids = {"h2so4", "hno3", "hcl_conc", "h3po4", "hf"}
     if reagent_keys & conc_acids and reagent_keys & bases:
-        incompatibilities.append("Concentrated acid + base: highly exothermic neutralization -- add slowly with cooling")
+        _warn("concentrated acid", "base",
+              "Concentrated acid + base: highly exothermic neutralization -- add slowly with cooling",
+              "high", "Add acid to base (never reverse); use ice bath and slow addition")
 
     # Grignard/organolithium + protic solvents
     organometallics = {"memgbr", "etmgbr", "phmgbr", "meli", "phli",
                        "n_buli", "t_buli", "s_buli", "znet2", "znme2"}
     protic_solvents = {"meoh", "etoh", "h2o", "acoh", "ipoh"}
     if reagent_keys & organometallics and reagent_keys & protic_solvents:
-        incompatibilities.append("Organometallic + protic solvent: immediate quench -- use ethereal solvents only")
+        _warn("organometallic", "protic solvent",
+              "Organometallic + protic solvent: immediate quench -- use ethereal solvents only",
+              "critical", "Use THF or diethyl ether; ensure strictly anhydrous conditions")
 
     # Perchloric acid + organics -> explosive perchlorates
     perchlorics = {"hclo4", "perchloric_acid"}
     if reagent_keys & perchlorics and reagent_keys & flammable_organics:
-        incompatibilities.append("CRITICAL: Perchloric acid + organics -> explosive perchlorate esters")
+        _warn("perchloric acid", "organic",
+              "Perchloric acid + organics -> explosive perchlorate esters",
+              "critical", "Never heat perchloric acid with organics; use perchloric acid hood")
 
-    return incompatibilities
+    # -- New pairs (CAMEO / Bretherick's) ------------------------------------
+
+    # Azide + heavy metals -> detonation-sensitive azides
+    heavy_metals = {"pb_oac2", "hgcl2", "hg_oac2", "pbcl2", "agno3"}
+    if reagent_keys & azides and reagent_keys & heavy_metals:
+        _warn("azide", "heavy metal",
+              "Azide + heavy metals (Pb, Hg, Ag) -> detonation-sensitive metal azides",
+              "critical", "Avoid combining; use copper or zinc catalysts instead if needed")
+
+    # Nitric acid + alcohols -> alkyl nitrate explosives
+    alcohols = {"meoh", "etoh", "ipoh", "n_buoh", "glycerol"}
+    nitric_acids = {"hno3", "hno3_conc"}
+    if reagent_keys & nitric_acids and reagent_keys & alcohols:
+        _warn("nitric acid", "alcohol",
+              "Nitric acid + alcohols -> alkyl nitrate explosives",
+              "critical", "Use dilute HNO3; keep temperature below 0 C; blast shield required")
+
+    # Chloroform + strong base -> phosgene
+    chloroform = {"chcl3", "chloroform", "cdcl3"}
+    strong_bases = {"naoh", "koh", "naoh_conc", "koh_conc", "n_buli", "t_buli",
+                    "sodium_hydroxide", "potassium_hydroxide"}
+    if reagent_keys & chloroform and reagent_keys & strong_bases:
+        _warn("chloroform", "strong base",
+              "Chloroform + strong base -> phosgene (COCl2, fatal)",
+              "critical", "Use DCM instead; if unavoidable, work in fume hood with phosgene detector")
+
+    # DMSO + acyl halides -> exothermic decomposition
+    dmso = {"dmso"}
+    acyl_halides = {"accl", "socl2", "pcl5", "pcl3", "oxalyl_chloride"}
+    if reagent_keys & dmso and reagent_keys & acyl_halides:
+        _warn("DMSO", "acyl halide",
+              "DMSO + acyl halides -> exothermic decomposition",
+              "high", "Use alternative solvent (DMF or NMP); if unavoidable, add at -78 C")
+
+    # Hydrogen peroxide + acetone -> TATP precursor
+    peroxide_tatp = {"h2o2", "h2o2_conc"}
+    acetone_set = {"acetone"}
+    if reagent_keys & peroxide_tatp and reagent_keys & acetone_set:
+        _warn("hydrogen peroxide", "acetone",
+              "Hydrogen peroxide + acetone -> TATP explosive precursor (in presence of acid)",
+              "critical", "Never combine H2O2 with acetone; use alternative solvent for peroxide reactions")
+
+    # Picric acid + metals -> shock-sensitive metal picrates
+    picric = {"picric_acid", "2_4_6_trinitrophenol"}
+    metal_containers = {"na", "k", "li", "zn", "pb_oac2", "cu", "fecl3"}
+    if reagent_keys & picric and reagent_keys & metal_containers:
+        _warn("picric acid", "metal",
+              "Picric acid + metals -> metal picrates (shock-sensitive explosives)",
+              "critical", "Store picric acid in plastic; avoid contact with metals")
+
+    # Ether + strong oxidizers -> peroxide explosion
+    ethers = {"diethyl_ether", "thf", "dioxane", "dme", "tbme", "cpme"}
+    if reagent_keys & ethers and reagent_keys & strong_oxidizers:
+        _warn("ether", "strong oxidizer",
+              "Ether solvents + strong oxidizers -> peroxide formation and explosion risk",
+              "high", "Test ether for peroxides before use; inhibit with BHT if stored")
+
+    # Carbon disulfide + alkali metals -> violent reaction
+    cs2 = {"cs2", "carbon_disulfide"}
+    if reagent_keys & cs2 and reagent_keys & alkali_metals:
+        _warn("carbon disulfide", "alkali metal",
+              "Carbon disulfide + alkali metals -> violent exothermic reaction",
+              "critical", "Do not combine; use alternative sulfur sources")
+
+    # Ammonia + mercury compounds -> fulminating mercury
+    mercury = {"hgcl2", "hg_oac2", "hg2cl2"}
+    if reagent_keys & ammonia and reagent_keys & mercury:
+        _warn("ammonia", "mercury compound",
+              "Ammonia + mercury compounds -> fulminating mercury (shock-sensitive)",
+              "critical", "Never combine; substitute mercury catalyst with safer alternative")
+
+    # Acetone + chloroform + base -> chlorobutanol (unexpected side reaction)
+    if reagent_keys & acetone_set and reagent_keys & chloroform and reagent_keys & bases:
+        _warn("acetone + chloroform", "base",
+              "Acetone + chloroform + base -> chlorobutanol side reaction",
+              "medium", "Avoid mixing; use separate vessels for extraction steps")
+
+    return warnings
 
 
 def _classify_waste(all_hazards: set[str]) -> str:

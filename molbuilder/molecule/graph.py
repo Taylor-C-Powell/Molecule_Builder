@@ -184,6 +184,60 @@ class Molecule:
         self.atoms: list[Atom] = []
         self.bonds: list[Bond] = []
         self._adj: dict[int, list[int]] = {}
+        self._ring_bonds_cache: set[tuple[int, int]] | None = None
+        self._fg_cache: list | None = None
+
+    # ---- cache management ----
+
+    def _invalidate_caches(self):
+        """Reset ring-bond and functional-group caches after structural changes."""
+        self._ring_bonds_cache = None
+        self._fg_cache = None
+
+    def _compute_ring_bonds(self) -> set[tuple[int, int]]:
+        """Find all ring bonds via DFS back-edge detection.
+
+        Returns a set of (min(i,j), max(i,j)) tuples for every bond
+        that lies on at least one cycle.  O(V+E) total.
+        """
+        ring_bonds: set[tuple[int, int]] = set()
+        visited: set[int] = set()
+        # parent tracks the DFS tree parent to ignore the trivial back-edge
+        parent: dict[int, int] = {}
+
+        for start in self._adj:
+            if start in visited:
+                continue
+            stack: list[tuple[int, int]] = [(start, -1)]
+            while stack:
+                node, par = stack.pop()
+                if node in visited:
+                    # Back edge: node already visited -> ring bond
+                    # But we only mark the actual bond that caused re-visit
+                    # We handle this below in the neighbor loop instead.
+                    continue
+                visited.add(node)
+                parent[node] = par
+                for nb in self._adj.get(node, []):
+                    if nb not in visited:
+                        stack.append((nb, node))
+                    elif nb != par:
+                        # Back edge found: trace the cycle and mark all bonds
+                        # Simple approach: mark (node, nb) as ring bond
+                        # and trace back from node to nb via parent chain
+                        key = (min(node, nb), max(node, nb))
+                        ring_bonds.add(key)
+                        cur = node
+                        while cur != nb and cur != -1:
+                            p = parent[cur]
+                            if p == -1:
+                                break
+                            rk = (min(cur, p), max(cur, p))
+                            ring_bonds.add(rk)
+                            cur = p
+
+        self._ring_bonds_cache = ring_bonds
+        return ring_bonds
 
     # ---- building ----
 
@@ -193,6 +247,7 @@ class Molecule:
                  isotope: int | None = None,
                  formal_charge: int = 0) -> int:
         """Add an atom at an explicit 3D position.  Returns new index."""
+        self._invalidate_caches()
         idx = len(self.atoms)
         self.atoms.append(Atom(
             symbol=symbol,
@@ -209,6 +264,7 @@ class Molecule:
     def add_bond(self, i: int, j: int, order: int = 1,
                  rotatable: bool | None = None) -> Bond:
         """Add a bond between atoms *i* and *j*.  Returns the Bond."""
+        self._invalidate_caches()
         if rotatable is None:
             rotatable = (order == 1)
         bond = Bond(atom_i=i, atom_j=j, order=order, rotatable=rotatable)
@@ -310,6 +366,7 @@ class Molecule:
 
     def close_ring(self, i: int, j: int, order: int = 1):
         """Bond two existing atoms to close a ring (non-rotatable)."""
+        self._invalidate_caches()
         self.add_bond(i, j, order=order, rotatable=False)
 
     # ---- geometry queries ----
@@ -359,24 +416,15 @@ class Molecule:
         return None
 
     def is_in_ring(self, i: int, j: int) -> bool:
-        """True if removing the i-j edge leaves i and j connected."""
-        visited: set[int] = set()
-        stack = [i]
-        while stack:
-            cur = stack.pop()
-            if cur == j:
-                return True
-            if cur in visited:
-                continue
-            visited.add(cur)
-            for nb in self._adj.get(cur, []):
-                if cur == i and nb == j:
-                    continue
-                if cur == j and nb == i:
-                    continue
-                if nb not in visited:
-                    stack.append(nb)
-        return False
+        """True if the bond i-j is part of a ring.
+
+        Uses a cached set of ring bonds (computed once, then O(1) lookups).
+        The cache is invalidated whenever the molecular graph changes.
+        """
+        if self._ring_bonds_cache is None:
+            self._compute_ring_bonds()
+        key = (min(i, j), max(i, j))
+        return key in self._ring_bonds_cache
 
     # ---- dihedral manipulation ----
 

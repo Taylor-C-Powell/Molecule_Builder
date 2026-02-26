@@ -42,32 +42,72 @@ class CostEstimate:
     notes: list[str]
 
 
+@dataclass
+class CostParameters:
+    """Configurable cost model parameters.
+
+    All defaults match the original US-centric hardcoded values so that
+    ``CostParameters()`` is a drop-in replacement with zero behaviour
+    change.  Use the class-method presets for other regions, or set
+    individual fields for full customisation.
+    """
+    labor_rate_usd_h: float = 75.0
+    base_labor_hours_per_step: float = 3.0
+    energy_cost_kwh: float = 0.10
+    waste_disposal_per_kg: float = 2.50
+    overhead_fraction: float = 0.25
+    equipment_depreciation_per_batch: float = 0.002
+    default_reagent_equiv: float = 1.2
+    solvent_l_per_kg: float = DEFAULT_SOLVENT_L_PER_KG
+
+    @classmethod
+    def us_default(cls) -> CostParameters:
+        """US defaults (identical to bare ``CostParameters()``)."""
+        return cls()
+
+    @classmethod
+    def eu_default(cls) -> CostParameters:
+        """EU defaults: higher labour, lower energy, stricter waste."""
+        return cls(
+            labor_rate_usd_h=95.0,
+            energy_cost_kwh=0.08,
+            waste_disposal_per_kg=4.00,
+            overhead_fraction=0.30,
+        )
+
+    @classmethod
+    def india_default(cls) -> CostParameters:
+        """India defaults: lower labour, similar energy."""
+        return cls(
+            labor_rate_usd_h=25.0,
+            base_labor_hours_per_step=3.5,
+            energy_cost_kwh=0.09,
+            waste_disposal_per_kg=1.50,
+            overhead_fraction=0.20,
+        )
+
+    @classmethod
+    def china_default(cls) -> CostParameters:
+        """China defaults: lower labour, lower overhead."""
+        return cls(
+            labor_rate_usd_h=30.0,
+            energy_cost_kwh=0.07,
+            waste_disposal_per_kg=1.80,
+            overhead_fraction=0.20,
+        )
+
+
 # =====================================================================
-#  Configuration constants (realistic 2024 values)
+#  Configuration constants (kept as deprecated aliases for reference)
 # =====================================================================
 
-# Labour rate USD/h (loaded, including benefits)
 _LABOR_RATE_USD_H = 75.0
-
-# Hours of labour per synthesis step (depends on complexity)
 _BASE_LABOR_HOURS_PER_STEP = 3.0
-
-# Energy cost per kWh
 _ENERGY_COST_KWH = 0.10
-
-# Waste disposal cost per kg
 _WASTE_DISPOSAL_PER_KG = 2.50
-
-# Overhead multiplier on direct costs (insurance, QC, facility)
 _OVERHEAD_FRACTION = 0.25
-
-# Equipment depreciation rate (fraction of capital cost per batch)
 _EQUIPMENT_DEPRECIATION_PER_BATCH = 0.002
-
-# Default reagent equivalents if not otherwise specified
 _DEFAULT_REAGENT_EQUIV = 1.2
-
-# Typical solvent volume: litres per kg of product (shared constant)
 _SOLVENT_L_PER_KG = DEFAULT_SOLVENT_L_PER_KG
 
 
@@ -80,7 +120,9 @@ def _normalise_key(name: str) -> str:
     return normalize_reagent_name(name)
 
 
-def _reagent_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
+def _reagent_cost_for_step(
+    template: ReactionTemplate, scale_kg: float, params: CostParameters,
+) -> float:
     """Estimate raw-material cost for one step.
 
     Looks up each reagent in REAGENT_DB.  Falls back to a conservative
@@ -91,7 +133,7 @@ def _reagent_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float
         reagent = get_reagent(rname)
         price_per_kg = reagent.cost_per_kg if reagent and reagent.cost_per_kg > 0 else 100.0
         # Assume reagent mass ~ DEFAULT_EQUIV * product mass (rough stoichiometry)
-        reagent_kg = scale_kg * _DEFAULT_REAGENT_EQUIV
+        reagent_kg = scale_kg * params.default_reagent_equiv
         total += price_per_kg * reagent_kg
 
     # Catalyst cost (used in smaller amounts: ~0.05 equiv)
@@ -105,21 +147,23 @@ def _reagent_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float
     for sname in template.solvents[:1]:  # primary solvent only
         solvent = get_solvent(sname)
         cost_per_L = solvent.cost_per_L if solvent and solvent.cost_per_L > 0 else 15.0
-        solvent_L = scale_kg * _SOLVENT_L_PER_KG
+        solvent_L = scale_kg * params.solvent_l_per_kg
         total += cost_per_L * solvent_L
 
     return total
 
 
-def _labor_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
+def _labor_cost_for_step(
+    template: ReactionTemplate, scale_kg: float, params: CostParameters,
+) -> float:
     """Estimate labour cost for one step.
 
-    Base 3 h per step.  Add time for:
+    Base hours per step from params.  Add time for:
     - Cryogenic work (+1 h)
     - Chromatography purification (+2 h)
     - Scale > 50 kg (+1 h for logistics)
     """
-    hours = _BASE_LABOR_HOURS_PER_STEP
+    hours = params.base_labor_hours_per_step
 
     mean_t = (template.temperature_range[0] + template.temperature_range[1]) / 2.0
     if mean_t < -20:
@@ -131,10 +175,12 @@ def _labor_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
     if scale_kg > 200:
         hours += 1.0   # additional logistics
 
-    return hours * _LABOR_RATE_USD_H
+    return hours * params.labor_rate_usd_h
 
 
-def _equipment_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
+def _equipment_cost_for_step(
+    template: ReactionTemplate, scale_kg: float, params: CostParameters,
+) -> float:
     """Depreciation-based equipment cost per batch.
 
     Uses six-tenths rule for vessel capital cost then applies per-batch
@@ -144,10 +190,12 @@ def _equipment_cost_for_step(template: ReactionTemplate, scale_kg: float) -> flo
     base_capital = 15_000.0    # reference 100 L vessel
     scale_factor = (max(volume_L, 1.0) / 100.0) ** 0.6
     capital = base_capital * max(scale_factor, 0.3)
-    return capital * _EQUIPMENT_DEPRECIATION_PER_BATCH
+    return capital * params.equipment_depreciation_per_batch
 
 
-def _energy_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
+def _energy_cost_for_step(
+    template: ReactionTemplate, scale_kg: float, params: CostParameters,
+) -> float:
     """Estimate energy consumption in USD.
 
     Heating/cooling energy based on temperature delta, agitation power,
@@ -158,7 +206,7 @@ def _energy_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
 
     # Heating or cooling energy (kWh) ~ mass * Cp * deltaT / 3600
     # Approximate solution Cp ~ 2 kJ/(kg*K), plus safety factor
-    mass_kg = scale_kg * _SOLVENT_L_PER_KG  # total charge mass approx
+    mass_kg = scale_kg * params.solvent_l_per_kg  # total charge mass approx
     energy_kwh = mass_kg * 2.0 * delta_t / 3600.0
 
     # Agitation: ~0.5 kW per 100 L for 2 h
@@ -166,13 +214,15 @@ def _energy_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
     agitation_kwh = (volume_L / 100.0) * 0.5 * 2.0
 
     # Solvent removal (rotovap / distillation): ~0.3 kWh per L
-    solvent_removal_kwh = scale_kg * _SOLVENT_L_PER_KG * 0.3
+    solvent_removal_kwh = scale_kg * params.solvent_l_per_kg * 0.3
 
     total_kwh = energy_kwh + agitation_kwh + solvent_removal_kwh
-    return total_kwh * _ENERGY_COST_KWH
+    return total_kwh * params.energy_cost_kwh
 
 
-def _waste_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
+def _waste_cost_for_step(
+    template: ReactionTemplate, scale_kg: float, params: CostParameters,
+) -> float:
     """Estimate waste disposal cost.
 
     Waste includes spent solvent, aqueous washes, and by-products.
@@ -190,7 +240,7 @@ def _waste_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
 
     waste_multiplier = 8.0 if hazardous else 5.0
     waste_kg = scale_kg * waste_multiplier
-    disposal_rate = _WASTE_DISPOSAL_PER_KG * (2.0 if hazardous else 1.0)
+    disposal_rate = params.waste_disposal_per_kg * (2.0 if hazardous else 1.0)
     return waste_kg * disposal_rate
 
 
@@ -201,6 +251,7 @@ def _waste_cost_for_step(template: ReactionTemplate, scale_kg: float) -> float:
 def estimate_cost(
     steps: list[Any],
     scale_kg: float,
+    params: CostParameters | None = None,
 ) -> CostEstimate:
     """Estimate total manufacturing cost for a synthesis route.
 
@@ -214,12 +265,17 @@ def estimate_cost(
         Duck typing is used; no specific class is required.
     scale_kg : float
         Target production scale in kilograms of final product.
+    params : CostParameters | None
+        Cost model parameters.  Defaults to ``CostParameters()`` (US values)
+        when not supplied, preserving backwards compatibility.
 
     Returns
     -------
     CostEstimate
         Complete cost estimate with per-kg pricing and itemised breakdown.
     """
+    if params is None:
+        params = CostParameters()
     if not steps:
         breakdown = CostBreakdown(0, 0, 0, 0, 0, 0)
         return CostEstimate(
@@ -264,17 +320,17 @@ def estimate_cost(
         # Scale needed at this step to deliver cumulative_scale
         step_scale = cumulative_scale / avg_yield
 
-        total_materials += _reagent_cost_for_step(template, step_scale)
-        total_labor += _labor_cost_for_step(template, step_scale)
-        total_equipment += _equipment_cost_for_step(template, step_scale)
-        total_energy += _energy_cost_for_step(template, step_scale)
-        total_waste += _waste_cost_for_step(template, step_scale)
+        total_materials += _reagent_cost_for_step(template, step_scale, params)
+        total_labor += _labor_cost_for_step(template, step_scale, params)
+        total_equipment += _equipment_cost_for_step(template, step_scale, params)
+        total_energy += _energy_cost_for_step(template, step_scale, params)
+        total_waste += _waste_cost_for_step(template, step_scale, params)
 
         cumulative_scale = step_scale
 
     # Overhead
     direct_costs = total_materials + total_labor + total_equipment + total_energy + total_waste
-    total_overhead = direct_costs * _OVERHEAD_FRACTION
+    total_overhead = direct_costs * params.overhead_fraction
 
     total_usd = direct_costs + total_overhead
 

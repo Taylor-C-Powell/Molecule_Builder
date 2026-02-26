@@ -9,7 +9,7 @@ from molbuilder.process.reactor import select_reactor
 from molbuilder.process.conditions import optimize_conditions
 from molbuilder.process.purification import recommend_purification
 from molbuilder.process.safety import assess_safety
-from molbuilder.process.costing import estimate_cost
+from molbuilder.process.costing import estimate_cost, CostParameters
 from molbuilder.process.scale_up import analyze_scale_up
 from app.models.process import (
     ProcessEvaluateResponse,
@@ -78,7 +78,7 @@ def _serialize_safety(assessments) -> list[SafetyAssessmentResponse]:
             ppe_required=a.ppe_required,
             engineering_controls=a.engineering_controls,
             emergency_procedures=a.emergency_procedures,
-            incompatible_materials=a.incompatible_materials,
+            incompatible_materials=[str(m) for m in a.incompatible_materials],
             waste_classification=a.waste_classification,
             hazards=[
                 HazardInfoResponse(
@@ -131,12 +131,20 @@ PROCESS_TIMEOUT_SECONDS = 60
 
 _executor = ThreadPoolExecutor(max_workers=2)
 
+_COST_REGION_MAP: dict[str, CostParameters] = {
+    "us": CostParameters.us_default(),
+    "eu": CostParameters.eu_default(),
+    "india": CostParameters.india_default(),
+    "china": CostParameters.china_default(),
+}
+
 
 def _evaluate_process_sync(
     smiles: str,
     scale_kg: float,
     max_depth: int,
     beam_width: int,
+    cost_region: str = "us",
 ) -> ProcessEvaluateResponse:
     """Core process evaluation logic (runs in thread pool)."""
     mol = parse(smiles)
@@ -167,8 +175,9 @@ def _evaluate_process_sync(
         )
 
     # Aggregate assessments
+    cost_params = _COST_REGION_MAP.get(cost_region, CostParameters())
     safety = _serialize_safety(assess_safety(route.steps))
-    cost = _serialize_cost(estimate_cost(route.steps, scale_kg))
+    cost = _serialize_cost(estimate_cost(route.steps, scale_kg, params=cost_params))
     annual_kg = scale_kg * 100
     scaleup = _serialize_scaleup(analyze_scale_up(route.steps, annual_kg))
 
@@ -190,10 +199,11 @@ def evaluate_process(
     scale_kg: float = 1.0,
     max_depth: int = 5,
     beam_width: int = 5,
+    cost_region: str = "us",
 ) -> ProcessEvaluateResponse:
     """Full pipeline with timeout protection: parse -> retro -> process engineering."""
     future = _executor.submit(
-        _evaluate_process_sync, smiles, scale_kg, max_depth, beam_width
+        _evaluate_process_sync, smiles, scale_kg, max_depth, beam_width, cost_region
     )
     try:
         return future.result(timeout=PROCESS_TIMEOUT_SECONDS)

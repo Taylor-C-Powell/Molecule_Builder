@@ -934,26 +934,111 @@ def _validate_smiles_transform(original: str, transformed: str) -> str | None:
         return None
 
 
-def _replace_oh_with_carbonyl(smiles: str) -> str | None:
-    """Replace first C-OH with C=O (alcohol -> carbonyl).
+def _replace_oh_with_carbonyl(smiles: str, _mol: Molecule | None = None) -> str | None:
+    """Oxidise an alcohol to a carbonyl (graph-based).
 
-    Uses validation to prevent corrupt results from substring
-    collisions (e.g. 'COCO' should not become 'C=OCO').
+    Finds the first C-O(H) single bond, changes it to C=O, and
+    rebuilds SMILES via the graph writer.  Falls back to the original
+    string heuristic only when no graph is available.
     """
-    if "CO" in smiles and "C=O" not in smiles:
-        candidate = smiles.replace("CO", "C=O", 1)
-        return _validate_smiles_transform(smiles, candidate)
+    mol = _mol
+    if mol is None:
+        try:
+            mol = parse(smiles)
+        except Exception:
+            return None
+
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "O":
+            continue
+        nbrs = mol.neighbors(idx)
+        c_nbrs = [n for n in nbrs if mol.atoms[n].symbol == "C"]
+        if not c_nbrs:
+            continue
+        for c_idx in c_nbrs:
+            bond = mol.get_bond(idx, c_idx)
+            if bond is None or bond.order != 1:
+                continue
+            # Found an alcohol C-O single bond.  Build oxidised molecule.
+            removed = {idx}
+            # Also remove any explicit H on the O
+            for h_nb in nbrs:
+                if mol.atoms[h_nb].symbol == "H":
+                    removed.add(h_nb)
+            sub = Molecule(name="oxidised")
+            old_to_new: dict[int, int] = {}
+            for old_idx, a in enumerate(mol.atoms):
+                if old_idx in removed or a.symbol == "H":
+                    continue
+                new_idx = sub.add_atom(a.symbol, a.position.copy(), a.hybridization)
+                old_to_new[old_idx] = new_idx
+            # Add new O double-bonded to the carbon
+            new_c = old_to_new.get(c_idx)
+            if new_c is None:
+                continue
+            o_pos = mol.atoms[idx].position.copy()
+            new_o = sub.add_atom("O", o_pos)
+            sub.add_bond(new_c, new_o, order=2, rotatable=False)
+            # Copy remaining bonds
+            for b in mol.bonds:
+                if b.atom_i in old_to_new and b.atom_j in old_to_new:
+                    ni, nj = old_to_new[b.atom_i], old_to_new[b.atom_j]
+                    if sub.get_bond(ni, nj) is None:
+                        sub.add_bond(ni, nj, order=b.order, rotatable=b.rotatable)
+            try:
+                result = to_smiles(sub)
+                return _validate_smiles_transform(smiles, result)
+            except Exception:
+                continue
     return None
 
 
-def _replace_carbonyl_with_oh(smiles: str) -> str | None:
-    """Replace first C=O with C-OH (carbonyl -> alcohol).
+def _replace_carbonyl_with_oh(smiles: str, _mol: Molecule | None = None) -> str | None:
+    """Reduce a carbonyl to an alcohol (graph-based).
 
-    Uses validation to prevent corrupt results.
+    Finds the first C=O double bond, changes it to C-O (single bond).
+    The SMILES writer will add implicit H on the oxygen.
     """
-    if "C=O" in smiles:
-        candidate = smiles.replace("C=O", "CO", 1)
-        return _validate_smiles_transform(smiles, candidate)
+    mol = _mol
+    if mol is None:
+        try:
+            mol = parse(smiles)
+        except Exception:
+            return None
+
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "O":
+            continue
+        nbrs = mol.neighbors(idx)
+        c_nbrs = [n for n in nbrs if mol.atoms[n].symbol == "C"]
+        if not c_nbrs:
+            continue
+        for c_idx in c_nbrs:
+            bond = mol.get_bond(idx, c_idx)
+            if bond is None or bond.order != 2:
+                continue
+            # Found C=O.  Build reduced molecule with C-O.
+            sub = Molecule(name="reduced")
+            old_to_new: dict[int, int] = {}
+            for old_idx, a in enumerate(mol.atoms):
+                if a.symbol == "H":
+                    continue
+                new_idx = sub.add_atom(a.symbol, a.position.copy(), a.hybridization)
+                old_to_new[old_idx] = new_idx
+            for b in mol.bonds:
+                if b.atom_i in old_to_new and b.atom_j in old_to_new:
+                    ni, nj = old_to_new[b.atom_i], old_to_new[b.atom_j]
+                    if sub.get_bond(ni, nj) is None:
+                        order = b.order
+                        # Reduce the specific C=O bond to C-O
+                        if {b.atom_i, b.atom_j} == {idx, c_idx}:
+                            order = 1
+                        sub.add_bond(ni, nj, order=order, rotatable=b.rotatable)
+            try:
+                result = to_smiles(sub)
+                return _validate_smiles_transform(smiles, result)
+            except Exception:
+                continue
     return None
 
 
@@ -1078,42 +1163,97 @@ def _substitute_fg(
     fg: FunctionalGroup,
     template: ReactionTemplate,
 ) -> str | None:
-    """For substitution reactions, swap the produced FG for the required one.
+    """For substitution reactions, swap the produced FG for the required one (graph-based).
 
-    E.g. if the template produces an alcohol from an alkyl halide, the
-    precursor is the alkyl halide form.
+    Locates the FG centre atom on the molecular graph, removes the
+    leaving group atoms, and attaches the new atoms for the incoming
+    functional group.  Falls back to None if no swap is applicable.
     """
-    # Determine what FG the precursor should have
     required = template.functional_group_required
-    produced = template.functional_group_produced
+    fg_name = fg.name
 
-    # Map common FG swaps in SMILES
-    swap_map = {
-        ("alcohol", "alkyl_halide"): ("O", "Br"),
-        ("ether", "alkyl_halide"): ("OC", "Br"),
-        ("ether", "alcohol"): ("OC", "O"),
-        ("primary_amine", "alkyl_halide"): ("N", "Br"),
-        ("secondary_amine", "primary_amine"): ("NC", "N"),
-        ("tertiary_amine", "secondary_amine"): ("N(C)", "N"),
-        ("nitrile", "alkyl_halide"): ("C#N", "Br"),
-        ("azide", "alkyl_halide"): ("N=[N+]=[N-]", "Br"),
+    # Map: (produced_fg, required_fg) -> new_atom_symbol to attach
+    atom_swap: dict[tuple[str, str], str] = {
+        ("alcohol", "alkyl_halide"): "Br",
+        ("ether", "alkyl_halide"): "Br",
+        ("ether", "alcohol"): "O",
+        ("primary_amine", "alkyl_halide"): "Br",
+        ("nitrile", "alkyl_halide"): "Br",
     }
 
-    fg_name = fg.name
     for req in required:
         key = (fg_name, req)
-        if key in swap_map:
-            old_frag, new_frag = swap_map[key]
-            if old_frag in target_smiles:
-                candidate = target_smiles.replace(old_frag, new_frag, 1)
-                validated = _validate_smiles_transform(target_smiles, candidate)
-                if validated is not None:
-                    return validated
+        new_sym = atom_swap.get(key)
+        if new_sym is None:
+            continue
 
-    # Generic fallback: just return the target with a halide substitution
-    if fg_name == "alcohol" and "O" in target_smiles:
-        candidate = target_smiles.replace("O", "Br", 1)
-        return _validate_smiles_transform(target_smiles, candidate)
+        # Find the FG centre -- the heteroatom to remove
+        center = fg.center
+        fg_set = set(fg.atoms)
+        center_atom = target_mol.atoms[center]
+
+        # For alcohols/ethers/amines the centre is the heteroatom (O, N)
+        # For nitriles the centre is C, but we want to remove the C#N
+        if fg_name in ("alcohol", "ether", "primary_amine"):
+            # Remove the heteroatom and its H atoms
+            removed = {center}
+            for h_nb in target_mol.neighbors(center):
+                if target_mol.atoms[h_nb].symbol == "H":
+                    removed.add(h_nb)
+            # Find the C attached to the removed heteroatom
+            c_attach = None
+            for nb in target_mol.neighbors(center):
+                if nb not in removed and target_mol.atoms[nb].symbol == "C":
+                    c_attach = nb
+                    break
+            if c_attach is None:
+                continue
+        elif fg_name == "nitrile":
+            # Remove N from C#N; the C stays but gets Br instead
+            n_atoms = [a for a in fg.atoms if target_mol.atoms[a].symbol == "N"]
+            if not n_atoms:
+                continue
+            removed = set(n_atoms)
+            c_attach = center  # the C of C#N
+        else:
+            continue
+
+        # Build the substituted molecule
+        sub = Molecule(name="substituted")
+        old_to_new: dict[int, int] = {}
+        for old_idx, a in enumerate(target_mol.atoms):
+            if old_idx in removed or a.symbol == "H":
+                continue
+            new_idx = sub.add_atom(a.symbol, a.position.copy(), a.hybridization)
+            old_to_new[old_idx] = new_idx
+
+        # Copy bonds (excluding bonds to removed atoms)
+        for b in target_mol.bonds:
+            if b.atom_i in old_to_new and b.atom_j in old_to_new:
+                ni, nj = old_to_new[b.atom_i], old_to_new[b.atom_j]
+                order = b.order
+                # For nitrile, the C was triple-bonded to N; it now gets single bond to Br
+                if fg_name == "nitrile" and {b.atom_i, b.atom_j} & set(n_atoms):
+                    continue  # skip the C#N bond
+                if sub.get_bond(ni, nj) is None:
+                    sub.add_bond(ni, nj, order=order, rotatable=b.rotatable)
+
+        # Attach new atom
+        new_c = old_to_new.get(c_attach)
+        if new_c is None:
+            continue
+        pos = target_mol.atoms[center].position.copy()
+        new_a = sub.add_atom(new_sym, pos)
+        sub.add_bond(new_c, new_a, order=1)
+
+        try:
+            result = to_smiles(sub)
+            validated = _validate_smiles_transform(target_smiles, result)
+            if validated is not None:
+                return validated
+        except Exception:
+            continue
+
     return None
 
 
@@ -1194,13 +1334,56 @@ def _add_across_double_bond(
     fg: FunctionalGroup,
     template: ReactionTemplate,
 ) -> str | None:
-    """Reverse of elimination: add HX across a double bond to get precursor."""
-    # If the target has an alkene, the precursor is an alkyl halide/alcohol.
-    if fg.name == "alkene" and "C=C" in target_smiles:
-        # Add H and Br across the double bond
-        candidate = target_smiles.replace("C=C", "CC(Br)", 1)
-        return _validate_smiles_transform(target_smiles, candidate)
-    return None
+    """Reverse of elimination: add HBr across a double bond (graph-based).
+
+    Finds the C=C in the FG, changes the bond order to 1, and adds a
+    Br atom bonded to one of the carbons.
+    """
+    if fg.name != "alkene":
+        return None
+
+    # Find the C=C double bond from the FG atoms
+    c_pair = [a for a in fg.atoms if target_mol.atoms[a].symbol == "C"]
+    if len(c_pair) < 2:
+        return None
+    ci, cj = c_pair[0], c_pair[1]
+    bond = target_mol.get_bond(ci, cj)
+    if bond is None or bond.order != 2:
+        return None
+
+    # Build new molecule with C-C single bond + Br on one carbon
+    sub = Molecule(name="addition_product")
+    old_to_new: dict[int, int] = {}
+    for old_idx, a in enumerate(target_mol.atoms):
+        if a.symbol == "H":
+            continue
+        new_idx = sub.add_atom(a.symbol, a.position.copy(), a.hybridization)
+        old_to_new[old_idx] = new_idx
+
+    for b in target_mol.bonds:
+        if b.atom_i in old_to_new and b.atom_j in old_to_new:
+            ni, nj = old_to_new[b.atom_i], old_to_new[b.atom_j]
+            order = b.order
+            # Change C=C to C-C
+            if {b.atom_i, b.atom_j} == {ci, cj}:
+                order = 1
+            if sub.get_bond(ni, nj) is None:
+                sub.add_bond(ni, nj, order=order, rotatable=b.rotatable)
+
+    # Add Br to one carbon
+    new_c = old_to_new.get(cj)
+    if new_c is None:
+        return None
+    br_pos = target_mol.atoms[cj].position.copy()
+    br_pos[0] += 1.9  # offset for Br
+    new_br = sub.add_atom("Br", br_pos)
+    sub.add_bond(new_c, new_br, order=1)
+
+    try:
+        result = to_smiles(sub)
+        return _validate_smiles_transform(target_smiles, result)
+    except Exception:
+        return None
 
 
 def _remove_addition(
@@ -1209,30 +1392,90 @@ def _remove_addition(
     fg: FunctionalGroup,
     template: ReactionTemplate,
 ) -> str | None:
-    """Reverse of addition: remove the added group to restore alkene."""
-    fg_name = fg.name
+    """Reverse of addition: remove the added group to restore alkene (graph-based).
 
-    # The template required an alkene and produced the current FG
-    if "alkene" in template.functional_group_required:
-        # Restore the alkene by removing the added functionality
-        if fg_name == "alcohol" and "CO" in target_smiles:
-            candidate = target_smiles.replace("CO", "C=C", 1)
-            result = _validate_smiles_transform(target_smiles, candidate)
-            if result is not None:
-                return result
-        if fg_name.startswith("alkyl_halide"):
-            for hal in ("Br", "Cl", "I"):
-                if f"C{hal}" in target_smiles:
-                    candidate = target_smiles.replace(f"C{hal}", "C=C", 1)
-                    result = _validate_smiles_transform(target_smiles, candidate)
-                    if result is not None:
-                        return result
-        if fg_name == "epoxide" and "C1OC1" in target_smiles:
-            candidate = target_smiles.replace("C1OC1", "C=C", 1)
-            result = _validate_smiles_transform(target_smiles, candidate)
-            if result is not None:
-                return result
-    return None
+    Finds the added heteroatom/halogen via the FG centre, removes it,
+    and restores the C=C double bond between the two carbons it bridged.
+    """
+    fg_name = fg.name
+    if "alkene" not in template.functional_group_required:
+        return None
+
+    center = fg.center
+    center_sym = target_mol.atoms[center].symbol
+
+    # Determine which atom to remove and which two carbons to restore C=C
+    removed: set[int] = set()
+    c_a: int | None = None
+    c_b: int | None = None
+
+    if fg_name == "alcohol":
+        # Centre is O; remove O and its H; find the C attached
+        removed.add(center)
+        for h_nb in target_mol.neighbors(center):
+            if target_mol.atoms[h_nb].symbol == "H":
+                removed.add(h_nb)
+        c_nbrs = [n for n in target_mol.neighbors(center)
+                   if target_mol.atoms[n].symbol == "C"]
+        if c_nbrs:
+            c_a = c_nbrs[0]
+            # Find adjacent C to form C=C
+            for nb in target_mol.neighbors(c_a):
+                if nb != center and target_mol.atoms[nb].symbol == "C" and nb not in removed:
+                    c_b = nb
+                    break
+    elif fg_name.startswith("alkyl_halide"):
+        # Centre is the C bonded to the halogen
+        hal_nbrs = [n for n in target_mol.neighbors(center)
+                     if target_mol.atoms[n].symbol in ("F", "Cl", "Br", "I")]
+        if hal_nbrs:
+            removed.add(hal_nbrs[0])
+            c_a = center
+            for nb in target_mol.neighbors(center):
+                if nb not in removed and target_mol.atoms[nb].symbol == "C":
+                    c_b = nb
+                    break
+    elif fg_name == "epoxide":
+        # Centre is O; remove O; the two C atoms in the ring become C=C
+        removed.add(center)
+        c_nbrs = [n for n in target_mol.neighbors(center)
+                   if target_mol.atoms[n].symbol == "C"]
+        if len(c_nbrs) >= 2:
+            c_a, c_b = c_nbrs[0], c_nbrs[1]
+
+    if c_a is None or c_b is None:
+        return None
+
+    # Build new molecule with the added group removed and C=C restored
+    sub = Molecule(name="alkene_precursor")
+    old_to_new: dict[int, int] = {}
+    for old_idx, a in enumerate(target_mol.atoms):
+        if old_idx in removed or a.symbol == "H":
+            continue
+        new_idx = sub.add_atom(a.symbol, a.position.copy(), a.hybridization)
+        old_to_new[old_idx] = new_idx
+
+    for b in target_mol.bonds:
+        if b.atom_i in old_to_new and b.atom_j in old_to_new:
+            ni, nj = old_to_new[b.atom_i], old_to_new[b.atom_j]
+            order = b.order
+            # Restore double bond between c_a and c_b
+            if {b.atom_i, b.atom_j} == {c_a, c_b}:
+                order = 2
+            if sub.get_bond(ni, nj) is None:
+                sub.add_bond(ni, nj, order=order, rotatable=b.rotatable)
+
+    # If c_a-c_b had no bond (epoxide case), add one
+    if c_a in old_to_new and c_b in old_to_new:
+        ni, nj = old_to_new[c_a], old_to_new[c_b]
+        if sub.get_bond(ni, nj) is None:
+            sub.add_bond(ni, nj, order=2, rotatable=False)
+
+    try:
+        result = to_smiles(sub)
+        return _validate_smiles_transform(target_smiles, result)
+    except Exception:
+        return None
 
 
 def _toggle_protection(

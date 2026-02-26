@@ -176,7 +176,14 @@ def detect_functional_groups(mol: Molecule) -> list[FunctionalGroup]:
     Returns a list of ``FunctionalGroup`` instances, one per occurrence.
     The same atom may appear in more than one group (e.g. an ester
     contains both a C=O and a C-O-C linkage).
+
+    Results are cached on the Molecule instance (``mol._fg_cache``).
+    The cache is automatically invalidated when the molecule is modified
+    via ``add_atom()``, ``add_bond()``, or ``close_ring()``.
     """
+    if hasattr(mol, '_fg_cache') and mol._fg_cache is not None:
+        return list(mol._fg_cache)
+
     groups: list[FunctionalGroup] = []
     groups.extend(_detect_carboxylic_acids(mol))
     groups.extend(_detect_esters(mol))
@@ -202,6 +209,11 @@ def detect_functional_groups(mol: Molecule) -> list[FunctionalGroup]:
     groups.extend(_detect_boronic_acids(mol))
     groups.extend(_detect_phosphonates(mol))
     groups.extend(_detect_sulfonamides(mol))
+
+    # Cache results on the molecule instance
+    if hasattr(mol, '_fg_cache'):
+        mol._fg_cache = list(groups)
+
     return groups
 
 
