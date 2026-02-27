@@ -64,6 +64,61 @@ export class ApiClient {
   delete<T>(path: string) {
     return this.request<T>("DELETE", path);
   }
+
+  async postFile<T>(path: string, file: File): Promise<T> {
+    const headers: Record<string, string> = {};
+    const token = this.getToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: "POST",
+      headers,
+      body: form,
+    });
+
+    if (!res.ok) {
+      let detail = `Request failed: ${res.status}`;
+      try {
+        const err: ApiError = await res.json();
+        detail = err.detail;
+      } catch {
+        // non-JSON error
+      }
+      throw new ApiRequestError(detail, res.status);
+    }
+
+    return res.json();
+  }
+
+  async downloadBlob(path: string, method: string = "GET"): Promise<Blob> {
+    const headers: Record<string, string> = {};
+    const token = this.getToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method,
+      headers,
+    });
+
+    if (!res.ok) {
+      let detail = `Request failed: ${res.status}`;
+      try {
+        const err: ApiError = await res.json();
+        detail = err.detail;
+      } catch {
+        // non-JSON error
+      }
+      throw new ApiRequestError(detail, res.status);
+    }
+
+    return res.blob();
+  }
 }
 
 export class ApiRequestError extends Error {

@@ -106,6 +106,66 @@ curl -X POST https://molbuilder-api.up.railway.app/api/v1/process/predict-condit
 
 Tiers: Free (100 req/day) | Pro ($49/mo) | Team ($199/mo) | Enterprise (custom)
 
+## New in v1.2
+
+### Synthetic Accessibility Scoring
+
+Estimate how hard a molecule is to synthesize (1 = easy, 10 = hard):
+
+```python
+from molbuilder.molecule.sa_score import sa_score
+from molbuilder.smiles import parse
+
+mol = parse("c1ccc2ccccc2c1")  # naphthalene
+result = sa_score(mol)
+print(result.sa_score)          # 4.0
+print(result.ring_complexity)   # 2.0
+```
+
+### File I/O API Endpoints
+
+Upload and download molecule files via the REST API:
+
+```bash
+# Import a MOL file
+curl -X POST .../api/v1/molecule/import-file \
+  -H "X-API-Key: your-key" -F "file=@molecule.mol"
+
+# Export as XYZ
+curl .../api/v1/molecule/{id}/export/xyz -H "X-API-Key: your-key"
+```
+
+### PDF Reports
+
+Generate professional PDF process reports (requires `pip install molbuilder[pdf]`):
+
+```python
+from molbuilder.reports.pdf_report import generate_molecule_pdf
+from molbuilder.smiles import parse
+
+mol = parse("CC(=O)O")
+pdf_bytes = generate_molecule_pdf(mol)
+```
+
+### Python SDK v0.2.0
+
+```bash
+pip install molbuilder-client
+```
+
+```python
+from molbuilder_client import MolBuilder
+
+client = MolBuilder(api_key="mb_...")
+client.import_file("molecule.xyz")
+client.export_file("mol_id", "pdb", save_to="output.pdb")
+pdf = client.download_report("CCO", scale_kg=10.0, save_to="report.pdf")
+```
+
+### Examples
+
+See [`examples/`](examples/) for self-contained demo scripts including the full SMILES-to-manufacturing pipeline.
+
 ## Quick reference
 
 ```python
@@ -141,7 +201,7 @@ write_mol(mol, "aspirin.mol")
 
 ## Testing
 
-1,280+ tests across 23 test files. CI enforces 80% coverage.
+1,435+ tests across 30+ test files. CI enforces 80% coverage.
 
 ```bash
 pip install -e ".[dev]"

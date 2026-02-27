@@ -46,6 +46,7 @@ class MoleculeProperties:
     num_atoms: int
     num_bonds: int
     functional_groups: list[str] = field(default_factory=list)
+    sa_score: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -341,3 +342,12 @@ class BatchList:
     total: int
     page: int
     per_page: int
+
+
+# -- File I/O ----------------------------------------------------------------
+
+@dataclass(frozen=True, slots=True)
+class FileImportResult:
+    molecules: list[MoleculeInfo]
+    format: str
+    count: int

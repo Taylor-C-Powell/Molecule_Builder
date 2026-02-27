@@ -35,6 +35,15 @@ export function PropertiesPanel({ properties, loading }: PropertiesPanelProps) {
     ["HBA", properties.hba != null ? String(properties.hba) : "--"],
   ];
 
+  const saColor =
+    properties.sa_score != null
+      ? properties.sa_score < 4
+        ? "text-green-600"
+        : properties.sa_score <= 7
+          ? "text-yellow-600"
+          : "text-red-600"
+      : "";
+
   return (
     <div className="space-y-4">
       <Card>
@@ -51,6 +60,12 @@ export function PropertiesPanel({ properties, loading }: PropertiesPanelProps) {
               <span className="font-medium font-mono">{value}</span>
             </div>
           ))}
+          <div className="flex justify-between text-sm py-1 border-b border-border/50">
+            <span className="text-text-secondary">SA Score</span>
+            <span className={`font-medium font-mono ${saColor}`}>
+              {properties.sa_score != null ? num(properties.sa_score) : "--"}
+            </span>
+          </div>
         </div>
       </Card>
 

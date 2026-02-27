@@ -28,7 +28,7 @@ T = TypeVar("T")
 
 DEFAULT_BASE_URL = "https://molbuilder-api-production.up.railway.app"
 API_PREFIX = "/api/v1"
-USER_AGENT = "molbuilder-client/0.1.0"
+USER_AGENT = "molbuilder-client/0.2.0"
 
 
 # ---------------------------------------------------------------------------

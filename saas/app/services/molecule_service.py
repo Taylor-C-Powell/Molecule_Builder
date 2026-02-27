@@ -7,6 +7,7 @@ from molbuilder.io.json_io import _molecular_formula
 from molbuilder.reactions.functional_group_detect import detect_functional_groups
 from molbuilder.core.elements import atomic_weight
 from molbuilder.molecule.properties import lipinski_properties
+from molbuilder.molecule.sa_score import sa_score
 from app.models.molecule import (
     AtomResponse,
     BondResponse,
@@ -41,6 +42,7 @@ def get_functional_groups(mol: Molecule) -> list[str]:
 
 def build_properties(mol_id: str, mol: Molecule, smiles: str) -> MoleculePropertiesResponse:
     props = lipinski_properties(mol)
+    sa = sa_score(mol)
     return MoleculePropertiesResponse(
         id=mol_id,
         smiles=smiles,
@@ -57,6 +59,7 @@ def build_properties(mol_id: str, mol: Molecule, smiles: str) -> MoleculePropert
         heavy_atom_count=props.heavy_atom_count,
         lipinski_violations=props.lipinski_violations,
         lipinski_pass=props.lipinski_pass,
+        sa_score=sa.sa_score,
     )
 
 

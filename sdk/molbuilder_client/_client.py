@@ -21,6 +21,7 @@ from molbuilder_client._models import (
     BillingStatus,
     CheckoutSession,
     Element,
+    FileImportResult,
     LibraryImport,
     LibraryList,
     LibraryMolecule,
@@ -96,6 +97,24 @@ class MolBuilder:
         resp = self._client.delete(self._url(path))
         raise_for_status(resp)
         return resp.json()
+
+    def _post_file(self, path: str, filename: str, content: bytes) -> dict[str, Any]:
+        resp = self._client.post(
+            self._url(path),
+            files={"file": (filename, content, "application/octet-stream")},
+        )
+        raise_for_status(resp)
+        return resp.json()
+
+    def _get_raw(self, path: str, *, params: dict[str, Any] | None = None) -> httpx.Response:
+        resp = self._client.get(self._url(path), params=params)
+        raise_for_status(resp)
+        return resp
+
+    def _post_raw(self, path: str, *, params: dict[str, Any] | None = None) -> httpx.Response:
+        resp = self._client.post(self._url(path), params=params)
+        raise_for_status(resp)
+        return resp
 
     # -- Auth -----------------------------------------------------------------
 
@@ -302,3 +321,80 @@ class MolBuilder:
         """Cancel a running batch job. Returns True on success."""
         self._delete(f"batch/{job_id}")
         return True
+
+    # -- File I/O -------------------------------------------------------------
+
+    def import_file(self, file_path: str, *, format: str | None = None) -> FileImportResult:
+        """Import a molecule file (XYZ, MOL, SDF, PDB, JSON).
+
+        Parameters
+        ----------
+        file_path:
+            Path to the molecule file on disk.
+        format:
+            Explicit format override. If None, detected from extension.
+        """
+        import pathlib
+        p = pathlib.Path(file_path)
+        content = p.read_bytes()
+        filename = p.name
+        if format:
+            filename = f"{p.stem}.{format}"
+        data = self._post_file("molecule/import-file", filename, content)
+        return from_dict(FileImportResult, data)
+
+    def export_file(self, mol_id: str, format: str, *, save_to: str | None = None) -> str:
+        """Export a molecule in the specified format.
+
+        Parameters
+        ----------
+        mol_id:
+            Molecule ID from a previous from_smiles() or import_file() call.
+        format:
+            Output format: 'xyz', 'mol', 'pdb', or 'json'.
+        save_to:
+            If provided, write content to this file path and return the path.
+            Otherwise return the raw file content string.
+        """
+        resp = self._get_raw(f"molecule/{mol_id}/export/{format}")
+        content = resp.text
+        if save_to:
+            import pathlib
+            pathlib.Path(save_to).write_text(content, encoding="utf-8")
+            return save_to
+        return content
+
+    # -- Reports --------------------------------------------------------------
+
+    def download_report(
+        self,
+        smiles: str,
+        *,
+        scale_kg: float = 1.0,
+        save_to: str | None = None,
+    ) -> bytes:
+        """Download a process engineering PDF report.
+
+        Parameters
+        ----------
+        smiles:
+            Target molecule SMILES.
+        scale_kg:
+            Production scale in kg.
+        save_to:
+            If provided, write PDF to this file path.
+
+        Returns
+        -------
+        bytes
+            Raw PDF bytes.
+        """
+        resp = self._post_raw(
+            "reports/process-pdf",
+            params={"smiles": smiles, "scale_kg": scale_kg},
+        )
+        pdf_bytes = resp.content
+        if save_to:
+            import pathlib
+            pathlib.Path(save_to).write_bytes(pdf_bytes)
+        return pdf_bytes

@@ -37,6 +37,7 @@ from molbuilder_client._models import (
     CostEstimate,
     Disconnection,
     Element,
+    FileImportResult,
     Hazard,
     LibraryImport,
     LibraryList,
@@ -101,9 +102,10 @@ __all__ = [
     "BatchList",
     "BatchStatus",
     "BatchSubmit",
+    "FileImportResult",
     "LibraryImport",
     "LibraryList",
     "LibraryMolecule",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

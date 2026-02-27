@@ -47,6 +47,7 @@ class MoleculePropertiesResponse(BaseModel):
     heavy_atom_count: int | None = None
     lipinski_violations: int | None = None
     lipinski_pass: bool | None = None
+    sa_score: float | None = None
 
 
 class Molecule3DResponse(BaseModel):

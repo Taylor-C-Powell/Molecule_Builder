@@ -4,6 +4,7 @@ import type {
   MoleculeResponse,
   Molecule3DResponse,
   MoleculePropertiesResponse,
+  FileImportResponse,
 } from "./types";
 
 export function parseSmilesApi(client: ApiClient, req: ParseSmilesRequest) {
@@ -16,4 +17,12 @@ export function getMolecule3dApi(client: ApiClient, id: string) {
 
 export function getMoleculePropertiesApi(client: ApiClient, id: string) {
   return client.get<MoleculePropertiesResponse>(`/v1/molecule/${id}/properties`);
+}
+
+export function importFileApi(client: ApiClient, file: File) {
+  return client.postFile<FileImportResponse>("/v1/molecule/import-file", file);
+}
+
+export function exportMoleculeApi(client: ApiClient, molId: string, format: string) {
+  return client.downloadBlob(`/v1/molecule/${molId}/export/${format}`);
 }

@@ -75,6 +75,7 @@ export interface MoleculePropertiesResponse {
   heavy_atom_count: number | null;
   lipinski_violations: number | null;
   lipinski_pass: boolean | null;
+  sa_score: number | null;
 }
 
 // ---- Retrosynthesis ----
@@ -354,6 +355,13 @@ export interface BatchListResponse {
   total: number;
   page: number;
   per_page: number;
+}
+
+// ---- File I/O ----
+export interface FileImportResponse {
+  molecules: MoleculeResponse[];
+  format: string;
+  count: number;
 }
 
 // ---- Common ----

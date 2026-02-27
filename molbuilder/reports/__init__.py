@@ -42,6 +42,11 @@ from molbuilder.reports.synthesis_report import generate_synthesis_report
 from molbuilder.reports.safety_report import generate_safety_report
 from molbuilder.reports.cost_report import generate_cost_report
 
+try:
+    from molbuilder.reports.pdf_report import generate_process_pdf, generate_molecule_pdf
+except ImportError:
+    pass
+
 
 # =====================================================================
 #  Protocol types for duck-typed interfaces

@@ -39,6 +39,11 @@ class AuthorizationError(MolBuilderAPIError):
         super().__init__(403, detail)
 
 
+class InvalidFileFormat(MolBuilderAPIError):
+    def __init__(self, filename_or_format: str):
+        super().__init__(422, f"Unsupported or invalid file format: '{filename_or_format}'")
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(MolBuilderAPIError)
     async def molbuilder_error_handler(
