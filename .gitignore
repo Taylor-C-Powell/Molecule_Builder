@@ -66,3 +66,6 @@ run_water_collision.py
 
 # Studio build artifacts
 studio/*.tsbuildinfo
+
+# External repos (cloned for PRs)
+project-procrustes/
