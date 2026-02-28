@@ -210,6 +210,24 @@ def generate_safety_report(
             lines.append("  No reagent hazards listed.")
             lines.append("")
 
+        # Thermal hazards
+        thermal = _safe_list(a, "thermal_hazards")
+        if thermal:
+            lines.append("  Thermal Hazards:")
+            for th in thermal:
+                th_type = _safe_str(getattr(th, "reaction_type", None), "Unknown")
+                th_sev = _safe_str(getattr(th, "severity", None), "unknown")
+                th_desc = _safe_str(getattr(th, "description", None), "")
+                th_max = getattr(th, "max_temp_c", None)
+                th_mit = _safe_str(getattr(th, "mitigation", None), "")
+                temp_str = f" (max {th_max} C)" if th_max is not None else ""
+                lines.append(
+                    f"    [{th_sev.upper()}] {th_type}{temp_str}: {th_desc}"
+                )
+                if th_mit:
+                    lines.append(f"      Mitigation: {th_mit}")
+            lines.append("")
+
         # Engineering controls
         controls = _safe_list(a, "engineering_controls")
         if controls:

@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import logging
-from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import ThreadPoolExecutor, Future, TimeoutError as FuturesTimeoutError
 
 from app.services.job_db import get_job_db
 
 logger = logging.getLogger("molbuilder.batch")
+
+# Maximum time (seconds) a single batch job is allowed to run before timeout
+BATCH_JOB_TIMEOUT_SECONDS = 300
 
 
 def _process_molecule(smiles: str, job_type: str, params: dict) -> dict:
@@ -92,9 +95,9 @@ def _run_batch(job_id: str, smiles_list: list[str], job_type: str, params: dict)
     errors = 0
 
     for i, smiles in enumerate(smiles_list):
-        # Check if job was cancelled
+        # Check if job was cancelled or timed out
         job = db.get_job(job_id)
-        if job and job["status"] == "cancelled":
+        if job and job["status"] in ("cancelled", "failed"):
             return
 
         result = _process_molecule(smiles, job_type, params)
@@ -104,6 +107,11 @@ def _run_batch(job_id: str, smiles_list: list[str], job_type: str, params: dict)
 
         progress = ((i + 1) / total) * 100.0
         db.update_status(job_id, "running", progress)
+
+    # Final status check: do not overwrite if job was cancelled or timed out
+    job = db.get_job(job_id)
+    if job and job["status"] in ("cancelled", "failed"):
+        return
 
     db.set_result(job_id, {
         "results": results,
@@ -123,9 +131,40 @@ class BatchWorker:
     def submit_batch(self, job_id: str, smiles_list: list[str],
                      job_type: str, params: dict | None = None) -> None:
         future = self._executor.submit(
-            _run_batch, job_id, smiles_list, job_type, params or {}
+            self._run_with_timeout, job_id, smiles_list, job_type, params or {}
         )
         self._futures[job_id] = future
+
+    @staticmethod
+    def _run_with_timeout(job_id: str, smiles_list: list[str],
+                          job_type: str, params: dict) -> None:
+        """Run a batch job with a timeout guard."""
+        import threading
+
+        result_holder: list[Exception | None] = [None]
+        done_event = threading.Event()
+
+        def _target():
+            try:
+                _run_batch(job_id, smiles_list, job_type, params)
+            except Exception as exc:
+                result_holder[0] = exc
+            finally:
+                done_event.set()
+
+        thread = threading.Thread(target=_target, daemon=True)
+        thread.start()
+
+        if not done_event.wait(timeout=BATCH_JOB_TIMEOUT_SECONDS):
+            logger.error("Batch job %s timed out after %d seconds",
+                         job_id, BATCH_JOB_TIMEOUT_SECONDS)
+            db = get_job_db()
+            db.update_status(job_id, "failed", 0.0)
+            db.set_error(job_id, f"Job timed out after {BATCH_JOB_TIMEOUT_SECONDS} seconds")
+            return
+
+        if result_holder[0] is not None:
+            raise result_holder[0]
 
     def cancel(self, job_id: str) -> bool:
         future = self._futures.get(job_id)

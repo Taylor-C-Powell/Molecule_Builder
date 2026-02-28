@@ -898,15 +898,15 @@ def _modify_fg_smiles(
                 # Precursor is the corresponding aldehyde or ketone
                 return _replace_oh_with_carbonyl(target_smiles)
             if fg_name in ("aldehyde", "ketone"):
-                # Precursor might be a carboxylic acid
-                return target_smiles  # keep same (template applies to it)
+                # Precursor is the carboxylic acid form
+                return _replace_carbonyl_with_carboxyl(target_smiles)
         else:  # reduce
             if fg_name == "aldehyde":
                 return _replace_carbonyl_with_oh(target_smiles)
             if fg_name == "ketone":
                 return _replace_carbonyl_with_oh(target_smiles)
             if fg_name == "carboxylic_acid":
-                return target_smiles
+                return _replace_carboxyl_with_carbonyl(target_smiles)
     except Exception:
         pass
     return None
@@ -1039,6 +1039,120 @@ def _replace_carbonyl_with_oh(smiles: str, _mol: Molecule | None = None) -> str 
                 return _validate_smiles_transform(smiles, result)
             except Exception:
                 continue
+    return None
+
+
+def _replace_carbonyl_with_carboxyl(smiles: str, _mol: Molecule | None = None) -> str | None:
+    """Oxidise an aldehyde/ketone to a carboxylic acid (graph-based).
+
+    Finds the first C=O double bond and adds a second -OH to the carbon,
+    producing a -C(=O)O pattern.  Rebuilds SMILES via the graph writer.
+    """
+    mol = _mol
+    if mol is None:
+        try:
+            mol = parse(smiles)
+        except Exception:
+            return None
+
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "O":
+            continue
+        nbrs = mol.neighbors(idx)
+        c_nbrs = [n for n in nbrs if mol.atoms[n].symbol == "C"]
+        if not c_nbrs:
+            continue
+        for c_idx in c_nbrs:
+            bond = mol.get_bond(idx, c_idx)
+            if bond is None or bond.order != 2:
+                continue
+            # Found C=O.  Build carboxylic acid by adding -OH to the carbon.
+            sub = Molecule(name="oxidised_acid")
+            old_to_new: dict[int, int] = {}
+            for old_idx, a in enumerate(mol.atoms):
+                if a.symbol == "H":
+                    continue
+                new_idx = sub.add_atom(a.symbol, a.position.copy(), a.hybridization)
+                old_to_new[old_idx] = new_idx
+            for b in mol.bonds:
+                if b.atom_i in old_to_new and b.atom_j in old_to_new:
+                    ni, nj = old_to_new[b.atom_i], old_to_new[b.atom_j]
+                    if sub.get_bond(ni, nj) is None:
+                        sub.add_bond(ni, nj, order=b.order, rotatable=b.rotatable)
+            # Add hydroxyl oxygen bonded to the carbon
+            new_c = old_to_new.get(c_idx)
+            if new_c is None:
+                continue
+            o_pos = mol.atoms[idx].position.copy()
+            o_pos[0] += 1.2  # offset slightly
+            new_oh = sub.add_atom("O", o_pos)
+            sub.add_bond(new_c, new_oh, order=1, rotatable=True)
+            try:
+                result = to_smiles(sub)
+                return _validate_smiles_transform(smiles, result)
+            except Exception:
+                continue
+    return None
+
+
+def _replace_carboxyl_with_carbonyl(smiles: str, _mol: Molecule | None = None) -> str | None:
+    """Reduce a carboxylic acid to an aldehyde (graph-based).
+
+    Finds a -C(=O)O-H pattern, removes the hydroxyl oxygen, and keeps
+    the C=O double bond to produce an aldehyde.
+    """
+    mol = _mol
+    if mol is None:
+        try:
+            mol = parse(smiles)
+        except Exception:
+            return None
+
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "C":
+            continue
+        nbrs = mol.neighbors(idx)
+        o_double = None
+        o_single = None
+        for n in nbrs:
+            if mol.atoms[n].symbol != "O":
+                continue
+            b = mol.get_bond(idx, n)
+            if b is None:
+                continue
+            if b.order == 2 and o_double is None:
+                o_double = n
+            elif b.order == 1 and o_single is None:
+                # Check this O is terminal (hydroxyl of carboxylic acid)
+                o_nbrs = mol.neighbors(n)
+                non_h_nbrs = [x for x in o_nbrs if mol.atoms[x].symbol != "H"]
+                if len(non_h_nbrs) == 1:
+                    o_single = n
+        if o_double is None or o_single is None:
+            continue
+        # Found carboxylic acid C(=O)O.  Remove the hydroxyl O.
+        removed = {o_single}
+        # Also remove any explicit H on the hydroxyl O
+        for h_nb in mol.neighbors(o_single):
+            if mol.atoms[h_nb].symbol == "H":
+                removed.add(h_nb)
+        sub = Molecule(name="reduced_aldehyde")
+        old_to_new: dict[int, int] = {}
+        for old_idx, a in enumerate(mol.atoms):
+            if old_idx in removed or a.symbol == "H":
+                continue
+            new_idx = sub.add_atom(a.symbol, a.position.copy(), a.hybridization)
+            old_to_new[old_idx] = new_idx
+        for b in mol.bonds:
+            if b.atom_i in old_to_new and b.atom_j in old_to_new:
+                ni, nj = old_to_new[b.atom_i], old_to_new[b.atom_j]
+                if sub.get_bond(ni, nj) is None:
+                    sub.add_bond(ni, nj, order=b.order, rotatable=b.rotatable)
+        try:
+            result = to_smiles(sub)
+            return _validate_smiles_transform(smiles, result)
+        except Exception:
+            continue
     return None
 
 

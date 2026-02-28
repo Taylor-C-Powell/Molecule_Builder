@@ -2,6 +2,7 @@
 
 import logging
 import secrets
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -20,6 +21,16 @@ from app.routers import auth, batch, billing, file_io, legal, library, molecule,
 logger = logging.getLogger("molbuilder.startup")
 
 _LANDING_HTML = (Path(__file__).parent / "landing.html").read_text(encoding="utf-8")
+
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """Attach a UUID X-Request-ID header to every response for tracing."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        request_id = str(uuid.uuid4())
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -165,6 +176,7 @@ app = FastAPI(
 
 # Security headers (outermost middleware, runs last)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestIDMiddleware)
 app.add_middleware(VersioningMiddleware)
 app.add_middleware(UsageTrackingMiddleware)
 

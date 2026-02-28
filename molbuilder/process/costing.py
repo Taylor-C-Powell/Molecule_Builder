@@ -7,12 +7,20 @@ all synthesis steps.  Reagent pricing comes from ``REAGENT_DB``.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any
 
 from molbuilder.reactions.reaction_types import ReactionCategory, ReactionTemplate
-from molbuilder.reactions.reagent_data import get_reagent, get_solvent, normalize_reagent_name
+from molbuilder.reactions.reagent_data import (
+    PRICING_TIER_DEFAULTS,
+    get_reagent,
+    get_solvent,
+    normalize_reagent_name,
+)
 from molbuilder.process import DEFAULT_SOLVENT_L_PER_KG
+
+logger = logging.getLogger("molbuilder.costing")
 
 
 # =====================================================================
@@ -129,17 +137,33 @@ def _reagent_cost_for_step(
     default of $100/kg if the reagent is not found.
     """
     total = 0.0
+    default_reagent_price = PRICING_TIER_DEFAULTS["standard"]
     for rname in template.reagents:
         reagent = get_reagent(rname)
-        price_per_kg = reagent.cost_per_kg if reagent and reagent.cost_per_kg > 0 else 100.0
+        if reagent and reagent.cost_per_kg > 0:
+            price_per_kg = reagent.cost_per_kg
+        elif reagent:
+            price_per_kg = PRICING_TIER_DEFAULTS.get(reagent.pricing_tier, default_reagent_price)
+        else:
+            logger.warning("Unknown reagent '%s' -- using standard tier default ($%.0f/kg)",
+                           rname, default_reagent_price)
+            price_per_kg = default_reagent_price
         # Assume reagent mass ~ DEFAULT_EQUIV * product mass (rough stoichiometry)
         reagent_kg = scale_kg * params.default_reagent_equiv
         total += price_per_kg * reagent_kg
 
     # Catalyst cost (used in smaller amounts: ~0.05 equiv)
+    default_cat_price = PRICING_TIER_DEFAULTS["specialty"]
     for cname in template.catalysts:
         cat_reagent = get_reagent(cname)
-        cat_price = cat_reagent.cost_per_kg if cat_reagent and cat_reagent.cost_per_kg > 0 else 500.0
+        if cat_reagent and cat_reagent.cost_per_kg > 0:
+            cat_price = cat_reagent.cost_per_kg
+        elif cat_reagent:
+            cat_price = PRICING_TIER_DEFAULTS.get(cat_reagent.pricing_tier, default_cat_price)
+        else:
+            logger.warning("Unknown catalyst '%s' -- using specialty tier default ($%.0f/kg)",
+                           cname, default_cat_price)
+            cat_price = default_cat_price
         catalyst_kg = scale_kg * 0.05
         total += cat_price * catalyst_kg
 

@@ -148,6 +148,17 @@ class IncompatibilityWarning:
 
 
 @dataclass
+class ThermalHazard:
+    """Thermal hazard assessment for a reaction step."""
+
+    reaction_type: str
+    severity: str          # "low", "medium", "high", "critical"
+    description: str
+    max_temp_c: float
+    mitigation: str
+
+
+@dataclass
 class SafetyAssessment:
     """Complete safety assessment for one synthesis step."""
 
@@ -158,6 +169,7 @@ class SafetyAssessment:
     engineering_controls: list[str]
     emergency_procedures: list[str]
     incompatible_materials: list[IncompatibilityWarning]
+    thermal_hazards: list[ThermalHazard]
     waste_classification: str
     risk_level: str             # "low", "medium", "high"
 
@@ -328,11 +340,19 @@ def _determine_emergency_procedures(
 
 def _determine_incompatibilities(
     template: ReactionTemplate,
+    solvent: str | None = None,
 ) -> list[IncompatibilityWarning]:
-    """List known incompatible material pairs in the step."""
+    """List known incompatible material pairs in the step.
+
+    When *solvent* is provided, it is included in the reagent key set
+    so that all existing pair checks naturally catch solvent-reagent
+    conflicts.  Additional solvent-specific checks are also applied.
+    """
     warnings: list[IncompatibilityWarning] = []
 
     reagent_keys = {normalize_reagent_name(r) for r in template.reagents}
+    if solvent:
+        reagent_keys.add(normalize_reagent_name(solvent))
 
     def _warn(a: str, b: str, hazard: str, severity: str, mitigation: str):
         warnings.append(IncompatibilityWarning(
@@ -529,7 +549,162 @@ def _determine_incompatibilities(
               "Acetone + chloroform + base -> chlorobutanol side reaction",
               "medium", "Avoid mixing; use separate vessels for extraction steps")
 
+    # -- Solvent-specific checks -----------------------------------------------
+
+    if solvent:
+        solvent_key = normalize_reagent_name(solvent)
+
+        # NaH / water-reactive in protic or aqueous solvent
+        protic_solvent_keys = {"meoh", "etoh", "ipoh", "h2o", "water",
+                               "methanol", "ethanol", "isopropanol", "acoh"}
+        water_reactive_all = {
+            "lialh4", "lithium_aluminium_hydride",
+            "nah", "sodium_hydride",
+            "n_buli", "n_butyllithium", "t_buli", "s_buli",
+            "memgbr", "etmgbr", "phmgbr", "meli", "phli",
+        }
+        if solvent_key in protic_solvent_keys and reagent_keys & water_reactive_all:
+            _warn("protic solvent", "water-reactive reagent",
+                  f"Water-reactive reagent in protic solvent ({solvent}): violent reaction risk",
+                  "critical",
+                  "Switch to ethereal solvent (THF, Et2O); ensure anhydrous conditions")
+
+        # DMSO thermal decomposition at high temperature
+        if solvent_key == "dmso":
+            mean_t = (template.temperature_range[0] + template.temperature_range[1]) / 2.0
+            if mean_t > 150:
+                _warn("DMSO", "high temperature",
+                      "DMSO decomposes above 189 C with toxic by-products (Me2S, formaldehyde)",
+                      "high",
+                      "Use alternative high-boiling solvent (NMP, DMI); "
+                      "limit temperature to below 180 C")
+
+        # Ether peroxide accumulation warning when used as primary solvent
+        ether_solvents = {"diethyl_ether", "thf", "dioxane", "dme", "tbme", "cpme"}
+        if solvent_key in ether_solvents and reagent_keys & strong_oxidizers:
+            # Already caught above in ether + strong oxidizer check, but
+            # reinforce the solvent-specific context
+            pass  # covered by existing check
+
     return warnings
+
+
+def _assess_thermal_hazards(template: ReactionTemplate) -> list[ThermalHazard]:
+    """Identify thermal hazards based on template category and reagents."""
+    hazards: list[ThermalHazard] = []
+    reagent_keys = {normalize_reagent_name(r) for r in template.reagents}
+    catalyst_keys = {normalize_reagent_name(c) for c in template.catalysts}
+    all_keys = reagent_keys | catalyst_keys
+    name_lower = (template.named_reaction or "").lower()
+
+    # Grignard formation: organometallic + Mg
+    grignard_reagents = {"memgbr", "etmgbr", "phmgbr"}
+    if all_keys & grignard_reagents or "grignard" in name_lower:
+        hazards.append(ThermalHazard(
+            reaction_type="Grignard formation",
+            severity="critical",
+            description="Highly exothermic initiation; risk of runaway if reaction stalls then restarts",
+            max_temp_c=35.0,
+            mitigation="Use slow addition with ice bath; monitor temperature continuously; "
+                       "have dry-ice/acetone bath ready for emergency cooling",
+        ))
+
+    # Catalytic hydrogenation
+    h2_keys = {"h2_pd_c", "pd_c_10", "lindlar"}
+    if all_keys & h2_keys or "hydrogenation" in name_lower:
+        hazards.append(ThermalHazard(
+            reaction_type="Catalytic hydrogenation",
+            severity="high",
+            description="Exothermic hydrogen uptake; catalyst can ignite H2/air mixtures",
+            max_temp_c=50.0,
+            mitigation="Purge vessel with inert gas before introducing H2; "
+                       "control H2 pressure; keep catalyst wet when filtering",
+        ))
+
+    # Diazotization
+    if "diazotization" in name_lower or "diazo" in name_lower:
+        hazards.append(ThermalHazard(
+            reaction_type="Diazotization",
+            severity="critical",
+            description="Diazonium salts are thermally unstable and may decompose explosively above 5 C",
+            max_temp_c=5.0,
+            mitigation="Maintain temperature at 0-5 C with ice-salt bath; "
+                       "prepare fresh and use immediately; never isolate diazonium salts",
+        ))
+
+    # Friedel-Crafts
+    fc_catalysts = {"alcl3", "bf3_oet2", "ticl4"}
+    if all_keys & fc_catalysts and (
+        "friedel" in name_lower or "acylation" in name_lower or "alkylation" in name_lower
+    ):
+        hazards.append(ThermalHazard(
+            reaction_type="Friedel-Crafts reaction",
+            severity="high",
+            description="Exothermic complexation with Lewis acid; HCl gas evolution",
+            max_temp_c=25.0,
+            mitigation="Add Lewis acid catalyst slowly; maintain ice-bath cooling; "
+                       "vent HCl through scrubber",
+        ))
+
+    # Nitration
+    if "nitration" in name_lower or ("hno3" in all_keys and "h2so4" in all_keys):
+        hazards.append(ThermalHazard(
+            reaction_type="Nitration",
+            severity="critical",
+            description="Mixed acid nitration is highly exothermic with risk of runaway and explosion",
+            max_temp_c=10.0,
+            mitigation="Add nitrating agent slowly below 10 C; use blast shield; "
+                       "have quench water available",
+        ))
+
+    # Sulfonation
+    if "sulfonation" in name_lower:
+        hazards.append(ThermalHazard(
+            reaction_type="Sulfonation",
+            severity="high",
+            description="Exothermic reaction with fuming sulfuric acid or SO3",
+            max_temp_c=40.0,
+            mitigation="Add sulfonating agent slowly with cooling; "
+                       "use temperature-controlled addition funnel",
+        ))
+
+    # Ozonolysis
+    if "ozonolysis" in name_lower or "o3" in all_keys:
+        hazards.append(ThermalHazard(
+            reaction_type="Ozonolysis",
+            severity="high",
+            description="Ozonides are explosive intermediates; ozone is a strong oxidant",
+            max_temp_c=-78.0,
+            mitigation="Perform at -78 C in DCM; quench ozonides immediately with Me2S or PPh3; "
+                       "never concentrate ozonide solutions",
+        ))
+
+    # Metalation (n-BuLi, t-BuLi, s-BuLi)
+    lithium_bases = {"n_buli", "n_butyllithium", "t_buli", "s_buli",
+                     "meli", "phli"}
+    if all_keys & lithium_bases:
+        hazards.append(ThermalHazard(
+            reaction_type="Organolithium metalation",
+            severity="critical",
+            description="Pyrophoric reagent; exothermic metalation; "
+                       "t-BuLi ignites on air contact",
+            max_temp_c=-78.0,
+            mitigation="Handle under inert atmosphere (Schlenk or glovebox); "
+                       "cool to -78 C before addition; use syringe pump for controlled addition",
+        ))
+
+    # Wolff-Kishner (hydrazine + base + heat)
+    if "wolff" in name_lower or ("n2h4" in all_keys or "nh2nh2" in all_keys):
+        hazards.append(ThermalHazard(
+            reaction_type="Wolff-Kishner reduction",
+            severity="high",
+            description="Exothermic decomposition of hydrazones; N2 gas evolution at reflux",
+            max_temp_c=200.0,
+            mitigation="Use well-ventilated reflux condenser; add hydrazine slowly; "
+                       "ensure outlet for N2 gas to prevent pressure buildup",
+        ))
+
+    return hazards
 
 
 def _classify_waste(all_hazards: set[str]) -> str:
@@ -606,6 +781,11 @@ def assess_safety(steps: list[Any]) -> list[SafetyAssessment]:
             all_hazards.update(hi.ghs_hazards)
             all_pictograms.update(hi.ghs_pictograms)
 
+        # Determine solvent from conditions if available
+        solvent = None
+        if hasattr(step, "conditions") and step.conditions is not None:
+            solvent = getattr(step.conditions, "solvent", None)
+
         assessments.append(SafetyAssessment(
             step_number=idx + 1,
             step_name=template.name,
@@ -617,7 +797,10 @@ def assess_safety(steps: list[Any]) -> list[SafetyAssessment]:
             emergency_procedures=_determine_emergency_procedures(
                 all_hazards, all_pictograms,
             ),
-            incompatible_materials=_determine_incompatibilities(template),
+            incompatible_materials=_determine_incompatibilities(
+                template, solvent=solvent,
+            ),
+            thermal_hazards=_assess_thermal_hazards(template),
             waste_classification=_classify_waste(all_hazards),
             risk_level=_calculate_risk_level(all_hazards, all_pictograms),
         ))

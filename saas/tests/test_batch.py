@@ -2,6 +2,8 @@
 
 import time
 import uuid
+from unittest.mock import patch
+
 import pytest
 from app.auth.api_keys import api_key_store
 from app.config import Tier
@@ -110,3 +112,28 @@ class TestBatchCancel:
         cancel = client.delete(f"/api/v1/batch/{job_id}", headers=free_headers)
         # 200 cancelled, 404 already done, 429 rate limited
         assert cancel.status_code in (200, 404, 429)
+
+
+class TestBatchTimeout:
+    def test_batch_job_timeout_unit(self):
+        """_run_with_timeout should mark the job as failed on timeout."""
+        from app.services.batch_worker import BatchWorker
+        from app.services.job_db import get_job_db
+
+        db = get_job_db()
+        job_id = db.create_job("timeout@test.com", "evaluate", {"smiles_list": ["C"]})
+
+        def slow_batch(jid, smiles_list, job_type, params):
+            db2 = get_job_db()
+            db2.update_status(jid, "running", 0.0)
+            time.sleep(5)
+
+        with patch("app.services.batch_worker._run_batch", slow_batch):
+            with patch("app.services.batch_worker.BATCH_JOB_TIMEOUT_SECONDS", 1):
+                BatchWorker._run_with_timeout(
+                    job_id, ["C"], "evaluate", {}
+                )
+
+        job = db.get_job(job_id)
+        assert job["status"] == "failed"
+        assert "timed out" in (job.get("error") or "")

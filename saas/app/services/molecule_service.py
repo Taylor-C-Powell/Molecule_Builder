@@ -1,10 +1,13 @@
 """Molecule parsing and property extraction."""
 
+from functools import lru_cache
+
 from molbuilder.smiles.parser import parse
 from molbuilder.smiles.writer import to_smiles
 from molbuilder.molecule.graph import Molecule
 from molbuilder.io.json_io import _molecular_formula
 from molbuilder.reactions.functional_group_detect import detect_functional_groups
+from molbuilder.reactions.fg_smarts_validation import cross_validate_fg
 from molbuilder.core.elements import atomic_weight
 from molbuilder.molecule.properties import lipinski_properties
 from molbuilder.molecule.sa_score import sa_score
@@ -40,27 +43,39 @@ def get_functional_groups(mol: Molecule) -> list[str]:
     return [fg.name for fg in fgs]
 
 
-def build_properties(mol_id: str, mol: Molecule, smiles: str) -> MoleculePropertiesResponse:
+def get_fg_confidence(mol: Molecule) -> float:
+    """Return heuristic/SMARTS agreement confidence (0.0-1.0)."""
+    result = cross_validate_fg(mol)
+    return round(result.confidence, 3)
+
+
+@lru_cache(maxsize=512)
+def _compute_properties(smiles: str) -> dict:
+    """Compute and cache molecule properties keyed by canonical SMILES."""
+    mol = parse(smiles)
     props = lipinski_properties(mol)
     sa = sa_score(mol)
-    return MoleculePropertiesResponse(
-        id=mol_id,
-        smiles=smiles,
-        formula=get_formula(mol),
-        molecular_weight=get_molecular_weight(mol),
-        num_atoms=len(mol.atoms),
-        num_bonds=len(mol.bonds),
-        functional_groups=get_functional_groups(mol),
-        logp=props.logp,
-        hbd=props.hbd,
-        hba=props.hba,
-        rotatable_bonds=props.rotatable_bonds,
-        tpsa=props.tpsa,
-        heavy_atom_count=props.heavy_atom_count,
-        lipinski_violations=props.lipinski_violations,
-        lipinski_pass=props.lipinski_pass,
-        sa_score=sa.sa_score,
-    )
+    return {
+        "formula": get_formula(mol),
+        "molecular_weight": get_molecular_weight(mol),
+        "num_atoms": len(mol.atoms),
+        "num_bonds": len(mol.bonds),
+        "functional_groups": get_functional_groups(mol),
+        "logp": props.logp,
+        "hbd": props.hbd,
+        "hba": props.hba,
+        "rotatable_bonds": props.rotatable_bonds,
+        "tpsa": props.tpsa,
+        "heavy_atom_count": props.heavy_atom_count,
+        "lipinski_violations": props.lipinski_violations,
+        "lipinski_pass": props.lipinski_pass,
+        "sa_score": sa.sa_score,
+    }
+
+
+def build_properties(mol_id: str, mol: Molecule, smiles: str) -> MoleculePropertiesResponse:
+    cached = _compute_properties(smiles)
+    return MoleculePropertiesResponse(id=mol_id, smiles=smiles, **cached)
 
 
 def build_3d(mol_id: str, mol: Molecule) -> Molecule3DResponse:
