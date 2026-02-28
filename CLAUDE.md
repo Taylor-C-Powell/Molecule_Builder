@@ -34,12 +34,12 @@ cd studio && npm ci
 ## Running Tests
 
 ```bash
-# Core library (1435 tests across 30 files, CI enforces --cov-fail-under=80)
+# Core library (1510 tests across 36 files, CI enforces --cov-fail-under=80)
 python -m pytest tests/ -v
 python -m pytest tests/test_smiles.py -v          # single file
 python -m pytest tests/ --cov=molbuilder --cov-report=term-missing
 
-# SaaS API (151 tests across 18 files, uses FastAPI TestClient with temp SQLite DBs)
+# SaaS API (175 tests across 22 files, uses FastAPI TestClient with temp SQLite DBs)
 cd saas && python -m pytest tests/ -v
 
 # SDK (uses respx for HTTP mocking, pytest-asyncio with asyncio_mode=auto)
@@ -67,17 +67,19 @@ cd studio && npm run lint
 ### Core Library Dependency Graph
 
 ```
-core/  <-- everything depends on this
+core/  <-- everything depends on this (constants, elements, geometry, bond data)
   +-- atomic/      (Bohr model, quantum numbers, wavefunctions)
   +-- bonding/     (Lewis structures, VSEPR, covalent bond analysis)
-  +-- molecule/    (Molecule graph -- central class)
+  +-- molecule/    (Molecule graph, properties, SA score -- central class)
   |     +-- smiles/  (SMILES tokenizer, parser, writer)
   |     +-- io/      (XYZ, MOL/SDF V2000, PDB, JSON)
   +-- coords/      (3D coordinate generation -- DG+FF builtin or RDKit backend)
   +-- dynamics/    (MD engine: force field, Verlet integrator, reaction mechanisms)
-  +-- reactions/   (185 templates, 24 FG detectors, retrosynthesis engine, RetroCast adapter)
-  |     +-- process/  (reactor, conditions, costing, safety, scale-up)
-  +-- reports/     (ASCII report generators)
+  +-- smarts/      (SMARTS pattern matching engine -- atom/bond primitives, recursive SMARTS)
+  +-- data/        (ORD conditions JSON, template-to-ORD mapping)
+  +-- reactions/   (185 templates, 24 FG detectors, retrosynthesis, FG SMARTS validation, RetroCast adapter)
+  |     +-- process/  (reactor, conditions, condition prediction, costing, safety, scale-up)
+  +-- reports/     (ASCII + PDF report generators)
   +-- visualization/, gui/, cli/
 ```
 
@@ -94,6 +96,12 @@ class Molecule:
 ### SaaS API
 
 FastAPI with Pydantic v2. Auth flow: API key (X-API-Key) -> JWT exchange. Five tiers: free/pro/team/academic/enterprise. RBAC roles: admin/chemist/viewer. SQLite databases for users, audit trail, molecule store.
+
+**15 router modules:** auth, molecule, retrosynthesis, process, batch, library, file_io, reports, billing, analytics, audit, elements, version, feasibility, legal.
+
+**Middleware stack:** SecurityHeaders, RequestID, Versioning, UsageTracking, CORS.
+
+**Services:** molecule_service, retro_service, process_service, feasibility_service, prediction_service, file_io_service, batch_worker, job_db, library_db, molecule_store, user_db, audit_db, stripe_service, usage_tracker.
 
 ### Frontend & Studio
 
@@ -125,10 +133,16 @@ from molbuilder.core.elements import ELEMENTS, SYMBOL_TO_Z, from_symbol
 from molbuilder.io import write_xyz, read_xyz, write_mol, read_mol
 from molbuilder.coords import generate_3d              # 3D coord generation (auto/builtin/rdkit)
 from molbuilder.dynamics import MDSimulation, ForceField  # molecular dynamics
+from molbuilder.smarts import SmartsMatcher            # SMARTS substructure search
 from molbuilder.reactions import REACTION_TEMPLATES, detect_functional_groups
 from molbuilder.reactions.retrosynthesis import retrosynthesis, format_tree
+from molbuilder.reactions.fg_smarts_validation import cross_validate_fg  # FG cross-validation
 from molbuilder.process.reactor import select_reactor
 from molbuilder.process.costing import estimate_cost
+from molbuilder.process.condition_prediction import predict_conditions  # ORD-backed
+from molbuilder.molecule.properties import lipinski_properties
+from molbuilder.molecule.sa_score import sa_score       # synthetic accessibility (1-10)
+from molbuilder.reports.pdf_report import generate_molecule_pdf  # optional dep
 ```
 
 ## Entry Points

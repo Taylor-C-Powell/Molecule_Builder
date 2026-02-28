@@ -13,7 +13,7 @@ Quick start::
     print(to_smiles(mol))
 """
 
-__version__ = "1.1.1"
+__version__ = "1.2.0"
 
 # Core data types
 from molbuilder.molecule.graph import Molecule, Atom, Bond, Hybridization

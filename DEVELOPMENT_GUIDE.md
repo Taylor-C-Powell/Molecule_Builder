@@ -4,8 +4,8 @@ Authoritative reference for continuing development after context compactions.
 Read this file at the start of every new session or after context resets.
 
 **Current state:** All 10 phases (0-9) COMPLETE. All 3 sprints COMPLETE.
-517 tests passing (6 warnings). ~19,900 source lines + ~4,100 test lines.
-21 FG detectors. 91 reaction templates. 69 GHS codes. 49 BDE entries. 118 covalent radii.
+1510 tests passing across 36 test files. ~19,900 source lines + ~10,000 test lines.
+24 FG detectors. 185 reaction templates. 69 GHS codes. 49 BDE entries. 118 covalent radii.
 
 **Sprint 1 completed fixes (P0 critical):**
 - P0-1: Dipole moment formula corrected in `bonding/covalent.py`
@@ -55,6 +55,14 @@ Read this file at the start of every new session or after context resets.
 
 All P0, P1, and P2 items from the development roadmap are COMPLETE.
 
+**Engineering Hardening Sprint (completed 2026-02-28):**
+- Fix broken redox transforms (aldehyde/ketone oxidation, carboxylic acid reduction)
+- Thermal hazard detection (10 exothermic patterns: Grignard, diazotization, etc.)
+- Solvent-reagent incompatibility checks (NaH+water, n-BuLi+protic, DMSO high temp)
+- Expanded reagent DB from ~100 to 171, added pricing_tier field
+- FG SMARTS cross-validation layer (heuristic vs SMARTS agreement scoring)
+- SaaS robustness: RequestID middleware, batch job timeout, properties cache
+
 ---
 
 ## Table of Contents
@@ -75,8 +83,9 @@ All P0, P1, and P2 items from the development roadmap are COMPLETE.
 
 ## Project Overview
 
-**molbuilder** is a professional-grade molecular engineering tool. ~19,900 source
-lines + ~4,100 test lines across 81 Python files in 12 subpackages.
+**molbuilder** is a professional-grade molecular engineering toolkit. Five components:
+core library, SaaS API, frontend, studio, SDK. Core library: ~25,000 source lines
++ ~10,000 test lines across 16 subpackages.
 
 - **Pure Python** + numpy + scipy + matplotlib (no RDKit, no OpenBabel)
 - **Windows cp1252 compatible** -- no special unicode in source files
@@ -97,19 +106,23 @@ Molecule_Builder/
   synthesize.py               # Standalone synthesis planner script
   DEVELOPMENT_GUIDE.md        # THIS FILE
   legacy/                     # Original 13 flat files preserved
-  tests/
+  tests/                      # 1510 tests across 36 files
     __init__.py
-    test_core.py              # 105 tests
-    test_atomic.py            # 110 tests
-    test_bonding.py           # 72 tests
-    test_molecule.py          # 49 tests
-    test_smiles.py            # 30 tests
-    test_io.py                # 12 tests
-    test_reactions.py         # 23 tests
-    test_process.py           # 45 tests
-    test_edge_cases.py        # 71 tests (edge cases + scientific validation)
+    test_core.py, test_atomic.py, test_bonding.py, test_molecule.py
+    test_smiles.py, test_io.py, test_reactions.py, test_process.py
+    test_edge_cases.py, test_dynamics.py, test_mechanisms.py
+    test_properties.py, test_reports.py, test_visualization.py
+    test_coords.py, test_ring_geometry.py, test_coverage_boost.py
+    test_bonding_graph_coverage.py, test_process_coverage.py
+    test_pka.py, test_drug_validation.py, test_interaction_viz.py
+    test_cache.py, test_feasibility.py, test_ml_features.py
+    test_condition_prediction.py, test_ord_integration.py
+    test_smarts.py, test_retrocast_adapter.py, test_sa_score.py
+    test_retro_graph_transforms.py, test_redox_transforms.py
+    test_thermal_hazards.py, test_reagent_database.py
+    test_fg_smarts_validation.py, test_pdf_report.py
   molbuilder/
-    __init__.py               # __version__ = "1.0.0"
+    __init__.py               # __version__ = "1.2.0"
     __main__.py               # Entry point -> cli.menu.main()
     core/                     # Shared constants, elements, geometry, bond data
       constants.py            # Physical constants, coulombs_law()
@@ -127,13 +140,15 @@ Molecule_Builder/
       vsepr.py                # VSEPRMolecule, AXEClassification
       covalent.py             # CovalentBond, MolecularBondAnalysis
     molecule/                 # Molecule graph, conformations, builders, amino acids
-      graph.py                # Molecule, Atom, Bond, enums (668 lines, central class)
+      graph.py                # Molecule, Atom, Bond, enums (central class)
       conformations.py        # classify_conformation, scan_torsion
       stereochemistry.py      # Re-export of Stereodescriptor
       builders.py             # build_ethane, build_butane, build_cyclohexane, etc.
       functional_groups.py    # add_hydroxyl, add_amino, add_phenyl_ring, etc.
-      amino_acids.py          # AminoAcidType, build_amino_acid, build_peptide (920 lines)
+      amino_acids.py          # AminoAcidType, build_amino_acid, build_peptide
       peptides.py             # Re-exports from amino_acids.py
+      properties.py           # lipinski_properties(), Lipinski dataclass
+      sa_score.py             # sa_score(), Ertl-style synthetic accessibility (1-10)
     smiles/                   # SMILES tokenizer, parser, writer
       tokenizer.py            # tokenize() -> list[Token]
       parser.py               # parse(smiles) -> Molecule
@@ -144,12 +159,23 @@ Molecule_Builder/
       mol_sdf.py              # to/from MOL V2000 / SDF format
       pdb.py                  # to/from PDB format
       smiles_io.py            # SMILES file read/write
+    coords/                   # 3D coordinate generation
+      __init__.py             # generate_3d() -- auto/builtin/rdkit backends
+    dynamics/                 # Molecular dynamics engine
+      md.py                   # MDSimulation, ForceField, Verlet integrator
+    smarts/                   # SMARTS pattern matching engine
+      matcher.py              # SmartsMatcher -- atom/bond primitives, recursive SMARTS
+    data/                     # Pre-computed empirical data
+      ord_conditions.json     # 180 reaction types from Open Reaction Database
+      template_ord_mapping.py # Maps 185 templates to ORD keys
     reactions/                # Reaction templates, reagent DB, FG detection
       reaction_types.py       # ReactionCategory enum, ReactionTemplate dataclass
-      reagent_data.py         # REAGENT_DB (~100), SOLVENT_DB (~30)
-      knowledge_base.py       # 91 reaction templates, lookup functions
-      functional_group_detect.py  # 21 FG detectors
+      reagent_data.py         # REAGENT_DB (171), SOLVENT_DB (32), pricing_tier field
+      knowledge_base.py       # 185 reaction templates, lookup functions
+      functional_group_detect.py  # 24 FG detectors
+      fg_smarts_validation.py # Cross-validates heuristic vs SMARTS FG detection
       retrosynthesis.py       # Beam search retrosynthesis engine
+      retrocast_adapter.py    # tree_to_retrocast_routes(), export_retrocast_json()
       synthesis_route.py      # SynthesisStep, SynthesisRoute, extract_best_route
     process/                  # Reactor, solvents, costing, safety, scale-up
       reactor.py              # ReactorType enum, ReactorSpec, select_reactor()
@@ -157,16 +183,18 @@ Molecule_Builder/
       purification.py         # PurificationMethod enum, recommend_purification()
       conditions.py           # ReactionConditions, optimize_conditions()
       costing.py              # CostBreakdown, CostEstimate, estimate_cost()
-      safety.py               # GHS hazards, SafetyAssessment, assess_safety()
+      safety.py               # GHS hazards, SafetyAssessment, ThermalHazard, assess_safety()
+      condition_prediction.py # predict_conditions() -- ORD-backed condition prediction
       scale_up.py             # ScaleUpAnalysis, analyze_scale_up()
     visualization/            # Bohr, quantum, molecule 3D visualizations
     gui/                      # tkinter + matplotlib 3D molecule builder
-    reports/                  # Text report generators
+    reports/                  # Report generators (text + PDF)
       text_formatter.py       # ascii_table, section_header, word_wrap, etc.
       molecule_report.py      # generate_molecule_report()
       synthesis_report.py     # generate_synthesis_report()
       safety_report.py        # generate_safety_report()
       cost_report.py          # generate_cost_report()
+      pdf_report.py           # generate_molecule_pdf(), generate_process_pdf() (optional dep)
     cli/                      # Interactive menu and wizard
       menu.py                 # Main menu system (11 options)
       demos.py                # Demo functions
@@ -847,7 +875,7 @@ Compare computed values against known experimental data:
 ## Verification Commands
 
 ```bash
-# Run full test suite (expect 435 passing before fixes, more after)
+# Run full test suite (1510 tests)
 python -m pytest tests/ -q
 
 # Run specific test file
@@ -1010,17 +1038,17 @@ core/  <-- everything depends on this (no internal dependencies)
 |----------|-------|----------|
 | Elements | 118 | `core/elements.py` |
 | Covalent radii | 118 | `core/element_properties.py` |
-| Reagents | ~100 | `reactions/reagent_data.py` |
-| Solvents | ~30 | `reactions/reagent_data.py` |
-| Reaction templates | 91 | `reactions/knowledge_base.py` |
+| Reagents | 171 | `reactions/reagent_data.py` |
+| Solvents | 32 | `reactions/reagent_data.py` |
+| Reaction templates | 185 | `reactions/knowledge_base.py` |
 | Purchasable materials | ~200 | `reactions/retrosynthesis.py` |
 | Bond lengths | 27 entries | `core/bond_data.py` |
 | BDE values | 49 entries | `core/bond_data.py` |
 | GHS hazard codes | 69 | `process/safety.py` |
-| FG detectors | 21 | `reactions/functional_group_detect.py` |
+| FG detectors | 24 | `reactions/functional_group_detect.py` |
 | Amino acids | 20 | `molecule/amino_acids.py` |
 | Torsion barriers | 16 types | `core/bond_data.py` |
-| Tests | 517 | `tests/` (9 files) |
+| Tests | 1510 | `tests/` (36 files) |
 
 ---
 

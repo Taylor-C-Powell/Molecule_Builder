@@ -120,6 +120,39 @@ except RateLimitError as e:
 |-------------------------------------------------------------------|---------------------|--------------------------------|
 | `process_evaluate(smiles, scale_kg=1.0, max_depth=5, beam_width=5)` | `ProcessEvaluation` | Full process engineering report |
 
+### Batch Processing
+
+| Method                                          | Returns       | Description                       |
+|-------------------------------------------------|---------------|-----------------------------------|
+| `submit_batch(smiles_list, job_type, **params)` | `BatchJob`    | Submit async batch job            |
+| `get_batch_status(job_id)`                      | `BatchJob`    | Poll job status and results       |
+| `list_batches(limit=20, offset=0)`              | `BatchList`   | List your batch jobs              |
+| `cancel_batch(job_id)`                          | `BatchJob`    | Cancel a running batch job        |
+| `wait_for_batch(job_id, timeout=300)`           | `BatchJob`    | Poll until complete or timeout    |
+
+### Molecule Library
+
+| Method                                   | Returns          | Description                   |
+|------------------------------------------|------------------|-------------------------------|
+| `save_molecule(mol_id, **kwargs)`        | `LibraryEntry`   | Save molecule to library      |
+| `get_molecule(entry_id)`                 | `LibraryEntry`   | Get library entry by ID       |
+| `list_molecules(limit=20, offset=0)`     | `LibraryList`    | List saved molecules          |
+| `update_molecule(entry_id, **kwargs)`    | `LibraryEntry`   | Update library entry metadata |
+| `delete_molecule(entry_id)`              | `None`           | Delete library entry          |
+
+### File I/O
+
+| Method                                          | Returns           | Description                    |
+|-------------------------------------------------|-------------------|--------------------------------|
+| `import_file(file_path)`                        | `FileImportResult`| Upload and parse a molecule file |
+| `export_file(mol_id, format, save_to=None)`     | `bytes`           | Export molecule in given format |
+
+### Reports
+
+| Method                                             | Returns | Description                      |
+|----------------------------------------------------|---------|----------------------------------|
+| `download_report(smiles, scale_kg=1.0, save_to=None)` | `bytes` | Generate and download PDF report |
+
 ### Billing
 
 | Method                  | Returns           | Description                        |
