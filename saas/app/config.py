@@ -64,6 +64,8 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_pro_monthly_price_id: str = ""
     stripe_pro_yearly_price_id: str = ""
+    stripe_team_monthly_price_id: str = ""
+    stripe_team_yearly_price_id: str = ""
 
     # Sentry error monitoring (set SENTRY_DSN in environment)
     sentry_dsn: str = ""

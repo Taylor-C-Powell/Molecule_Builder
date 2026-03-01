@@ -77,6 +77,35 @@ class TestCheckout:
         assert resp.status_code == 200
         assert resp.json()["checkout_url"] == "https://checkout.stripe.com/test_session"
 
+    @patch("app.routers.billing.settings")
+    @patch("app.services.stripe_service.stripe")
+    def test_checkout_team_monthly(self, mock_stripe, mock_settings, client, auth_headers):
+        """With Stripe configured, team_monthly checkout returns a URL."""
+        mock_settings.stripe_secret_key = "sk_test_fake"
+        mock_settings.stripe_webhook_secret = "whsec_fake"
+        mock_settings.stripe_pro_monthly_price_id = "price_pro_m"
+        mock_settings.stripe_pro_yearly_price_id = "price_pro_y"
+        mock_settings.stripe_team_monthly_price_id = "price_team_m"
+        mock_settings.stripe_team_yearly_price_id = "price_team_y"
+        mock_settings.allowed_redirect_hosts = "www.molbuilder.io,molbuilder.io,localhost"
+
+        mock_stripe.Customer.list.return_value = MagicMock(data=[])
+        mock_customer = MagicMock()
+        mock_customer.id = "cus_test_team"
+        mock_stripe.Customer.create.return_value = mock_customer
+
+        mock_session = MagicMock()
+        mock_session.url = "https://checkout.stripe.com/team_session"
+        mock_stripe.checkout.Session.create.return_value = mock_session
+
+        resp = client.post(
+            "/api/v1/billing/checkout",
+            json={"plan": "team_monthly"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["checkout_url"] == "https://checkout.stripe.com/team_session"
+
     def test_checkout_invalid_plan(self, client, auth_headers):
         resp = client.post(
             "/api/v1/billing/checkout",

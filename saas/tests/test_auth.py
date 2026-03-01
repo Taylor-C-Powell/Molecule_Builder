@@ -101,6 +101,44 @@ def test_bad_jwt_returns_401(client):
     assert resp.status_code == 401
 
 
+def test_register_academic_edu(client):
+    """Academic .edu emails get academic tier automatically."""
+    resp = client.post("/api/v1/auth/register", json={"email": "prof@mit.edu"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["tier"] == "academic"
+    assert data["api_key"].startswith("mb_acad")
+
+
+def test_register_academic_ac_uk(client):
+    """Academic .ac.uk emails get academic tier."""
+    resp = client.post("/api/v1/auth/register", json={"email": "researcher@ox.ac.uk"})
+    assert resp.status_code == 200
+    assert resp.json()["tier"] == "academic"
+
+
+def test_register_non_academic(client):
+    """Non-academic emails remain free tier."""
+    resp = client.post("/api/v1/auth/register", json={"email": "user@gmail.com"})
+    assert resp.status_code == 200
+    assert resp.json()["tier"] == "free"
+    assert resp.json()["api_key"].startswith("mb_free_")
+
+
+def test_register_academic_edu_au(client):
+    """Australian .edu.au emails get academic tier."""
+    resp = client.post("/api/v1/auth/register", json={"email": "student@unsw.edu.au"})
+    assert resp.status_code == 200
+    assert resp.json()["tier"] == "academic"
+
+
+def test_academic_detection_case_insensitive(client):
+    """Academic detection is case-insensitive."""
+    resp = client.post("/api/v1/auth/register", json={"email": "Prof@MIT.EDU"})
+    assert resp.status_code == 200
+    assert resp.json()["tier"] == "academic"
+
+
 def test_rate_limit_returns_429(client, auth_headers):
     # Free tier: 10 rpm. Exhaust the limit then check 429.
     for _ in range(10):

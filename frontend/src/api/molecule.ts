@@ -1,9 +1,11 @@
 import type { ApiClient } from "./client";
 import type {
+  ADMETResponse,
   ParseSmilesRequest,
   MoleculeResponse,
   Molecule3DResponse,
   MoleculePropertiesResponse,
+  SolubilityResponse,
   FileImportResponse,
 } from "./types";
 
@@ -17,6 +19,14 @@ export function getMolecule3dApi(client: ApiClient, id: string) {
 
 export function getMoleculePropertiesApi(client: ApiClient, id: string) {
   return client.get<MoleculePropertiesResponse>(`/v1/molecule/${id}/properties`);
+}
+
+export function getADMETApi(client: ApiClient, id: string) {
+  return client.get<ADMETResponse>(`/v1/molecule/${id}/admet`);
+}
+
+export function getSolubilityApi(client: ApiClient, id: string) {
+  return client.get<SolubilityResponse>(`/v1/molecule/${id}/solubility`);
 }
 
 export function importFileApi(client: ApiClient, file: File) {

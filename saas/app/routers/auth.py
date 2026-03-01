@@ -20,6 +20,19 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 _EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 _MAX_EMAIL_LEN = 254
 
+# Academic institution email suffixes (international)
+_ACADEMIC_TLDS = frozenset({
+    ".edu", ".ac.uk", ".ac.jp", ".ac.kr", ".ac.in", ".ac.cn", ".ac.za",
+    ".ac.nz", ".edu.au", ".edu.cn", ".edu.sg", ".edu.hk", ".edu.tw",
+    ".edu.br", ".edu.mx", ".edu.co", ".edu.ar", ".edu.pl", ".university",
+})
+
+
+def _is_academic_email(email: str) -> bool:
+    """Return True if email domain matches a known academic TLD."""
+    domain = email.rsplit("@", 1)[-1].lower()
+    return any(domain.endswith(tld) for tld in _ACADEMIC_TLDS)
+
 
 def _validate_email(email: str) -> str:
     """Validate and normalize email address."""
@@ -48,9 +61,10 @@ def register(body: APIKeyCreate, request: Request):
         raise RateLimitExceeded()
 
     email = _validate_email(body.email)
-    raw_key = api_key_store.create(email=email, tier=Tier.FREE, role=Role.CHEMIST)
+    tier = Tier.ACADEMIC if _is_academic_email(email) else Tier.FREE
+    raw_key = api_key_store.create(email=email, tier=tier, role=Role.CHEMIST)
     return APIKeyResponse(
-        api_key=raw_key, email=email, tier=Tier.FREE, role=Role.CHEMIST,
+        api_key=raw_key, email=email, tier=tier, role=Role.CHEMIST,
     )
 
 

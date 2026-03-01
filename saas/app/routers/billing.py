@@ -55,11 +55,13 @@ def create_checkout(body: CheckoutRequest, user: UserContext = Depends(get_curre
     success_url = _validate_redirect_url(body.success_url)
     cancel_url = _validate_redirect_url(body.cancel_url)
 
-    price_id = (
-        settings.stripe_pro_monthly_price_id
-        if body.plan == "pro_monthly"
-        else settings.stripe_pro_yearly_price_id
-    )
+    plan_to_price = {
+        "pro_monthly": settings.stripe_pro_monthly_price_id,
+        "pro_yearly": settings.stripe_pro_yearly_price_id,
+        "team_monthly": settings.stripe_team_monthly_price_id,
+        "team_yearly": settings.stripe_team_yearly_price_id,
+    }
+    price_id = plan_to_price.get(body.plan, "")
     if not price_id:
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail=f"Price not configured for {body.plan}")

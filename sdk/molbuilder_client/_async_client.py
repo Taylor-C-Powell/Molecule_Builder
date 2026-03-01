@@ -14,6 +14,7 @@ from molbuilder_client._base import (
     raise_for_status,
 )
 from molbuilder_client._models import (
+    ADMETProfile,
     APIKeyInfo,
     BatchList,
     BatchStatus,
@@ -30,6 +31,7 @@ from molbuilder_client._models import (
     MoleculeProperties,
     ProcessEvaluation,
     RetrosynthesisPlan,
+    SolubilityResult,
     Token,
 )
 
@@ -142,6 +144,16 @@ class AsyncMolBuilder:
         """Retrieve computed molecular properties for *mol_id*."""
         data = await self._get(f"molecule/{mol_id}/properties")
         return from_dict(MoleculeProperties, data)
+
+    async def get_admet(self, mol_id: str) -> ADMETProfile:
+        """Retrieve ADMET predictions for *mol_id*."""
+        data = await self._get(f"molecule/{mol_id}/admet")
+        return from_dict(ADMETProfile, data)
+
+    async def get_solubility(self, mol_id: str) -> SolubilityResult:
+        """Retrieve solubility and crystallization predictions for *mol_id*."""
+        data = await self._get(f"molecule/{mol_id}/solubility")
+        return from_dict(SolubilityResult, data)
 
     async def get_3d(self, mol_id: str) -> Molecule3D:
         """Retrieve 3D atomic coordinates and bonds for *mol_id*."""

@@ -22,6 +22,7 @@ from molbuilder_client._exceptions import (
     ValidationError,
 )
 from molbuilder_client._models import (
+    ADMETProfile,
     APIKeyInfo,
     Atom3D,
     BatchJobSummary,
@@ -54,6 +55,7 @@ from molbuilder_client._models import (
     RouteStep,
     SafetyAssessment,
     ScaleUp,
+    SolubilityResult,
     StepDetail,
     Token,
 )
@@ -106,6 +108,8 @@ __all__ = [
     "LibraryImport",
     "LibraryList",
     "LibraryMolecule",
+    "ADMETProfile",
+    "SolubilityResult",
 ]
 
 __version__ = "0.2.0"

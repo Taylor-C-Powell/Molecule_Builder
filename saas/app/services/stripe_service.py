@@ -70,6 +70,22 @@ def downgrade_user(email: str) -> None:
     logger.info("Downgraded %s to free tier", email)
 
 
+def _tier_from_price_id(subscription: object) -> Tier:
+    """Determine the Tier from a Stripe subscription's price ID."""
+    try:
+        price_id = subscription.items.data[0].price.id
+    except (AttributeError, IndexError):
+        return Tier.PRO  # safe fallback
+
+    price_to_tier = {
+        settings.stripe_pro_monthly_price_id: Tier.PRO,
+        settings.stripe_pro_yearly_price_id: Tier.PRO,
+        settings.stripe_team_monthly_price_id: Tier.TEAM,
+        settings.stripe_team_yearly_price_id: Tier.TEAM,
+    }
+    return price_to_tier.get(price_id, Tier.PRO)
+
+
 def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
     """Verify and dispatch a Stripe webhook event. Returns event summary."""
     event = stripe.Webhook.construct_event(
@@ -84,8 +100,12 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
         db = get_user_db()
         user = db.get_by_stripe_customer(customer_id)
         if user:
-            upgrade_user(user["email"], Tier.PRO, subscription_id)
-            return {"action": "upgraded", "email": user["email"], "tier": "pro"}
+            # Retrieve subscription to determine tier from price ID
+            _configure()
+            sub = stripe.Subscription.retrieve(subscription_id)
+            tier = _tier_from_price_id(sub)
+            upgrade_user(user["email"], tier, subscription_id)
+            return {"action": "upgraded", "email": user["email"], "tier": tier.value}
         else:
             logger.warning("Webhook: no user found for customer %s", customer_id)
             return {"action": "skipped", "reason": "unknown_customer"}
@@ -124,10 +144,11 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> dict:
         user = db.get_by_stripe_customer(customer_id)
         if user:
             if status == "active":
+                tier = _tier_from_price_id(subscription)
                 db.update_subscription(
-                    user["email"], subscription.id, "active", Tier.PRO.value
+                    user["email"], subscription.id, "active", tier.value
                 )
-                api_key_store.update_tier(user["email"], Tier.PRO)
+                api_key_store.update_tier(user["email"], tier)
                 return {"action": "subscription_updated", "status": status}
             elif status in ("unpaid", "past_due", "canceled", "incomplete_expired"):
                 # Downgrade to free tier when subscription is no longer active

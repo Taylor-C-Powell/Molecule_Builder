@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class CheckoutRequest(BaseModel):
-    plan: Literal["pro_monthly", "pro_yearly"] = Field(
+    plan: Literal["pro_monthly", "pro_yearly", "team_monthly", "team_yearly"] = Field(
         ..., description="Subscription plan to purchase"
     )
     success_url: str = Field(

@@ -78,6 +78,43 @@ export interface MoleculePropertiesResponse {
   sa_score: number | null;
 }
 
+// ---- ADMET ----
+export interface ADMETResponse {
+  id: string;
+  smiles: string;
+  oral_bioavailability: string;
+  intestinal_absorption: string;
+  caco2_permeability: string;
+  pgp_substrate: boolean;
+  bbb_penetrant: boolean;
+  plasma_protein_binding: string;
+  vd_class: string;
+  cyp_inhibition: Record<string, boolean>;
+  metabolic_stability: string;
+  renal_clearance: string;
+  half_life_class: string;
+  herg_risk: string;
+  ames_mutagenicity: boolean;
+  hepatotoxicity_risk: string;
+  structural_alerts: string[];
+  overall_score: number;
+  warnings: string[];
+  flags: string[];
+}
+
+// ---- Solubility ----
+export interface SolubilityResponse {
+  id: string;
+  smiles: string;
+  log_s_esol: number;
+  log_s_gse: number;
+  solubility_mg_ml: number;
+  solubility_class: string;
+  estimated_melting_point_c: number;
+  crystallization_risk: string;
+  polymorph_risk: string;
+}
+
 // ---- Retrosynthesis ----
 export interface RetroRequest {
   smiles: string;
@@ -252,7 +289,7 @@ export interface ProcessEvaluateResponse {
 
 // ---- Billing ----
 export interface CheckoutRequest {
-  plan: "pro_monthly" | "pro_yearly";
+  plan: "pro_monthly" | "pro_yearly" | "team_monthly" | "team_yearly";
   success_url: string;
   cancel_url: string;
 }

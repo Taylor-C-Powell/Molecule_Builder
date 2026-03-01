@@ -73,6 +73,47 @@ class Molecule3D:
     bonds: list[Bond3D] = field(default_factory=list)
 
 
+# -- ADMET -------------------------------------------------------------------
+
+@dataclass(frozen=True, slots=True)
+class ADMETProfile:
+    id: str
+    smiles: str
+    oral_bioavailability: str
+    intestinal_absorption: str
+    caco2_permeability: str
+    pgp_substrate: bool
+    bbb_penetrant: bool
+    plasma_protein_binding: str
+    vd_class: str
+    cyp_inhibition: dict[str, bool]
+    metabolic_stability: str
+    renal_clearance: str
+    half_life_class: str
+    herg_risk: str
+    ames_mutagenicity: bool
+    hepatotoxicity_risk: str
+    structural_alerts: list[str] = field(default_factory=list)
+    overall_score: float = 0.0
+    warnings: list[str] = field(default_factory=list)
+    flags: list[str] = field(default_factory=list)
+
+
+# -- Solubility ---------------------------------------------------------------
+
+@dataclass(frozen=True, slots=True)
+class SolubilityResult:
+    id: str
+    smiles: str
+    log_s_esol: float
+    log_s_gse: float
+    solubility_mg_ml: float
+    solubility_class: str
+    estimated_melting_point_c: float
+    crystallization_risk: str
+    polymorph_risk: str
+
+
 # -- Elements -----------------------------------------------------------------
 
 @dataclass(frozen=True, slots=True)

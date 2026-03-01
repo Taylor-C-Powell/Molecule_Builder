@@ -50,6 +50,41 @@ class MoleculePropertiesResponse(BaseModel):
     sa_score: float | None = None
 
 
+class ADMETResponse(BaseModel):
+    id: str
+    smiles: str
+    oral_bioavailability: str
+    intestinal_absorption: str
+    caco2_permeability: str
+    pgp_substrate: bool
+    bbb_penetrant: bool
+    plasma_protein_binding: str
+    vd_class: str
+    cyp_inhibition: dict[str, bool]
+    metabolic_stability: str
+    renal_clearance: str
+    half_life_class: str
+    herg_risk: str
+    ames_mutagenicity: bool
+    hepatotoxicity_risk: str
+    structural_alerts: list[str]
+    overall_score: float
+    warnings: list[str]
+    flags: list[str]
+
+
+class SolubilityResponse(BaseModel):
+    id: str
+    smiles: str
+    log_s_esol: float
+    log_s_gse: float
+    solubility_mg_ml: float
+    solubility_class: str
+    estimated_melting_point_c: float
+    crystallization_risk: str
+    polymorph_risk: str
+
+
 class Molecule3DResponse(BaseModel):
     id: str
     atoms: list[AtomResponse]

@@ -4,13 +4,17 @@ from fastapi import APIRouter, Depends
 from app.dependencies import UserContext, check_rate_limit
 from app.exceptions import InvalidSMILES, MoleculeNotFound
 from app.models.molecule import (
+    ADMETResponse,
     ParseSmilesRequest,
     MoleculeResponse,
     MoleculePropertiesResponse,
     Molecule3DResponse,
+    SolubilityResponse,
 )
 from app.services.molecule_store import molecule_store
-from app.services.molecule_service import parse_smiles, build_properties, build_3d
+from app.services.molecule_service import (
+    parse_smiles, build_properties, build_3d, build_solubility, build_admet,
+)
 
 router = APIRouter(prefix="/api/v1/molecule", tags=["molecule"])
 
@@ -44,6 +48,30 @@ def get_properties(
         raise MoleculeNotFound(mol_id)
     mol, smiles = item
     return build_properties(mol_id, mol, smiles)
+
+
+@router.get("/{mol_id}/admet", response_model=ADMETResponse)
+def get_admet(
+    mol_id: str,
+    user: UserContext = Depends(check_rate_limit),
+):
+    item = molecule_store.get(mol_id)
+    if item is None:
+        raise MoleculeNotFound(mol_id)
+    _, smiles = item
+    return build_admet(mol_id, smiles)
+
+
+@router.get("/{mol_id}/solubility", response_model=SolubilityResponse)
+def get_solubility(
+    mol_id: str,
+    user: UserContext = Depends(check_rate_limit),
+):
+    item = molecule_store.get(mol_id)
+    if item is None:
+        raise MoleculeNotFound(mol_id)
+    _, smiles = item
+    return build_solubility(mol_id, smiles)
 
 
 @router.get("/{mol_id}/3d", response_model=Molecule3DResponse)
