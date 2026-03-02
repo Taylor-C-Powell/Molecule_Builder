@@ -21,7 +21,10 @@ RUN pip install --no-cache-dir \
     "pydantic-settings>=2.1.0,<3.0.0" \
     "pyjwt>=2.8.0,<3.0.0" \
     "python-multipart>=0.0.6,<1.0.0" \
-    "stripe>=8.0.0,<10.0.0"
+    "stripe>=8.0.0,<10.0.0" \
+    "psycopg[binary,pool]>=3.1,<4.0.0" \
+    "alembic>=1.13,<2.0.0" \
+    "sqlalchemy>=2.0,<3.0.0"
 
 # Create non-root user and data directory
 RUN groupadd -r molbuilder && useradd -r -g molbuilder -d /app -s /sbin/nologin molbuilder \
@@ -34,6 +37,9 @@ RUN python -c "from molbuilder.smiles.parser import parse; parse('C'); print('mo
 ENV AUDIT_DB_PATH=/data/molbuilder_audit.db
 ENV USER_DB_PATH=/data/molbuilder_users.db
 ENV MOLECULE_DB_PATH=/data/molbuilder_molecules.db
+ENV JOB_DB_PATH=/data/molbuilder_jobs.db
+ENV LIBRARY_DB_PATH=/data/molbuilder_library.db
+# PostgreSQL: set DATABASE_BACKEND=postgresql and DATABASE_URL at runtime
 
 ENV PORT=8000
 EXPOSE ${PORT}

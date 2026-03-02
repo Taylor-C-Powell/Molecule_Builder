@@ -12,6 +12,11 @@ from app.auth.roles import Role
 from app.config import Tier
 
 
+def _using_postgres() -> bool:
+    """True when tests should run against PostgreSQL."""
+    return os.environ.get("DATABASE_BACKEND", "sqlite").lower() == "postgresql"
+
+
 @pytest.fixture(autouse=True)
 def _reset_rate_limiter():
     """Clear rate limiter state between tests."""
@@ -24,11 +29,19 @@ def _reset_rate_limiter():
 def _temp_audit_db(tmp_path):
     """Use a temporary audit DB for each test."""
     from app.services.audit_db import AuditDB, set_audit_db
-    db_path = str(tmp_path / "test_audit.db")
-    db = AuditDB(db_path)
+    if _using_postgres():
+        from app.services.database import get_backend
+        backend = get_backend()
+        # Truncate between tests
+        backend.execute_update("DELETE FROM audit_log")
+        db = AuditDB(backend=backend)
+    else:
+        db_path = str(tmp_path / "test_audit.db")
+        db = AuditDB(db_path)
     set_audit_db(db)
     yield db
-    db.close()
+    if not _using_postgres():
+        db.close()
     set_audit_db(None)
 
 
@@ -36,11 +49,18 @@ def _temp_audit_db(tmp_path):
 def _temp_user_db(tmp_path):
     """Use a temporary user DB for each test."""
     from app.services.user_db import UserDB, set_user_db
-    db_path = str(tmp_path / "test_users.db")
-    db = UserDB(db_path)
+    if _using_postgres():
+        from app.services.database import get_backend
+        backend = get_backend()
+        backend.execute_update("DELETE FROM api_keys")
+        db = UserDB(backend=backend)
+    else:
+        db_path = str(tmp_path / "test_users.db")
+        db = UserDB(db_path)
     set_user_db(db)
     yield db
-    db.close()
+    if not _using_postgres():
+        db.close()
     set_user_db(None)
 
 
@@ -48,11 +68,18 @@ def _temp_user_db(tmp_path):
 def _temp_job_db(tmp_path):
     """Use a temporary job DB for each test."""
     from app.services.job_db import JobDB, set_job_db
-    db_path = str(tmp_path / "test_jobs.db")
-    db = JobDB(db_path)
+    if _using_postgres():
+        from app.services.database import get_backend
+        backend = get_backend()
+        backend.execute_update("DELETE FROM jobs")
+        db = JobDB(backend=backend)
+    else:
+        db_path = str(tmp_path / "test_jobs.db")
+        db = JobDB(db_path)
     set_job_db(db)
     yield db
-    db.close()
+    if not _using_postgres():
+        db.close()
     set_job_db(None)
 
 
@@ -60,11 +87,18 @@ def _temp_job_db(tmp_path):
 def _temp_library_db(tmp_path):
     """Use a temporary library DB for each test."""
     from app.services.library_db import LibraryDB, set_library_db
-    db_path = str(tmp_path / "test_library.db")
-    db = LibraryDB(db_path)
+    if _using_postgres():
+        from app.services.database import get_backend
+        backend = get_backend()
+        backend.execute_update("DELETE FROM library_molecules")
+        db = LibraryDB(backend=backend)
+    else:
+        db_path = str(tmp_path / "test_library.db")
+        db = LibraryDB(db_path)
     set_library_db(db)
     yield db
-    db.close()
+    if not _using_postgres():
+        db.close()
     set_library_db(None)
 
 
