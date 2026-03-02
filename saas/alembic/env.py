@@ -20,9 +20,13 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Override sqlalchemy.url from application settings
+# Override sqlalchemy.url from application settings.
+# Ensure the psycopg v3 driver is used (not psycopg2) by rewriting the
+# scheme from "postgresql://" to "postgresql+psycopg://".
 target_url = settings.database_url
 if target_url:
+    if target_url.startswith("postgresql://"):
+        target_url = "postgresql+psycopg://" + target_url[len("postgresql://"):]
     config.set_main_option("sqlalchemy.url", target_url)
 
 target_metadata = None
