@@ -155,8 +155,8 @@ class MoleculeStore:
             if hasattr(self, "_local") and hasattr(self._local, "conn") and self._local.conn is not None:
                 self._local.conn.close()
                 self._local.conn = None
-        else:
-            self._backend.close()
+        # When using a shared PG backend, don't close the pool -- it's
+        # managed by the application lifecycle, not individual DB classes.
 
 
 # Module-level singleton (overridable in tests)

@@ -150,7 +150,8 @@ class JobDB:
         return affected > 0
 
     def close(self) -> None:
-        self._backend.close()
+        if self._direct_sqlite:
+            self._backend.close()
 
 
 _job_db: JobDB | None = None

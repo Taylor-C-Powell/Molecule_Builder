@@ -239,7 +239,8 @@ class AuditDB:
         return [self._normalise_record(r) for r in rows]
 
     def close(self) -> None:
-        self._backend.close()
+        if self._direct_sqlite:
+            self._backend.close()
 
 
 # Module-level singleton (overridable in tests)
