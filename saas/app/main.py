@@ -100,14 +100,29 @@ async def lifespan(app: FastAPI):
     from molbuilder.smiles.parser import parse
     parse("C")
 
-    # Initialize job and library databases
-    from app.services.job_db import JobDB, set_job_db
-    from app.services.library_db import LibraryDB, set_library_db
+    # Initialize database backend and service databases
+    from app.services.job_db import get_job_db, set_job_db
+    from app.services.library_db import get_library_db, set_library_db
     from app.services.batch_worker import BatchWorker, set_batch_worker
-    _job_db = JobDB(_cfg.job_db_path)
-    set_job_db(_job_db)
-    _library_db = LibraryDB(_cfg.library_db_path)
-    set_library_db(_library_db)
+
+    if _cfg.database_backend == "postgresql":
+        from app.services.database import get_backend
+        _pg_backend = get_backend()
+        from app.services.job_db import JobDB
+        from app.services.library_db import LibraryDB
+        _job_db = JobDB(backend=_pg_backend)
+        set_job_db(_job_db)
+        _library_db = LibraryDB(backend=_pg_backend)
+        set_library_db(_library_db)
+        logger.info("Using PostgreSQL backend for all databases")
+    else:
+        from app.services.job_db import JobDB
+        from app.services.library_db import LibraryDB
+        _job_db = JobDB(_cfg.job_db_path)
+        set_job_db(_job_db)
+        _library_db = LibraryDB(_cfg.library_db_path)
+        set_library_db(_library_db)
+
     _batch_worker = BatchWorker()
     set_batch_worker(_batch_worker)
 

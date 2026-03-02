@@ -47,8 +47,10 @@ class Settings(BaseSettings):
     molecule_store_max: int = 10_000
 
     # Database settings
-    database_backend: str = "sqlite"  # "sqlite" or "postgresql" (future)
-    database_url: str = ""  # PostgreSQL DSN (future)
+    database_backend: str = "sqlite"  # "sqlite" or "postgresql"
+    database_url: str = ""  # PostgreSQL DSN (e.g. postgresql://user:pass@host/db)
+    pg_pool_min_size: int = 2
+    pg_pool_max_size: int = 10
     audit_db_path: str = "molbuilder_audit.db"
     user_db_path: str = "molbuilder_users.db"
     molecule_db_path: str = "molbuilder_molecules.db"

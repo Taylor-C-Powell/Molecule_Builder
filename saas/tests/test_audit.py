@@ -39,13 +39,11 @@ class TestAuditDB:
             user_tier="free",
             action="POST /api/v1/molecule/from-smiles",
         )
-        # Tamper with the record
-        conn = db._get_conn()
-        conn.execute(
+        # Tamper with the record via the backend
+        db._backend.execute_update(
             "UPDATE audit_log SET user_email = 'hacker@evil.com' WHERE id = ?",
             (rid,),
         )
-        conn.commit()
         result = db.verify_integrity(rid)
         assert result["valid"] is False
         assert "tampered" in result.get("error", "").lower()

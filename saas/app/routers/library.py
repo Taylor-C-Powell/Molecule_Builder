@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import sqlite3
-
 from fastapi import APIRouter, Depends, HTTPException
+
+from app.services.database import DatabaseIntegrityError
 
 from app.config import Tier
 from app.dependencies import UserContext, check_rate_limit
@@ -104,7 +104,7 @@ def save_molecule(
             notes=body.notes,
             properties=props,
         )
-    except sqlite3.IntegrityError:
+    except DatabaseIntegrityError:
         raise HTTPException(status_code=409, detail="Molecule already in library")
 
     saved = db.get_molecule(mol_id, user.email)
@@ -211,7 +211,7 @@ def import_molecules(
                 properties=props,
             )
             saved += 1
-        except sqlite3.IntegrityError:
+        except DatabaseIntegrityError:
             duplicates += 1
 
     return LibraryImportResponse(saved=saved, duplicates=duplicates, errors=errors)
