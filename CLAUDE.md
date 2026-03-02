@@ -21,6 +21,9 @@ pip install -e ".[dev]"
 # SaaS API
 pip install -e "./saas[dev]"
 
+# SaaS API with PostgreSQL support
+pip install -e "./saas[dev,pg]"
+
 # SDK
 pip install -e "./sdk[dev]"
 
@@ -39,8 +42,12 @@ python -m pytest tests/ -v
 python -m pytest tests/test_smiles.py -v          # single file
 python -m pytest tests/ --cov=molbuilder --cov-report=term-missing
 
-# SaaS API (175 tests across 22 files, uses FastAPI TestClient with temp SQLite DBs)
-cd saas && python -m pytest tests/ -v
+# SaaS API (187 tests across 24 files, uses FastAPI TestClient)
+cd saas && python -m pytest tests/ -v             # SQLite backend (default)
+
+# SaaS API against PostgreSQL (requires running PG instance)
+DATABASE_BACKEND=postgresql DATABASE_URL=postgresql://user:pass@localhost/molbuilder_test \
+  cd saas && python -m pytest tests/ -v
 
 # SDK (uses respx for HTTP mocking, pytest-asyncio with asyncio_mode=auto)
 python -m pytest sdk/tests/ -v
@@ -95,7 +102,16 @@ class Molecule:
 
 ### SaaS API
 
-FastAPI with Pydantic v2. Auth flow: API key (X-API-Key) -> JWT exchange. Five tiers: free/pro/team/academic/enterprise. RBAC roles: admin/chemist/viewer. SQLite databases for users, audit trail, molecule store.
+FastAPI with Pydantic v2. Auth flow: API key (X-API-Key) -> JWT exchange. Five tiers: free/pro/team/academic/enterprise. RBAC roles: admin/chemist/viewer.
+
+**Database:** Dual-backend via `DatabaseBackend` abstraction (`saas/app/services/database.py`). SQLite for dev/tests (default), PostgreSQL for production. Toggle via `DATABASE_BACKEND` env var (`"sqlite"` or `"postgresql"`). PostgreSQL uses psycopg v3 with `ConnectionPool`. Schema managed by Alembic (`saas/alembic/`).
+
+**5 database tables** (consolidated from 5 separate SQLite files):
+- `api_keys` (user_db) -- API key records, Stripe billing info
+- `audit_log` (audit_db) -- immutable 21 CFR Part 11 audit trail with HMAC signatures
+- `jobs` (job_db) -- batch job state with JSONB input/result
+- `library_molecules` (library_db) -- saved molecule library with JSONB tags/properties
+- `molecules` (molecule_store) -- SMILES cache with LRU eviction
 
 **15 router modules:** auth, molecule, retrosynthesis, process, batch, library, file_io, reports, billing, analytics, audit, elements, version, feasibility, legal.
 
@@ -119,6 +135,17 @@ React 19, react-router-dom v7, Zustand for state. API proxied via Vite dev serve
 - `generate_3d(mol)` modifies positions **in-place** (returns None). Backend: `"auto"` tries RDKit then builtin DG+FF.
 - Coverage excludes `gui/`, `cli/menu.py`, `cli/demos.py` (interactive/display code)
 
+## Database Gotchas
+
+- **Catch `DatabaseIntegrityError`, NOT `sqlite3.IntegrityError`** -- the abstraction layer re-raises driver-specific errors as `DatabaseIntegrityError` (`app.services.database`).
+- All DB service classes (`UserDB`, `AuditDB`, `JobDB`, `LibraryDB`, `MoleculeStore`) accept an optional `backend: DatabaseBackend` param. When omitted they fall back to direct SQLite.
+- **Audit HMAC signatures** are always computed from the epoch float. PostgreSQL stores both `timestamp` (TIMESTAMPTZ) and `timestamp_epoch` (FLOAT). The `_normalise_record()` method ensures `record["timestamp"]` is always the float for signature verification.
+- **JSON fields:** Use `supports_native_json` property to decide between `json.dumps()`/`json.loads()` (SQLite TEXT) and passing dicts directly (PostgreSQL JSONB).
+- **Upsert dialect:** SQLite uses `INSERT OR REPLACE`, PostgreSQL uses `INSERT ... ON CONFLICT DO UPDATE`. MoleculeStore handles this in the `put()` method.
+- **Tag search dialect:** LibraryDB uses `tags LIKE '%"tag"%'` for SQLite, `tags @> ?::jsonb` for PostgreSQL.
+- **SQL placeholders:** All service code uses `?` placeholders. The PostgresBackend auto-translates to `%s` via `_translate_sql()`.
+- **Alembic migrations:** Run `cd saas && alembic upgrade head` before first use with PostgreSQL. Schema lives in `saas/alembic/versions/`.
+
 ## Encoding Rules
 
 All `.py` files MUST be Windows cp1252 compatible -- no emojis, no unicode math symbols. Use ASCII only: `->` not right-arrow, `deg` not degree symbol, spell out Greek letters.
@@ -126,6 +153,7 @@ All `.py` files MUST be Windows cp1252 compatible -- no emojis, no unicode math 
 ## Key Import Patterns
 
 ```python
+# Core library
 from molbuilder.molecule.graph import Molecule, Atom, Bond, Hybridization
 from molbuilder.smiles import parse, to_smiles
 from molbuilder.core.constants import PLANCK_CONSTANT, SPEED_OF_LIGHT
@@ -143,6 +171,15 @@ from molbuilder.process.condition_prediction import predict_conditions  # ORD-ba
 from molbuilder.molecule.properties import lipinski_properties
 from molbuilder.molecule.sa_score import sa_score       # synthetic accessibility (1-10)
 from molbuilder.reports.pdf_report import generate_molecule_pdf  # optional dep
+
+# SaaS database layer
+from app.services.database import DatabaseBackend, SQLiteBackend, PostgresBackend
+from app.services.database import DatabaseIntegrityError, get_backend, set_backend
+from app.services.user_db import UserDB, get_user_db, set_user_db
+from app.services.audit_db import AuditDB, get_audit_db, set_audit_db
+from app.services.job_db import JobDB, get_job_db, set_job_db
+from app.services.library_db import LibraryDB, get_library_db, set_library_db
+from app.services.molecule_store import MoleculeStore, get_molecule_store, set_molecule_store
 ```
 
 ## Entry Points
@@ -152,10 +189,14 @@ from molbuilder.reports.pdf_report import generate_molecule_pdf  # optional dep
 - `uvicorn app.main:app` (from saas/) -- API server
 - `npm run dev` (from frontend/) -- dashboard dev server, port 5173
 - `npm run dev` (from studio/) -- 3D editor dev server, port 5174
+- `cd saas && alembic upgrade head` -- run PostgreSQL schema migrations
+- `cd saas && python scripts/migrate_sqlite_to_pg.py` -- one-time SQLite-to-PG data migration
+- `cd saas && python scripts/verify_migration.py` -- post-migration row count + signature verification
 
 ## CI/CD
 
-- **test.yml**: Python 3.11/3.12/3.13 matrix. Ruff lint, core tests (coverage >= 80%), saas tests, sdk tests.
+- **test.yml**: Python 3.11/3.12/3.13 matrix. Ruff lint, core tests (coverage >= 80%), saas tests (SQLite), sdk tests.
+- **test.yml (test-pg job)**: Optional PostgreSQL 16 integration tests. Runs on push to main or PRs labeled `test-pg`. Runs Alembic migrations then full SaaS suite against real PG.
 - **frontend-test.yml / studio-test.yml**: Node 22. Lint, typecheck, build.
 - **deploy.yml**: Auto-deploys SaaS to Railway on push to main (when saas/ or molbuilder/ change).
 - **release-sdk.yml**: Publishes SDK to PyPI on `sdk-v*` tags.
