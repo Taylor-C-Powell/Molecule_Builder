@@ -125,10 +125,17 @@ class SQLiteBackend(DatabaseBackend):
 
 
 def _translate_sql(sql: str) -> str:
-    """Convert ``?`` placeholders to ``%s`` for psycopg."""
-    # Simple replacement is safe because none of our SQL uses literal '?'
-    # inside strings.  If that ever changes, use a proper parser.
-    return sql.replace("?", "%s")
+    """Convert SQLite SQL conventions to PostgreSQL.
+
+    - ``?`` placeholders become ``%s``
+    - ``active = 1`` / ``active = 0`` become ``active = true`` / ``active = false``
+      (PostgreSQL BOOLEAN columns reject integer comparisons)
+    """
+    import re
+    sql = sql.replace("?", "%s")
+    sql = re.sub(r'\bactive\s*=\s*1\b', 'active = true', sql)
+    sql = re.sub(r'\bactive\s*=\s*0\b', 'active = false', sql)
+    return sql
 
 
 class PostgresBackend(DatabaseBackend):
