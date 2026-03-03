@@ -198,12 +198,13 @@ class TestConditionPredictor:
 
         result = pred.predict("CCO")
         assert isinstance(result, ReactionConditions)
-        assert result.temperature_C == 80.0
+        # Temperature model is gated (disabled); defaults to 25.0 C
+        assert result.temperature_C == 25.0
         assert result.solvent == "THF"
-        assert result.data_source == "ML model"
+        assert result.data_source.startswith("ML model")
 
-    def test_temperature_clamped(self):
-        """Predicted temperature should be clamped to [-80, 300]."""
+    def test_temperature_gated(self):
+        """Temperature model is disabled; should use heuristic default."""
         temp_mock = MagicMock()
         temp_mock.predict.return_value = [500.0]
         solvent_mock = MagicMock()
@@ -228,18 +229,20 @@ class TestConditionPredictor:
 
         result = pred.predict("CCO")
         assert result is not None
-        assert result.temperature_C <= 300.0
+        # Temperature model gated; temp_mock.predict should NOT be called
+        temp_mock.predict.assert_not_called()
+        assert result.temperature_C == 25.0
 
     def test_predict_exception_returns_none(self):
         """If model.predict raises, should return None gracefully."""
-        temp_mock = MagicMock()
-        temp_mock.predict.side_effect = RuntimeError("boom")
+        solvent_mock = MagicMock()
+        solvent_mock.predict.side_effect = RuntimeError("boom")
 
         pred = ConditionPredictor.__new__(ConditionPredictor)
         pred._model = {
             "feature_names": ALL_FEATURE_NAMES,
-            "temperature_model": temp_mock,
-            "solvent_model": MagicMock(),
+            "temperature_model": MagicMock(),
+            "solvent_model": solvent_mock,
             "catalyst_model": MagicMock(),
             "yield_model": MagicMock(),
             "solvent_classes": ["THF"],
@@ -323,7 +326,7 @@ class TestBundledModel:
         assert isinstance(result, ReactionConditions)
         assert -80 <= result.temperature_C <= 300
         assert result.solvent  # not empty
-        assert result.data_source == "ML model"
+        assert result.data_source.startswith("ML model")
 
     @pytest.mark.skipif(
         not os.path.isfile(

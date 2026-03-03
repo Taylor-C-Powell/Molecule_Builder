@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     # IP-based rate limits for unauthenticated endpoints (per minute)
     register_rpm: int = 5
     token_rpm: int = 20
+    # Key rotation: max per hour (not per minute) to prevent abuse
+    rotate_max_per_hour: int = 5
 
     expensive_hourly_free: int = 5
     expensive_hourly_pro: int = 30

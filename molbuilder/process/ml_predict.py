@@ -13,10 +13,11 @@ first and falls back to heuristics if it returns None.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 
-from molbuilder.process.conditions import ReactionConditions
+from molbuilder.process.conditions import ReactionConditions, addition_rate_for_scale
 from molbuilder.process.ml_features import extract_features, ALL_FEATURE_NAMES
 
 logger = logging.getLogger("molbuilder.ml_predict")
@@ -24,6 +25,11 @@ logger = logging.getLogger("molbuilder.ml_predict")
 # Path to the bundled model file (ships in molbuilder/data/)
 _MODEL_DIR = os.path.join(os.path.dirname(__file__), os.pardir, "data")
 _DEFAULT_MODEL_PATH = os.path.join(_MODEL_DIR, "condition_model.pkl")
+
+# Per-target confidence gates.  Targets with known poor performance
+# (R-squared < 0) are disabled; predictions fall back to heuristics.
+# This is safer than returning ML predictions that are worse than the mean.
+_DISABLED_TARGETS: frozenset[str] = frozenset({"temperature"})
 
 
 class ConditionPredictor:
@@ -46,6 +52,45 @@ class ConditionPredictor:
         if os.path.isfile(path):
             self._load_model(path)
 
+    @staticmethod
+    def _verify_checksum(path: str) -> bool:
+        """Verify SHA-256 checksum of model file against sidecar .sha256 file.
+
+        Returns True if the checksum matches or no sidecar file exists
+        (allowing custom models without checksums). Returns False if the
+        sidecar exists but the hash does not match (possible tampering).
+        """
+        sha_path = path + ".sha256"
+        if not os.path.isfile(sha_path):
+            logger.debug("No checksum file at %s; skipping verification", sha_path)
+            return True
+
+        try:
+            with open(sha_path, "r") as f:
+                expected = f.read().strip().lower()
+        except OSError:
+            logger.warning("Could not read checksum file %s", sha_path)
+            return False
+
+        sha = hashlib.sha256()
+        try:
+            with open(path, "rb") as f:
+                for chunk in iter(lambda: f.read(65536), b""):
+                    sha.update(chunk)
+        except OSError:
+            logger.warning("Could not read model file %s for checksum", path)
+            return False
+
+        actual = sha.hexdigest().lower()
+        if actual != expected:
+            logger.error(
+                "Model checksum MISMATCH for %s: expected %s, got %s. "
+                "The model file may have been tampered with.",
+                path, expected, actual,
+            )
+            return False
+        return True
+
     def _load_model(self, path: str) -> None:
         """Load a serialized model dict from a joblib pickle file.
 
@@ -56,6 +101,11 @@ class ConditionPredictor:
         If scikit-learn/joblib is not installed, logs a warning and
         leaves ``self._model`` as None.
         """
+        # Verify integrity before deserializing
+        if not self._verify_checksum(path):
+            logger.error("Refusing to load model with failed checksum: %s", path)
+            return
+
         try:
             import joblib
         except ImportError:
@@ -124,11 +174,16 @@ class ConditionPredictor:
         feature_vector = [features[k] for k in ALL_FEATURE_NAMES]
 
         try:
-            temp_pred = float(
-                self._model["temperature_model"].predict([feature_vector])[0]
-            )
-            # Clamp temperature to reasonable range
-            temp_pred = max(-80.0, min(300.0, temp_pred))
+            # Temperature model is gated: skip if in _DISABLED_TARGETS
+            # (current model has negative R-squared for temperature).
+            # Use a safe heuristic default of 25 C (room temperature).
+            if "temperature" not in _DISABLED_TARGETS:
+                temp_pred = float(
+                    self._model["temperature_model"].predict([feature_vector])[0]
+                )
+                temp_pred = max(-80.0, min(300.0, temp_pred))
+            else:
+                temp_pred = 25.0
 
             solvent_idx = int(
                 self._model["solvent_model"].predict([feature_vector])[0]
@@ -158,17 +213,7 @@ class ConditionPredictor:
             logger.warning("ML prediction failed for %s", smiles, exc_info=True)
             return None
 
-        # Scale-dependent addition rate (same heuristics as conditions.py)
-        if scale_kg < 0.1:
-            addition_rate = "all at once"
-        elif scale_kg < 1.0:
-            addition_rate = "portion-wise over 10 min"
-        elif scale_kg < 10.0:
-            addition_rate = "dropwise over 15-30 min"
-        elif scale_kg < 100.0:
-            addition_rate = "dropwise over 30-60 min via addition funnel"
-        else:
-            addition_rate = "metered addition over 1-2 h via peristaltic pump"
+        addition_rate = addition_rate_for_scale(scale_kg)
 
         # Scale-dependent reaction time
         import math as _math
@@ -190,6 +235,12 @@ class ConditionPredictor:
         notes_parts.append(f"Predicted yield: {yield_pred:.0f}%")
         notes = "  ".join(notes_parts) if notes_parts else "No special notes."
 
+        # Indicate which targets came from ML vs heuristic
+        if _DISABLED_TARGETS:
+            source = "ML model (temperature=heuristic)"
+        else:
+            source = "ML model"
+
         return ReactionConditions(
             temperature_C=round(temp_pred, 1),
             pressure_atm=1.0,
@@ -200,7 +251,7 @@ class ConditionPredictor:
             atmosphere="N2",
             workup_procedure="Standard aqueous workup: dilute, extract, wash, dry, concentrate.",
             notes=notes,
-            data_source="ML model",
+            data_source=source,
         )
 
 

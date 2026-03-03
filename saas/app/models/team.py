@@ -12,9 +12,9 @@ from pydantic import BaseModel, Field
 class TeamCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="Team display name")
     slug: str = Field(
-        ..., min_length=1, max_length=50,
-        pattern=r"^[a-z0-9][a-z0-9\-]*[a-z0-9]$|^[a-z0-9]$",
-        description="URL-safe team identifier (lowercase, hyphens)",
+        ..., min_length=3, max_length=40,
+        pattern=r"^[a-z0-9][a-z0-9\-]{1,38}[a-z0-9]$",
+        description="URL-safe team identifier (3-40 chars, lowercase alphanumeric and hyphens)",
     )
 
 

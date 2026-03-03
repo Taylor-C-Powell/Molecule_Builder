@@ -184,6 +184,7 @@ class Molecule:
         self.atoms: list[Atom] = []
         self.bonds: list[Bond] = []
         self._adj: dict[int, list[int]] = {}
+        self._bond_map: dict[tuple[int, int], Bond] = {}
         self._ring_bonds_cache: set[tuple[int, int]] | None = None
         self._fg_cache: list | None = None
 
@@ -271,6 +272,9 @@ class Molecule:
         self.bonds.append(bond)
         self._adj[i].append(j)
         self._adj[j].append(i)
+        # O(1) lookup by atom pair (both orderings)
+        self._bond_map[(i, j)] = bond
+        self._bond_map[(j, i)] = bond
         return bond
 
     def add_atom_bonded(self, symbol: str, bonded_to: int,
@@ -409,11 +413,8 @@ class Molecule:
         return list(self._adj.get(idx, []))
 
     def get_bond(self, i: int, j: int) -> Bond | None:
-        """Return the Bond between *i* and *j*, or None."""
-        for b in self.bonds:
-            if {b.atom_i, b.atom_j} == {i, j}:
-                return b
-        return None
+        """Return the Bond between *i* and *j*, or None.  O(1) lookup."""
+        return self._bond_map.get((i, j))
 
     def is_in_ring(self, i: int, j: int) -> bool:
         """True if the bond i-j is part of a ring.

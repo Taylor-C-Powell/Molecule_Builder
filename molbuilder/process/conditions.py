@@ -88,6 +88,24 @@ def _select_atmosphere(template: ReactionTemplate) -> str:
     return "air"
 
 
+def addition_rate_for_scale(scale_kg: float) -> str:
+    """Determine reagent addition rate based on scale alone.
+
+    Shared helper used by both template-based and ML-based condition
+    prediction.  Larger scales require slower, controlled addition for
+    thermal management.
+    """
+    if scale_kg < 0.1:
+        return "all at once"
+    if scale_kg < 1.0:
+        return "portion-wise over 10 min"
+    if scale_kg < 10.0:
+        return "dropwise over 15-30 min"
+    if scale_kg < 100.0:
+        return "dropwise over 30-60 min via addition funnel"
+    return "metered addition over 1-2 h via peristaltic pump"
+
+
 def _addition_rate(template: ReactionTemplate, scale_kg: float) -> str:
     """Determine reagent addition rate.
 

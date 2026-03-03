@@ -98,8 +98,12 @@ def get_token(body: TokenRequest, request: Request):
 
 
 @router.post("/rotate", response_model=APIKeyResponse)
-def rotate_key(body: TokenRequest):
+def rotate_key(body: TokenRequest, request: Request):
     """Exchange a valid API key for a new one. The old key is revoked."""
+    ip = _get_client_ip(request)
+    if not rate_limiter.check_ip_hourly(ip, "rotate", settings.rotate_max_per_hour):
+        raise RateLimitExceeded()
+
     record = api_key_store.validate(body.api_key)
     if record is None:
         raise AuthenticationError("Invalid API key")

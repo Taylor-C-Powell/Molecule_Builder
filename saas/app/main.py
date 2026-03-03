@@ -88,13 +88,32 @@ async def lifespan(app: FastAPI):
     # Generate ephemeral HMAC secrets if not configured (prod should set these)
     if not _cfg.api_key_hmac_secret:
         if is_production:
-            logger.warning("API_KEY_HMAC_SECRET not set in production - generating ephemeral secret")
-        _cfg.api_key_hmac_secret = secrets.token_hex(32)
+            logger.critical(
+                "API_KEY_HMAC_SECRET is not set! Set a stable secret "
+                "in production via environment variable API_KEY_HMAC_SECRET"
+            )
+            raise SystemExit(1)
+        else:
+            _cfg.api_key_hmac_secret = secrets.token_hex(32)
+            logger.warning(
+                "API_KEY_HMAC_SECRET not set - using ephemeral random secret "
+                "(local dev only)"
+            )
 
     if not _cfg.audit_hmac_secret:
         if is_production:
-            logger.warning("AUDIT_HMAC_SECRET not set in production - generating ephemeral secret")
-        _cfg.audit_hmac_secret = secrets.token_hex(32)
+            logger.critical(
+                "AUDIT_HMAC_SECRET is not set! 21 CFR Part 11 audit trail "
+                "signatures require a stable secret. Set AUDIT_HMAC_SECRET "
+                "in production via environment variable."
+            )
+            raise SystemExit(1)
+        else:
+            _cfg.audit_hmac_secret = secrets.token_hex(32)
+            logger.warning(
+                "AUDIT_HMAC_SECRET not set - using ephemeral random secret "
+                "(local dev only; audit signatures will not survive restarts)"
+            )
 
     # Warm up molbuilder data structures
     from molbuilder.smiles.parser import parse

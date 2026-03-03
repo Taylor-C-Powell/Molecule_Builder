@@ -531,7 +531,7 @@ def predict_conditions(
         # Use ML-predicted conditions for best match if available
         if idx == 0 and ml_conditions is not None:
             conditions = ml_conditions
-            data_source = "ML model"
+            data_source = ml_conditions.data_source
         else:
             conditions = optimize_conditions(tmpl, scale_kg)
             data_source = conditions.data_source

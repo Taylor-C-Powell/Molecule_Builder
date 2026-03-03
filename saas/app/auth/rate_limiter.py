@@ -62,5 +62,19 @@ class SlidingWindowLimiter:
             ep_windows[ip] = ts
             return True
 
+    def check_ip_hourly(self, ip: str, endpoint: str, limit: int) -> bool:
+        """Per-IP rate limit for endpoints with hourly windows."""
+        now = time.monotonic()
+        with self._lock:
+            ep_windows = self._ip_windows.setdefault(endpoint, {})
+            ts = ep_windows.get(ip, [])
+            ts = self._prune(ts, 3600.0)
+            if len(ts) >= limit:
+                ep_windows[ip] = ts
+                return False
+            ts.append(now)
+            ep_windows[ip] = ts
+            return True
+
 
 rate_limiter = SlidingWindowLimiter()
