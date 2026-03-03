@@ -162,6 +162,26 @@ def _temp_library_db(tmp_path, _ensure_pg_backend):
 
 
 @pytest.fixture(autouse=True)
+def _temp_team_db(tmp_path, _ensure_pg_backend):
+    """Use a temporary team DB for each test."""
+    from app.services.team_db import TeamDB, set_team_db
+    if _using_postgres():
+        _pg_truncate("team_library_molecules")
+        _pg_truncate("team_members")
+        _pg_truncate("teams")
+        from app.services.database import get_backend
+        db = TeamDB(backend=get_backend())
+    else:
+        db_path = str(tmp_path / "test_teams.db")
+        db = TeamDB(db_path)
+    set_team_db(db)
+    yield db
+    if not _using_postgres():
+        db.close()
+    set_team_db(None)
+
+
+@pytest.fixture(autouse=True)
 def _reset_molecule_store():
     """Reset molecule store singleton between tests."""
     from app.services.molecule_store import set_molecule_store
@@ -252,3 +272,15 @@ def enterprise_api_key():
 @pytest.fixture()
 def enterprise_headers(enterprise_api_key):
     return {"X-API-Key": enterprise_api_key}
+
+
+@pytest.fixture()
+def team_api_key():
+    """Create a team-tier API key for team management tests."""
+    email = f"team-{uuid.uuid4().hex[:8]}@example.com"
+    return api_key_store.create(email=email, tier=Tier.TEAM)
+
+
+@pytest.fixture()
+def team_headers(team_api_key):
+    return {"X-API-Key": team_api_key}

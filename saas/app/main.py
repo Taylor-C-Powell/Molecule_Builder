@@ -16,7 +16,7 @@ from app.exceptions import register_exception_handlers
 from app.middleware import UsageTrackingMiddleware
 from app.middleware_versioning import VersioningMiddleware
 from app.models.common import HealthResponse
-from app.routers import auth, batch, billing, file_io, legal, library, molecule, reports, retrosynthesis, process, elements, analytics, audit, version, feasibility
+from app.routers import auth, batch, billing, file_io, legal, library, molecule, reports, retrosynthesis, process, elements, analytics, audit, version, feasibility, teams
 
 logger = logging.getLogger("molbuilder.startup")
 
@@ -103,6 +103,7 @@ async def lifespan(app: FastAPI):
     # Initialize database backend and service databases
     from app.services.job_db import get_job_db, set_job_db
     from app.services.library_db import get_library_db, set_library_db
+    from app.services.team_db import TeamDB, set_team_db
     from app.services.batch_worker import BatchWorker, set_batch_worker
 
     if _cfg.database_backend == "postgresql":
@@ -114,6 +115,8 @@ async def lifespan(app: FastAPI):
         set_job_db(_job_db)
         _library_db = LibraryDB(backend=_pg_backend)
         set_library_db(_library_db)
+        _team_db = TeamDB(backend=_pg_backend)
+        set_team_db(_team_db)
         logger.info("Using PostgreSQL backend for all databases")
     else:
         from app.services.job_db import JobDB
@@ -122,6 +125,8 @@ async def lifespan(app: FastAPI):
         set_job_db(_job_db)
         _library_db = LibraryDB(_cfg.library_db_path)
         set_library_db(_library_db)
+        _team_db = TeamDB(_cfg.team_db_path)
+        set_team_db(_team_db)
 
     _batch_worker = BatchWorker()
     set_batch_worker(_batch_worker)
@@ -180,6 +185,7 @@ async def lifespan(app: FastAPI):
     _batch_worker.shutdown()
     _job_db.close()
     _library_db.close()
+    _team_db.close()
 
 
 app = FastAPI(
@@ -233,6 +239,7 @@ app.include_router(analytics.router)
 app.include_router(audit.router)
 app.include_router(version.router)
 app.include_router(feasibility.router)
+app.include_router(teams.router)
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)

@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     molecule_db_path: str = "molbuilder_molecules.db"
     job_db_path: str = "molbuilder_jobs.db"
     library_db_path: str = "molbuilder_library.db"
+    team_db_path: str = "molbuilder_teams.db"
     cors_origins: str = ""
     admin_bootstrap_email: str = ""
 

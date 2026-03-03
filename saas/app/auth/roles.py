@@ -26,6 +26,7 @@ _SELF_SERVICE_PREFIXES = (
     "/api/v1/auth/me",
     "/api/v1/library",
     "/api/v1/batch",
+    "/api/v1/teams",
 )
 
 
