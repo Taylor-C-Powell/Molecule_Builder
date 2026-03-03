@@ -45,6 +45,7 @@ dependencies = [
 rdkit = ["rdkit>=2024.3.1"]
 ord = ["ord-schema>=0.3.99"]
 pdf = ["reportlab>=4.0"]
+ml = ["scikit-learn>=1.3", "joblib>=1.3"]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -63,7 +64,7 @@ molbuilder = "molbuilder.__main__:main"
 include = ["molbuilder*"]
 
 [tool.setuptools.package-data]
-"molbuilder.data" = ["*.json"]
+"molbuilder.data" = ["*.json", "*.pkl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

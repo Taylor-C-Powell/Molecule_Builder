@@ -28,6 +28,7 @@ class RetroNodeResponse(BaseModel):
     is_purchasable: bool
     functional_groups: list[str]
     best_disconnection: DisconnectionResponse | None = None
+    disconnections: list[DisconnectionResponse] = []
     children: list["RetroNodeResponse"] = []
 
 

@@ -49,3 +49,37 @@ def test_retro_requires_auth(client):
         json={"smiles": "CCO"},
     )
     assert resp.status_code == 401
+
+
+def test_retro_disconnections_field_present(client, auth_headers):
+    """The tree node should include a disconnections list."""
+    resp = client.post(
+        "/api/v1/retrosynthesis/plan",
+        json={"smiles": "CC(=O)OCC", "max_depth": 2, "beam_width": 3},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    tree = resp.json()["tree"]
+    assert "disconnections" in tree
+    assert isinstance(tree["disconnections"], list)
+
+
+def test_retro_disconnections_contain_best(client, auth_headers):
+    """When best_disconnection exists, it should appear in disconnections too."""
+    resp = client.post(
+        "/api/v1/retrosynthesis/plan",
+        json={"smiles": "CC(=O)OCC", "max_depth": 3, "beam_width": 5},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    tree = resp.json()["tree"]
+    if tree["best_disconnection"] is not None:
+        best_name = tree["best_disconnection"]["reaction_name"]
+        disc_names = [d["reaction_name"] for d in tree["disconnections"]]
+        assert best_name in disc_names
+        # Each disconnection should have required fields
+        for d in tree["disconnections"]:
+            assert "reaction_name" in d
+            assert "score" in d
+            assert "precursors" in d
+            assert isinstance(d["score"], (int, float))

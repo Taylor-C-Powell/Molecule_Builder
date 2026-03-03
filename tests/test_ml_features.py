@@ -89,40 +89,60 @@ class TestExtractFeatures:
 
 
 class TestConditionPredictor:
-    """Test the ML condition predictor stub."""
+    """Test the ML condition predictor."""
+
+    def teardown_method(self):
+        set_predictor(None)
 
     def test_no_model_returns_none(self):
-        predictor = ConditionPredictor()
+        """Predictor with no model loaded returns None from predict()."""
+        predictor = ConditionPredictor.__new__(ConditionPredictor)
+        predictor._model = None
+        predictor._model_path = None
         result = predictor.predict("CCO")
         assert result is None
 
-    def test_is_loaded_false_by_default(self):
-        predictor = ConditionPredictor()
-        assert predictor.is_loaded is False
-
-    def test_model_path_none(self):
-        predictor = ConditionPredictor(model_path=None)
+    def test_nonexistent_path_stays_unloaded(self):
+        predictor = ConditionPredictor(model_path="/no/such/file.pkl")
         assert predictor.is_loaded is False
         assert predictor.predict("CCO") is None
+
+    def test_default_auto_loads_bundled_model(self):
+        """Default constructor auto-loads bundled .pkl if present."""
+        import os
+        model_path = os.path.join(
+            os.path.dirname(__file__), "..", "molbuilder", "data", "condition_model.pkl"
+        )
+        predictor = ConditionPredictor()
+        if os.path.isfile(model_path):
+            assert predictor.is_loaded is True
+        else:
+            assert predictor.is_loaded is False
 
     def test_module_singleton(self):
         predictor = get_predictor()
         assert isinstance(predictor, ConditionPredictor)
-        assert predictor.is_loaded is False
 
     def test_set_predictor(self):
         original = get_predictor()
-        custom = ConditionPredictor()
+        custom = ConditionPredictor.__new__(ConditionPredictor)
+        custom._model = None
+        custom._model_path = None
         set_predictor(custom)
         assert get_predictor() is custom
         # Restore
         set_predictor(original)
 
     def test_predict_with_params(self):
+        """Predictor with model returns ReactionConditions; without returns None."""
+        from molbuilder.process.conditions import ReactionConditions
         predictor = ConditionPredictor()
         result = predictor.predict(
             "CCO",
             template_name="OXIDATION",
             scale_kg=10.0,
         )
-        assert result is None
+        if predictor.is_loaded:
+            assert isinstance(result, ReactionConditions)
+        else:
+            assert result is None

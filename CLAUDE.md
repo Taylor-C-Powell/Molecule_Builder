@@ -24,6 +24,9 @@ pip install -e "./saas[dev]"
 # SaaS API with PostgreSQL support
 pip install -e "./saas[dev,pg]"
 
+# Core library with ML condition prediction
+pip install -e ".[dev,ml]"
+
 # SDK
 pip install -e "./sdk[dev]"
 
@@ -37,12 +40,12 @@ cd studio && npm ci
 ## Running Tests
 
 ```bash
-# Core library (1510 tests across 36 files, CI enforces --cov-fail-under=80)
+# Core library (1546 tests across 39 files, CI enforces --cov-fail-under=80)
 python -m pytest tests/ -v
 python -m pytest tests/test_smiles.py -v          # single file
 python -m pytest tests/ --cov=molbuilder --cov-report=term-missing
 
-# SaaS API (187 tests across 24 files, uses FastAPI TestClient)
+# SaaS API (222 tests across 25 files, uses FastAPI TestClient)
 cd saas && python -m pytest tests/ -v             # SQLite backend (default)
 
 # SaaS API against PostgreSQL (requires running PG instance)
@@ -83,7 +86,7 @@ core/  <-- everything depends on this (constants, elements, geometry, bond data)
   +-- coords/      (3D coordinate generation -- DG+FF builtin or RDKit backend)
   +-- dynamics/    (MD engine: force field, Verlet integrator, reaction mechanisms)
   +-- smarts/      (SMARTS pattern matching engine -- atom/bond primitives, recursive SMARTS)
-  +-- data/        (ORD conditions JSON, template-to-ORD mapping)
+  +-- data/        (ORD conditions JSON, template-to-ORD mapping, ML model .pkl)
   +-- reactions/   (185 templates, 24 FG detectors, retrosynthesis, FG SMARTS validation, RetroCast adapter)
   |     +-- process/  (reactor, conditions, condition prediction, costing, safety, scale-up)
   +-- reports/     (ASCII + PDF report generators)
@@ -106,18 +109,21 @@ FastAPI with Pydantic v2. Auth flow: API key (X-API-Key) -> JWT exchange. Five t
 
 **Database:** Dual-backend via `DatabaseBackend` abstraction (`saas/app/services/database.py`). SQLite for dev/tests (default), PostgreSQL for production. Toggle via `DATABASE_BACKEND` env var (`"sqlite"` or `"postgresql"`). PostgreSQL uses psycopg v3 with `ConnectionPool`. Schema managed by Alembic (`saas/alembic/`).
 
-**5 database tables** (consolidated from 5 separate SQLite files):
+**8 database tables** (5 core + 3 team management):
 - `api_keys` (user_db) -- API key records, Stripe billing info
 - `audit_log` (audit_db) -- immutable 21 CFR Part 11 audit trail with HMAC signatures
 - `jobs` (job_db) -- batch job state with JSONB input/result
 - `library_molecules` (library_db) -- saved molecule library with JSONB tags/properties
 - `molecules` (molecule_store) -- SMILES cache with LRU eviction
+- `teams` (team_db) -- team/org records with slug, owner
+- `team_members` (team_db) -- membership with team roles (owner/admin/member)
+- `team_library_molecules` (team_db) -- shared team molecule library
 
-**15 router modules:** auth, molecule, retrosynthesis, process, batch, library, file_io, reports, billing, analytics, audit, elements, version, feasibility, legal.
+**16 router modules:** auth, molecule, retrosynthesis, process, batch, library, file_io, reports, billing, analytics, audit, elements, version, feasibility, legal, teams.
 
 **Middleware stack:** SecurityHeaders, RequestID, Versioning, UsageTracking, CORS.
 
-**Services:** molecule_service, retro_service, process_service, feasibility_service, prediction_service, file_io_service, batch_worker, job_db, library_db, molecule_store, user_db, audit_db, stripe_service, usage_tracker.
+**Services:** molecule_service, retro_service, process_service, feasibility_service, prediction_service, file_io_service, batch_worker, job_db, library_db, molecule_store, user_db, audit_db, team_db, stripe_service, usage_tracker.
 
 ### Frontend & Studio
 
@@ -134,21 +140,44 @@ React 19, react-router-dom v7, Zustand for state. API proxied via Vite dev serve
 - AXE notation includes explicit lone pair count: "AX3E1" not "AX3E"
 - `generate_3d(mol)` modifies positions **in-place** (returns None). Backend: `"auto"` tries RDKit then builtin DG+FF.
 - Coverage excludes `gui/`, `cli/menu.py`, `cli/demos.py` (interactive/display code)
+- `ConditionPredictor()` auto-loads bundled model from `molbuilder/data/condition_model.pkl` -- returns ML predictions instead of None when model present
+- ML model requires `pip install molbuilder[ml]` (scikit-learn + joblib). Without it, predictor stays unloaded and callers fall back to heuristics
+- Retro API `RetroNodeResponse` includes `disconnections: list[DisconnectionResponse]` with ALL beam candidates, not just `best_disconnection`
 
 ## Database Gotchas
 
 - **Catch `DatabaseIntegrityError`, NOT `sqlite3.IntegrityError`** -- the abstraction layer re-raises driver-specific errors as `DatabaseIntegrityError` (`app.services.database`).
-- All DB service classes (`UserDB`, `AuditDB`, `JobDB`, `LibraryDB`, `MoleculeStore`) accept an optional `backend: DatabaseBackend` param. When omitted they fall back to direct SQLite.
+- All DB service classes (`UserDB`, `AuditDB`, `JobDB`, `LibraryDB`, `MoleculeStore`, `TeamDB`) accept an optional `backend: DatabaseBackend` param. When omitted they fall back to direct SQLite.
 - **Audit HMAC signatures** are always computed from the epoch float. PostgreSQL stores both `timestamp` (TIMESTAMPTZ) and `timestamp_epoch` (FLOAT). The `_normalise_record()` method ensures `record["timestamp"]` is always the float for signature verification.
 - **JSON fields:** Always use `json.dumps()` for writes and `json.loads()` for reads. `supports_native_json` is False for both backends because psycopg v3 cannot auto-adapt Python dicts via `%s` placeholders. PG JSONB columns accept JSON text input; psycopg auto-deserialises JSONB on reads (handled by `_decode_json()`).
 - **Timestamps for PG:** TIMESTAMPTZ columns reject raw `time.time()` floats. Convert via `datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()` when `self._backend.is_postgres`. See `user_db.insert_key()`, `molecule_store.put()/get()`, and `audit_db.record()` for examples.
 - **Datetime normalization on reads:** `PostgresBackend.execute()` auto-converts `datetime.datetime` values in result rows to ISO strings via `_normalize_row()`. This ensures Pydantic models (which expect `str` for timestamp fields) work with both backends.
 - **SQL translation:** `_translate_sql()` converts `?` to `%s` AND converts `active = 1/0` to `active = true/false` for PG BOOLEAN columns. All service code uses `?` placeholders.
 - **Upsert dialect:** SQLite uses `INSERT OR REPLACE`, PostgreSQL uses `INSERT ... ON CONFLICT DO UPDATE`. MoleculeStore handles this in the `put()` method.
-- **Tag search dialect:** LibraryDB uses `tags LIKE '%"tag"%'` for SQLite, `tags @> ?::jsonb` for PostgreSQL.
+- **Tag search dialect:** LibraryDB and TeamDB use `tags LIKE '%"tag"%'` for SQLite, `tags @> ?::jsonb` for PostgreSQL.
 - **Pool lifecycle:** DB class `close()` methods must NOT close the shared PG backend pool -- only close when `self._direct_sqlite` is True. The pool is managed by the application lifecycle (`main.py` lifespan), not individual DB classes.
 - **Alembic migrations:** Run `cd saas && alembic upgrade head` before first use with PostgreSQL. Schema lives in `saas/alembic/versions/`. The `alembic/env.py` rewrites `postgresql://` to `postgresql+psycopg://` for psycopg v3 compatibility.
-- **PG test infrastructure:** `conftest.py` uses a session-scoped pool fixture (`_pg_backend`) with `close()` monkey-patched to no-op. Table truncation between tests uses direct `psycopg.connect()` calls, not the pool. The `_ensure_pg_backend` autouse fixture pins the backend singleton before each test.
+- **PG test infrastructure:** `conftest.py` uses a session-scoped pool fixture (`_pg_backend`) with `close()` monkey-patched to no-op. Table truncation between tests uses direct `psycopg.connect()` calls, not the pool. The `_ensure_pg_backend` autouse fixture pins the backend singleton before each test. Team tables (`team_library_molecules`, `team_members`, `teams`) are truncated in FK-safe order.
+
+## Team Management
+
+Teams provide multi-user collaboration. Backend only (no frontend yet).
+
+**Team roles** (`TeamRole` in `app.auth.team_roles`) are separate from system roles (`Role`):
+- `owner` -- created the team, can delete it, full access
+- `admin` -- invite/remove members, change roles, library CRUD
+- `member` -- read/write team library only
+
+**Key design decisions:**
+- `team_id` via path params, not JWT -- users can belong to multiple teams
+- Team creation restricted to `Tier.TEAM` and `Tier.ENTERPRISE` (or system `Role.ADMIN`)
+- Owner cannot leave or be demoted; must transfer ownership or delete team
+- Self-removal allowed for non-owner members
+- No FK to `api_keys` -- `owner_email`/`user_email` are plain TEXT
+- System ADMIN gets virtual owner access to any team (via `_require_membership`)
+- `/api/v1/teams` is in `_SELF_SERVICE_PREFIXES` -- any authenticated user can hit these endpoints; authorization is handled in-router
+
+**TeamDB** (`app.services.team_db`) follows the same dual-backend pattern as LibraryDB. Config key: `team_db_path`. Alembic migration: `0002_team_management.py`.
 
 ## Encoding Rules
 
@@ -171,7 +200,9 @@ from molbuilder.reactions.retrosynthesis import retrosynthesis, format_tree
 from molbuilder.reactions.fg_smarts_validation import cross_validate_fg  # FG cross-validation
 from molbuilder.process.reactor import select_reactor
 from molbuilder.process.costing import estimate_cost
-from molbuilder.process.condition_prediction import predict_conditions  # ORD-backed
+from molbuilder.process.condition_prediction import predict_conditions  # ML-first, ORD/heuristic fallback
+from molbuilder.process.ml_predict import ConditionPredictor, get_predictor  # ML model interface
+from molbuilder.process.ml_features import extract_features, ALL_FEATURE_NAMES  # 52 ML features
 from molbuilder.molecule.properties import lipinski_properties
 from molbuilder.molecule.sa_score import sa_score       # synthetic accessibility (1-10)
 from molbuilder.reports.pdf_report import generate_molecule_pdf  # optional dep
@@ -184,6 +215,10 @@ from app.services.audit_db import AuditDB, get_audit_db, set_audit_db
 from app.services.job_db import JobDB, get_job_db, set_job_db
 from app.services.library_db import LibraryDB, get_library_db, set_library_db
 from app.services.molecule_store import MoleculeStore, get_molecule_store, set_molecule_store
+from app.services.team_db import TeamDB, get_team_db, set_team_db
+
+# Team management
+from app.auth.team_roles import TeamRole, can_manage_members, can_delete_team
 ```
 
 ## Entry Points

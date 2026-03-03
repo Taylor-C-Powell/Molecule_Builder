@@ -32,11 +32,28 @@ def _serialize_node(node) -> RetroNodeResponse:
             ],
         )
 
+    all_disconnections = [
+        DisconnectionResponse(
+            reaction_name=disc.template.name,
+            named_reaction=disc.template.named_reaction,
+            category=disc.template.category.name,
+            score=disc.score,
+            precursors=[
+                PrecursorResponse(
+                    smiles=p.smiles, name=p.name, cost_per_kg=p.cost_per_kg
+                )
+                for p in disc.precursors
+            ],
+        )
+        for disc in node.disconnections
+    ]
+
     return RetroNodeResponse(
         smiles=node.smiles,
         is_purchasable=node.is_purchasable,
         functional_groups=[fg.name for fg in node.functional_groups],
         best_disconnection=best,
+        disconnections=all_disconnections,
         children=[_serialize_node(c) for c in node.children],
     )
 

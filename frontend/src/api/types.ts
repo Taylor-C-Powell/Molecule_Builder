@@ -141,6 +141,7 @@ export interface RetroNodeResponse {
   is_purchasable: boolean;
   functional_groups: string[];
   best_disconnection: DisconnectionResponse | null;
+  disconnections: DisconnectionResponse[];
   children: RetroNodeResponse[];
 }
 
