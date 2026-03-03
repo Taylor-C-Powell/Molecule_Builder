@@ -5,6 +5,30 @@ All notable changes to MolBuilder will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-03-03
+
+### Added
+
+#### Core Library
+- **ML Feature Expansion**: 3 new molecular descriptors -- TPSA (`topological_polar_surface_area`), chiral center count, ionizable group count (55 total ML features, up from 52)
+- Retrained gradient-boosting condition prediction model with expanded feature set
+
+#### Frontend
+- **Team Management Pages**: Teams list page with create form, team detail page with tabs for members and shared library
+- **Team Components**: `CreateTeamForm`, `TeamCard`, `MembersPanel` (add/remove/role-change), `TeamLibraryPanel` (save/import/search/paginate)
+- **Teams API Layer**: `teams.ts` API module, `useTeams` hook, TypeScript interfaces for all team endpoints
+- `patch()` method on `ApiClient` for PATCH requests
+- Teams nav link in header
+
+### Fixed
+- Narrowed purchasability exception handling from `except Exception` to `except (ValueError, KeyError)` in `is_purchasable()` and `get_purchasable()`
+
+### Changed
+- ML feature count 52 -> 55 (11 descriptors + 28 FG one-hot + 1 fg_count + 14 category one-hot + 1 log_scale)
+- Temperature model hyperparams tuned (n_estimators=100, max_depth=4, learning_rate=0.1); temperature remains gated (R^2 still negative)
+- `.sha256` sidecar files now included in package data (`pyproject.toml`)
+- Training script uses `len(DESCRIPTOR_NAMES)` instead of hardcoded range for noise augmentation
+
 ## [1.2.0] - 2026-02-28
 
 ### Added

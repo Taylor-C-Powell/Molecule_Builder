@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { to: "/process", label: "Process" },
   { to: "/library", label: "Library" },
   { to: "/batch", label: "Batch" },
+  { to: "/teams", label: "Teams" },
   { to: "/account", label: "Account" },
 ];
 

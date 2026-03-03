@@ -521,7 +521,7 @@ def is_purchasable(smiles: str) -> bool:
         canon = to_smiles(parse(smiles))
         if canon in PURCHASABLE_MATERIALS:
             return True
-    except Exception:
+    except (ValueError, KeyError):
         pass
     return False
 
@@ -541,7 +541,7 @@ def get_purchasable(smiles: str) -> Precursor | None:
             name, cost = entry
             return Precursor(smiles=canon, molecule=None, name=name,
                              cost_per_kg=cost)
-    except Exception:
+    except (ValueError, KeyError):
         pass
     return None
 

@@ -33,8 +33,8 @@ class TestFeatureExtraction:
         """extract_features should produce exactly len(ALL_FEATURE_NAMES) features."""
         features = extract_features("CCO")
         assert len(features) == len(ALL_FEATURE_NAMES)
-        # 8 descriptors + 28 FG one-hot + 1 fg_count + 14 category one-hot + 1 log_scale
-        assert len(ALL_FEATURE_NAMES) == 52
+        # 11 descriptors + 28 FG one-hot + 1 fg_count + 14 category one-hot + 1 log_scale
+        assert len(ALL_FEATURE_NAMES) == 55
 
     def test_feature_keys_match(self):
         """Feature dict keys must match ALL_FEATURE_NAMES exactly."""
@@ -77,6 +77,29 @@ class TestFeatureExtraction:
         f1 = extract_features("CCO", scale_kg=1.0)
         f10 = extract_features("CCO", scale_kg=10.0)
         assert f10["log_scale_kg"] > f1["log_scale_kg"]
+
+    def test_tpsa_feature(self):
+        """TPSA should be present and positive for ethanol."""
+        features = extract_features("CCO")
+        assert "tpsa" in features
+        assert features["tpsa"] > 0
+
+    def test_chiral_centers_feature(self):
+        """Chiral SMILES should report nonzero num_chiral_centers."""
+        features = extract_features("C[C@H](O)F")
+        assert "num_chiral_centers" in features
+        assert features["num_chiral_centers"] >= 1.0
+
+    def test_chiral_centers_achiral(self):
+        """Achiral molecule should have 0 chiral centers."""
+        features = extract_features("CCO")
+        assert features["num_chiral_centers"] == 0.0
+
+    def test_ionizable_groups_feature(self):
+        """Carboxylic acid should have ionizable groups."""
+        features = extract_features("CC(=O)O")
+        assert "num_ionizable_groups" in features
+        assert features["num_ionizable_groups"] >= 1.0
 
 
 # =====================================================================

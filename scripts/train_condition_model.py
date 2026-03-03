@@ -29,6 +29,7 @@ from molbuilder.data import load_ord_conditions
 from molbuilder.process.ml_features import (
     extract_features,
     ALL_FEATURE_NAMES,
+    DESCRIPTOR_NAMES,
     _CATEGORY_NAMES,
 )
 
@@ -363,8 +364,8 @@ def _build_training_data(
             # Generate augmented samples with noise
             for _ in range(augment_per_smiles):
                 vec = list(base_vec)
-                # Add small Gaussian noise to continuous descriptors (first 8)
-                for j in range(8):
+                # Add small Gaussian noise to continuous descriptors
+                for j in range(len(DESCRIPTOR_NAMES)):
                     vec[j] += np.random.normal(0, abs(vec[j]) * 0.05 + 0.01)
 
                 # Vary scale_kg for the last feature
@@ -429,7 +430,7 @@ def main() -> None:
     # -- Train temperature regressor --
     print("\nTraining temperature model...")
     temp_model = GradientBoostingRegressor(
-        n_estimators=50, max_depth=3, learning_rate=0.15,
+        n_estimators=100, max_depth=4, learning_rate=0.1,
         subsample=0.8, random_state=42,
     )
     temp_scores = cross_val_score(temp_model, X_arr, y_temp_arr, cv=3, scoring="r2")

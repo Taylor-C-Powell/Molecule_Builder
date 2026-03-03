@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MolBuilder is a professional-grade molecular engineering toolkit with five components:
 
-- **`molbuilder/`** -- Core Python library (PyPI: `molbuilder` v1.2.0). Pure Python + numpy/scipy/matplotlib. Optional RDKit backend for 3D coords (`pip install molbuilder[rdkit]`).
+- **`molbuilder/`** -- Core Python library (PyPI: `molbuilder` v1.2.1). Pure Python + numpy/scipy/matplotlib. Optional RDKit backend for 3D coords (`pip install molbuilder[rdkit]`).
 - **`saas/`** -- FastAPI REST API (PyPI: `molbuilder-api`). JWT auth, tiered API keys, RBAC, Stripe billing. Deployed to Railway.
 - **`frontend/`** -- React SPA web dashboard (Vite + TypeScript + Tailwind CSS 4 + 3Dmol.js). Deployed to Vercel.
 - **`studio/`** -- React SPA 3D molecule editor (Vite + TypeScript + Three.js/R3F). Deployed to Vercel.
@@ -202,7 +202,7 @@ from molbuilder.process.reactor import select_reactor
 from molbuilder.process.costing import estimate_cost
 from molbuilder.process.condition_prediction import predict_conditions  # ML-first, ORD/heuristic fallback
 from molbuilder.process.ml_predict import ConditionPredictor, get_predictor  # ML model interface
-from molbuilder.process.ml_features import extract_features, ALL_FEATURE_NAMES  # 52 ML features
+from molbuilder.process.ml_features import extract_features, ALL_FEATURE_NAMES  # 55 ML features
 from molbuilder.molecule.properties import lipinski_properties
 from molbuilder.molecule.sa_score import sa_score       # synthetic accessibility (1-10)
 from molbuilder.reports.pdf_report import generate_molecule_pdf  # optional dep

@@ -28,6 +28,8 @@ from molbuilder.molecule.properties import (
     crippen_logp,
     hydrogen_bond_donors,
     hydrogen_bond_acceptors,
+    topological_polar_surface_area,
+    predict_pka,
 )
 from molbuilder.reactions.functional_group_detect import detect_functional_groups
 from molbuilder.reactions.reaction_types import ReactionCategory
@@ -129,6 +131,11 @@ def extract_features(
     features["logp"] = crippen_logp(mol)
     features["hbd"] = float(hydrogen_bond_donors(mol))
     features["hba"] = float(hydrogen_bond_acceptors(mol))
+    features["tpsa"] = topological_polar_surface_area(mol)
+    features["num_chiral_centers"] = float(
+        sum(1 for a in mol.atoms if a.chirality is not None)
+    )
+    features["num_ionizable_groups"] = float(len(predict_pka(mol)))
 
     # --- Functional group one-hot ---
     for fg_name in _FG_NAMES:
@@ -156,5 +163,6 @@ CATEGORY_FEATURE_NAMES = [f"cat_{n.lower()}" for n in _CATEGORY_NAMES]
 DESCRIPTOR_NAMES = [
     "mw", "heavy_atom_count", "num_bonds", "num_rings",
     "rotatable_bonds", "logp", "hbd", "hba",
+    "tpsa", "num_chiral_centers", "num_ionizable_groups",
 ]
 ALL_FEATURE_NAMES = DESCRIPTOR_NAMES + FG_FEATURE_NAMES + ["fg_count"] + CATEGORY_FEATURE_NAMES + ["log_scale_kg"]

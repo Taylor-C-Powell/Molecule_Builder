@@ -402,6 +402,94 @@ export interface FileImportResponse {
   count: number;
 }
 
+// ---- Teams ----
+export interface TeamCreateRequest {
+  name: string;
+  slug: string;
+}
+
+export interface TeamUpdateRequest {
+  name: string;
+}
+
+export interface TeamResponse {
+  id: number;
+  name: string;
+  slug: string;
+  owner_email: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamListResponse {
+  teams: TeamResponse[];
+}
+
+export interface MemberAddRequest {
+  email: string;
+  role?: string;
+}
+
+export interface MemberRoleUpdateRequest {
+  role: string;
+}
+
+export interface MemberResponse {
+  id: number;
+  team_id: number;
+  user_email: string;
+  team_role: string;
+  joined_at: string;
+}
+
+export interface MemberListResponse {
+  members: MemberResponse[];
+}
+
+export interface TeamLibrarySaveRequest {
+  smiles: string;
+  name?: string | null;
+  tags?: string[];
+  notes?: string | null;
+}
+
+export interface TeamLibraryUpdateRequest {
+  name?: string | null;
+  tags?: string[] | null;
+  notes?: string | null;
+}
+
+export interface TeamLibraryMoleculeResponse {
+  id: number;
+  team_id: number;
+  smiles: string;
+  name: string | null;
+  tags: string[];
+  notes: string | null;
+  properties: Record<string, unknown>;
+  added_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamLibraryListResponse {
+  molecules: TeamLibraryMoleculeResponse[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface TeamLibraryImportRequest {
+  smiles_list: string[];
+  tag?: string | null;
+}
+
+export interface TeamLibraryImportResponse {
+  saved: number;
+  duplicates: number;
+  errors: string[];
+}
+
 // ---- Common ----
 export interface ApiError {
   detail: string;

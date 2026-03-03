@@ -12,6 +12,8 @@ const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const LibraryPage = lazy(() => import("./pages/LibraryPage"));
 const BatchPage = lazy(() => import("./pages/BatchPage"));
+const TeamsPage = lazy(() => import("./pages/TeamsPage"));
+const TeamDetailPage = lazy(() => import("./pages/TeamDetailPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 
@@ -69,6 +71,22 @@ export function App() {
           element={
             <AuthGuard>
               <Layout><BatchPage /></Layout>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/teams"
+          element={
+            <AuthGuard>
+              <Layout><TeamsPage /></Layout>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/teams/:id"
+          element={
+            <AuthGuard>
+              <Layout><TeamDetailPage /></Layout>
             </AuthGuard>
           }
         />
