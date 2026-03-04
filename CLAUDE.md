@@ -40,7 +40,7 @@ cd studio && npm ci
 ## Running Tests
 
 ```bash
-# Core library (1546 tests across 39 files, CI enforces --cov-fail-under=80)
+# Core library (1586 tests across 41 files, CI enforces --cov-fail-under=80)
 python -m pytest tests/ -v
 python -m pytest tests/test_smiles.py -v          # single file
 python -m pytest tests/ --cov=molbuilder --cov-report=term-missing
@@ -86,8 +86,8 @@ core/  <-- everything depends on this (constants, elements, geometry, bond data)
   +-- coords/      (3D coordinate generation -- DG+FF builtin or RDKit backend)
   +-- dynamics/    (MD engine: force field, Verlet integrator, reaction mechanisms)
   +-- smarts/      (SMARTS pattern matching engine -- atom/bond primitives, recursive SMARTS)
-  +-- data/        (ORD conditions JSON, template-to-ORD mapping, ML model .pkl)
-  +-- reactions/   (185 templates, 24 FG detectors, retrosynthesis, FG SMARTS validation, RetroCast adapter)
+  +-- data/        (ORD conditions JSON, template-to-ORD mapping, ML model .pkl, retro scorer .pkl)
+  +-- reactions/   (185 templates, 24 FG detectors, retrosynthesis, FG SMARTS validation, RetroCast adapter, ML scoring)
   |     +-- process/  (reactor, conditions, condition prediction, costing, safety, scale-up)
   +-- reports/     (ASCII + PDF report generators)
   +-- visualization/, gui/, cli/
@@ -141,8 +141,10 @@ React 19, react-router-dom v7, Zustand for state. API proxied via Vite dev serve
 - `generate_3d(mol)` modifies positions **in-place** (returns None). Backend: `"auto"` tries RDKit then builtin DG+FF.
 - Coverage excludes `gui/`, `cli/menu.py`, `cli/demos.py` (interactive/display code)
 - `ConditionPredictor()` auto-loads bundled model from `molbuilder/data/condition_model.pkl` -- returns ML predictions instead of None when model present
-- ML model requires `pip install molbuilder[ml]` (scikit-learn + joblib). Without it, predictor stays unloaded and callers fall back to heuristics
+- `DisconnectionScorer()` auto-loads bundled model from `molbuilder/data/retro_scorer.pkl` -- returns ML scores instead of None when model present
+- ML models require `pip install molbuilder[ml]` (scikit-learn + joblib). Without it, predictors/scorers stay unloaded and callers fall back to heuristics
 - Retro API `RetroNodeResponse` includes `disconnections: list[DisconnectionResponse]` with ALL beam candidates, not just `best_disconnection`
+- `Disconnection.scoring_method` is `"heuristic"` or `"ml"` -- propagated through SaaS API `DisconnectionResponse.scoring_method`
 
 ## Database Gotchas
 
@@ -161,7 +163,7 @@ React 19, react-router-dom v7, Zustand for state. API proxied via Vite dev serve
 
 ## Team Management
 
-Teams provide multi-user collaboration. Backend only (no frontend yet).
+Teams provide multi-user collaboration. Backend + frontend (TeamsPage, TeamDetailPage).
 
 **Team roles** (`TeamRole` in `app.auth.team_roles`) are separate from system roles (`Role`):
 - `owner` -- created the team, can delete it, full access
@@ -178,6 +180,22 @@ Teams provide multi-user collaboration. Backend only (no frontend yet).
 - `/api/v1/teams` is in `_SELF_SERVICE_PREFIXES` -- any authenticated user can hit these endpoints; authorization is handled in-router
 
 **TeamDB** (`app.services.team_db`) follows the same dual-backend pattern as LibraryDB. Config key: `team_db_path`. Alembic migration: `0002_team_management.py`.
+
+## ML Retro Scorer (Learned Retrosynthesis)
+
+The retrosynthesis engine supports ML-based disconnection scoring alongside the default heuristic scorer. The ML scorer uses a GradientBoosting regressor trained on heuristic-labeled data.
+
+**Architecture** (mirrors `ConditionPredictor` in `ml_predict.py`):
+- `retro_features.py`: 82-feature extraction (target descriptors, precursor aggregates, relationship features, template/category one-hot, FG one-hot, strategic flags)
+- `ml_scoring.py`: `DisconnectionScorer` class with auto-load, SHA-256 verification, singleton (`get_scorer`/`set_scorer`), graceful fallback
+- Integration in `_build_retro_node()`: tries ML scorer first, falls back to `score_disconnection()` heuristic. Import is lazy (inline) to avoid circular imports.
+
+**Key details:**
+- Model: `molbuilder/data/retro_scorer.pkl` (~223KB), sidecar: `retro_scorer.pkl.sha256`
+- Training: `scripts/train_retro_scorer.py` -- generates data from 60 target SMILES with 5x augmentation
+- `Disconnection` dataclass has `scoring_method: str` field (`"heuristic"` or `"ml"`)
+- Without the model file or scikit-learn, all scoring transparently falls back to heuristics
+- Tests that need no-model behavior use `DisconnectionScorer.__new__()` pattern (same as `ConditionPredictor`)
 
 ## Encoding Rules
 
@@ -201,8 +219,10 @@ from molbuilder.reactions.fg_smarts_validation import cross_validate_fg  # FG cr
 from molbuilder.process.reactor import select_reactor
 from molbuilder.process.costing import estimate_cost
 from molbuilder.process.condition_prediction import predict_conditions  # ML-first, ORD/heuristic fallback
-from molbuilder.process.ml_predict import ConditionPredictor, get_predictor  # ML model interface
+from molbuilder.process.ml_predict import ConditionPredictor, get_predictor  # ML condition model
 from molbuilder.process.ml_features import extract_features, ALL_FEATURE_NAMES  # 55 ML features
+from molbuilder.reactions.ml_scoring import DisconnectionScorer, get_scorer  # ML retro scorer
+from molbuilder.reactions.retro_features import extract_retro_features, ALL_RETRO_FEATURE_NAMES  # 82 retro features
 from molbuilder.molecule.properties import lipinski_properties
 from molbuilder.molecule.sa_score import sa_score       # synthetic accessibility (1-10)
 from molbuilder.reports.pdf_report import generate_molecule_pdf  # optional dep
