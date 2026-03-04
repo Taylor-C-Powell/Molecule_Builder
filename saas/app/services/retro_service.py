@@ -30,6 +30,7 @@ def _serialize_node(node) -> RetroNodeResponse:
                 )
                 for p in d.precursors
             ],
+            scoring_method=getattr(d, "scoring_method", "heuristic"),
         )
 
     all_disconnections = [
@@ -44,6 +45,7 @@ def _serialize_node(node) -> RetroNodeResponse:
                 )
                 for p in disc.precursors
             ],
+            scoring_method=getattr(disc, "scoring_method", "heuristic"),
         )
         for disc in node.disconnections
     ]

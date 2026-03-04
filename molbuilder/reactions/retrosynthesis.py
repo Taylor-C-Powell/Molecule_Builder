@@ -439,10 +439,13 @@ class Disconnection:
         The precursor molecules produced by this disconnection.
     score : float
         Quality score from 0 to 100 (higher is better).
+    scoring_method : str
+        How the score was computed: ``"heuristic"`` or ``"ml"``.
     """
     template: ReactionTemplate
     precursors: list[Precursor]
     score: float
+    scoring_method: str = "heuristic"
 
 
 @dataclass
@@ -1821,9 +1824,19 @@ def _build_retro_node(
             if not precursors:
                 continue
 
-            score = score_disconnection(tmpl, precursors, mol)
+            # Try ML scorer first; fall back to heuristic
+            from molbuilder.reactions.ml_scoring import get_scorer
+            ml_score = get_scorer().score(
+                mol, smiles, tmpl, precursors, depth, target_fgs=fgs)
+            if ml_score is not None:
+                score = ml_score
+                method = "ml"
+            else:
+                score = score_disconnection(tmpl, precursors, mol)
+                method = "heuristic"
             disconnections.append(Disconnection(
-                template=tmpl, precursors=precursors, score=score))
+                template=tmpl, precursors=precursors, score=score,
+                scoring_method=method))
 
     # Sort by score (highest first) and keep top beam_width
     disconnections.sort(key=lambda d: d.score, reverse=True)

@@ -21,6 +21,7 @@ class DisconnectionResponse(BaseModel):
     category: str
     score: float
     precursors: list[PrecursorResponse]
+    scoring_method: str = "heuristic"
 
 
 class RetroNodeResponse(BaseModel):

@@ -134,6 +134,7 @@ export interface DisconnectionResponse {
   category: string;
   score: number;
   precursors: PrecursorResponse[];
+  scoring_method?: string;
 }
 
 export interface RetroNodeResponse {
