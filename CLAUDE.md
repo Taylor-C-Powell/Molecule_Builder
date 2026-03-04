@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MolBuilder is a professional-grade molecular engineering toolkit with five components:
 
-- **`molbuilder/`** -- Core Python library (PyPI: `molbuilder` v1.2.1). Pure Python + numpy/scipy/matplotlib. Optional RDKit backend for 3D coords (`pip install molbuilder[rdkit]`).
+- **`molbuilder/`** -- Core Python library (PyPI: `molbuilder` v1.2.2). Pure Python + numpy/scipy/matplotlib. Optional RDKit backend for 3D coords (`pip install molbuilder[rdkit]`).
 - **`saas/`** -- FastAPI REST API (PyPI: `molbuilder-api`). JWT auth, tiered API keys, RBAC, Stripe billing. Deployed to Railway.
 - **`frontend/`** -- React SPA web dashboard (Vite + TypeScript + Tailwind CSS 4 + 3Dmol.js). Deployed to Vercel.
 - **`studio/`** -- React SPA 3D molecule editor (Vite + TypeScript + Three.js/R3F). Deployed to Vercel.
@@ -77,7 +77,7 @@ cd studio && npm run lint
 ### Core Library Dependency Graph
 
 ```
-core/  <-- everything depends on this (constants, elements, geometry, bond data)
+core/  <-- everything depends on this (constants, elements, geometry, bond data, model_utils)
   +-- atomic/      (Bohr model, quantum numbers, wavefunctions)
   +-- bonding/     (Lewis structures, VSEPR, covalent bond analysis)
   +-- molecule/    (Molecule graph, properties, SA score -- central class)
@@ -87,7 +87,7 @@ core/  <-- everything depends on this (constants, elements, geometry, bond data)
   +-- dynamics/    (MD engine: force field, Verlet integrator, reaction mechanisms)
   +-- smarts/      (SMARTS pattern matching engine -- atom/bond primitives, recursive SMARTS)
   +-- data/        (ORD conditions JSON, template-to-ORD mapping, ML model .pkl, retro scorer .pkl)
-  +-- reactions/   (185 templates, 24 FG detectors, retrosynthesis, FG SMARTS validation, RetroCast adapter, ML scoring)
+  +-- reactions/   (185 templates, 32 FG detectors, retrosynthesis, FG SMARTS validation, RetroCast adapter, ML scoring)
   |     +-- process/  (reactor, conditions, condition prediction, costing, safety, scale-up)
   +-- reports/     (ASCII + PDF report generators)
   +-- visualization/, gui/, cli/
@@ -145,6 +145,9 @@ React 19, react-router-dom v7, Zustand for state. API proxied via Vite dev serve
 - ML models require `pip install molbuilder[ml]` (scikit-learn + joblib). Without it, predictors/scorers stay unloaded and callers fall back to heuristics
 - Retro API `RetroNodeResponse` includes `disconnections: list[DisconnectionResponse]` with ALL beam candidates, not just `best_disconnection`
 - `Disconnection.scoring_method` is `"heuristic"` or `"ml"` -- propagated through SaaS API `DisconnectionResponse.scoring_method`
+- `verify_model_checksum(path, require_sidecar=False)` -- shared by both ML loaders (`ml_predict.py`, `ml_scoring.py`); `require_sidecar=True` for bundled models
+- Frontend uses `sessionStorage` (not `localStorage`) for API key storage -- clears on tab close
+- Library/team search uses `_escape_like()` to sanitize `%` and `_` wildcards in LIKE queries
 
 ## Database Gotchas
 
@@ -186,7 +189,7 @@ Teams provide multi-user collaboration. Backend + frontend (TeamsPage, TeamDetai
 The retrosynthesis engine supports ML-based disconnection scoring alongside the default heuristic scorer. The ML scorer uses a GradientBoosting regressor trained on heuristic-labeled data.
 
 **Architecture** (mirrors `ConditionPredictor` in `ml_predict.py`):
-- `retro_features.py`: 82-feature extraction (target descriptors, precursor aggregates, relationship features, template/category one-hot, FG one-hot, strategic flags)
+- `retro_features.py`: 90-feature extraction (target descriptors, precursor aggregates, relationship features, template/category one-hot, FG one-hot, strategic flags)
 - `ml_scoring.py`: `DisconnectionScorer` class with auto-load, SHA-256 verification, singleton (`get_scorer`/`set_scorer`), graceful fallback
 - Integration in `_build_retro_node()`: tries ML scorer first, falls back to `score_disconnection()` heuristic. Import is lazy (inline) to avoid circular imports.
 
@@ -220,9 +223,10 @@ from molbuilder.process.reactor import select_reactor
 from molbuilder.process.costing import estimate_cost
 from molbuilder.process.condition_prediction import predict_conditions  # ML-first, ORD/heuristic fallback
 from molbuilder.process.ml_predict import ConditionPredictor, get_predictor  # ML condition model
-from molbuilder.process.ml_features import extract_features, ALL_FEATURE_NAMES  # 55 ML features
+from molbuilder.process.ml_features import extract_features, ALL_FEATURE_NAMES  # 63 ML features
 from molbuilder.reactions.ml_scoring import DisconnectionScorer, get_scorer  # ML retro scorer
-from molbuilder.reactions.retro_features import extract_retro_features, ALL_RETRO_FEATURE_NAMES  # 82 retro features
+from molbuilder.reactions.retro_features import extract_retro_features, ALL_RETRO_FEATURE_NAMES  # 90 retro features
+from molbuilder.core.model_utils import verify_model_checksum  # shared ML model verification
 from molbuilder.molecule.properties import lipinski_properties
 from molbuilder.molecule.sa_score import sa_score       # synthetic accessibility (1-10)
 from molbuilder.reports.pdf_report import generate_molecule_pdf  # optional dep
