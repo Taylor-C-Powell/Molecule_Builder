@@ -6,7 +6,7 @@ conditions (temperature, solvent, catalyst, etc.).
 
 The feature set includes:
 - Molecular descriptors (MW, heavy atoms, rings, rotatable bonds, logP)
-- Functional group one-hot encoding (24 binary features)
+- Functional group one-hot encoding (36 binary features)
 - Reaction template category one-hot encoding
 - Scale features (log of production scale)
 
@@ -40,7 +40,7 @@ def _molecular_weight(mol: Molecule) -> float:
     return round(sum(atomic_weight(a.symbol) for a in mol.atoms), 4)
 
 
-# The 24 FG detector names (stable ordering for one-hot encoding)
+# The 32 FG detector names (stable ordering for one-hot encoding)
 _FG_NAMES: list[str] = [
     "alcohol",
     "aldehyde",
@@ -52,24 +52,32 @@ _FG_NAMES: list[str] = [
     "alkyne",
     "amide",
     "anhydride",
+    "aromatic_amine",
     "aromatic_ring",
     "boronic_acid",
     "carboxylic_acid",
     "epoxide",
     "ester",
     "ether",
+    "hydrazide",
+    "hydrazine",
+    "imidazole",
     "imine",
     "ketone",
+    "michael_acceptor",
     "nitrile",
     "nitro",
+    "phenol",
     "phosphonate",
     "primary_amine",
+    "pyrazole",
     "secondary_amine",
     "sulfonamide",
     "sulfone",
     "sulfoxide",
     "tertiary_amine",
     "thiol",
+    "triazole",
 ]
 
 # Reaction category names (stable ordering for one-hot encoding)

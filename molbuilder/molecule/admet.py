@@ -228,7 +228,7 @@ def _cyp_inhibition(mol: Molecule, fgs: set[str]) -> dict[str, bool]:
 
     # Detect azole-like N-containing heterocycles (strong CYP inhibitors)
     has_azole = "imidazole" in fgs or "triazole" in fgs or "pyrazole" in fgs
-    has_aromatic_amine = "aniline" in fgs or "aromatic_amine" in fgs
+    has_aromatic_amine = "aromatic_amine" in fgs
 
     # Count aromatic rings for CYP3A4 (large substrate cavity)
     ar_count = _aromatic_ring_count(mol)
@@ -332,11 +332,11 @@ def _ames_mutagenicity(mol: Molecule, fgs: set[str]) -> bool:
 
     Positive for nitro aromatics, aromatic amines, epoxides, aziridines.
     """
-    mutagenic_fgs = {"nitro", "epoxide", "aziridine"}
+    mutagenic_fgs = {"nitro", "epoxide"}
     if fgs & mutagenic_fgs:
         return True
-    # Aromatic amine (aniline-type)
-    if "aniline" in fgs or "aromatic_amine" in fgs:
+    # Aromatic amine
+    if "aromatic_amine" in fgs:
         return True
     # Nitro group on aromatic ring: check for nitro + aromatic system
     has_nitro = any(
@@ -355,14 +355,13 @@ def _ames_mutagenicity(mol: Molecule, fgs: set[str]) -> bool:
 def _hepatotoxicity(mol: Molecule, fgs: set[str]) -> str:
     """Predict hepatotoxicity risk from reactive metabolite alerts."""
     alerts = 0
+    # Reactive metabolite alerts from detected FGs
+    # Note: isocyanate, isothiocyanate, acyl_halide, quinone not yet
+    # detected by FG engine -- aspirational for future detectors.
     reactive_fgs = {
-        "hydrazine", "hydrazide", "epoxide", "acyl_halide",
-        "anhydride", "isocyanate", "isothiocyanate",
+        "hydrazine", "hydrazide", "epoxide", "anhydride",
     }
     alerts += len(fgs & reactive_fgs)
-    # Quinone-like: check for para-diketone on aromatic ring
-    if "quinone" in fgs:
-        alerts += 1
     if alerts >= 2:
         return "high"
     if alerts == 1:
@@ -374,17 +373,12 @@ def _structural_alerts(mol: Molecule, fgs: set[str]) -> list[str]:
     """Detect PAINS-like structural alerts."""
     alerts = []
 
-    # Rhodanines
-    if "thiazolidinedione" in fgs or "rhodanine" in fgs:
-        alerts.append("rhodanine / thiazolidinedione")
-
-    # Catechol (ortho-dihydroxybenzene) -- check for phenol pairs
-    phenol_count = sum(1 for fg in fgs if fg in ("phenol",))
-    if phenol_count >= 2:
-        alerts.append("catechol (ortho-diphenol)")
+    # Catechol (ortho-dihydroxybenzene) -- detected via phenol FG
+    if "phenol" in fgs:
+        alerts.append("phenol (potential catechol)")
 
     # Michael acceptors (alpha,beta-unsaturated carbonyls)
-    if "enone" in fgs or "michael_acceptor" in fgs:
+    if "michael_acceptor" in fgs:
         alerts.append("Michael acceptor")
 
     # Acyl hydrazides

@@ -33,8 +33,8 @@ class TestFeatureExtraction:
         """extract_features should produce exactly len(ALL_FEATURE_NAMES) features."""
         features = extract_features("CCO")
         assert len(features) == len(ALL_FEATURE_NAMES)
-        # 11 descriptors + 28 FG one-hot + 1 fg_count + 14 category one-hot + 1 log_scale
-        assert len(ALL_FEATURE_NAMES) == 55
+        # 11 descriptors + 36 FG one-hot + 1 fg_count + 14 category one-hot + 1 log_scale
+        assert len(ALL_FEATURE_NAMES) == 63
 
     def test_feature_keys_match(self):
         """Feature dict keys must match ALL_FEATURE_NAMES exactly."""
@@ -188,7 +188,7 @@ class TestConditionPredictor:
         }
         pred = ConditionPredictor.__new__(ConditionPredictor)
         pred._model = None
-        pred._model_path = None
+        pred._model_path = "/fake/model.pkl"  # custom path -> no sidecar required
 
         with patch("joblib.load", return_value=mock_model):
             pred._load_model("/fake/model.pkl")

@@ -153,5 +153,13 @@ class UsageTrackingMiddleware(BaseHTTPMiddleware):
                 )
             except Exception:
                 logger.warning("Audit trail write failed", exc_info=True)
+                # In production, audit trail is mandatory (21 CFR Part 11)
+                import os
+                if os.environ.get("RAILWAY_ENVIRONMENT"):
+                    from starlette.responses import JSONResponse
+                    return JSONResponse(
+                        status_code=500,
+                        content={"detail": "Audit trail write failed"},
+                    )
 
         return response

@@ -10,6 +10,11 @@ import time
 from app.services.database import DatabaseBackend, DatabaseIntegrityError
 
 
+def _escape_like(s: str) -> str:
+    """Escape LIKE wildcard characters in user input."""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 class TeamDB:
     """Thread-safe database for team management.
 
@@ -385,13 +390,14 @@ class TeamDB:
                 conditions.append("tags @> ?::jsonb")
                 params.append(json.dumps([tag]))
             else:
-                conditions.append("tags LIKE ?")
-                params.append(f'%"{tag}"%')
+                conditions.append("tags LIKE ? ESCAPE '\\'")
+                params.append(f'%"{_escape_like(tag)}"%')
 
         if search:
-            conditions.append("(name LIKE ? OR smiles LIKE ?)")
-            params.append(f"%{search}%")
-            params.append(f"%{search}%")
+            escaped = _escape_like(search)
+            conditions.append("(name LIKE ? ESCAPE '\\' OR smiles LIKE ? ESCAPE '\\')")
+            params.append(f"%{escaped}%")
+            params.append(f"%{escaped}%")
 
         where = " AND ".join(conditions)
 

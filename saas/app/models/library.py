@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class LibrarySaveRequest(BaseModel):
-    smiles: str = Field(..., min_length=1, description="SMILES string")
+    smiles: str = Field(..., min_length=1, max_length=2000, description="SMILES string")
     name: str | None = Field(default=None, description="Optional molecule name")
     tags: list[str] = Field(default_factory=list, description="Tags for categorization")
     notes: str | None = Field(default=None, description="Optional notes")
@@ -37,7 +37,7 @@ class LibraryListResponse(BaseModel):
 
 
 class LibraryImportRequest(BaseModel):
-    smiles_list: list[str] = Field(..., min_length=1, description="SMILES strings to import")
+    smiles_list: list[str] = Field(..., min_length=1, max_length=10000, description="SMILES strings to import")
     tag: str | None = Field(default=None, description="Optional tag for all imported molecules")
 
 

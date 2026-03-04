@@ -93,7 +93,9 @@ def _serialize_route(route) -> SynthesisRouteResponse:
 
 RETRO_TIMEOUT_SECONDS = 30
 
-_executor = ThreadPoolExecutor(max_workers=2)
+# 4 workers: retro is CPU-bound per request but typically short-lived
+# (30s timeout).  Matches Railway's 4-vCPU container.
+_executor = ThreadPoolExecutor(max_workers=4)
 
 
 def _run_retro_sync(

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.auth.roles import Role
 from app.auth.team_roles import TeamRole, can_manage_members, can_delete_team
@@ -306,8 +306,8 @@ def save_team_molecule(
 @router.get("/{team_id}/library/", response_model=TeamLibraryListResponse)
 def list_team_molecules(
     team_id: int,
-    page: int = 1,
-    per_page: int = 20,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=100),
     tag: str | None = None,
     search: str | None = None,
     user: UserContext = Depends(check_rate_limit),

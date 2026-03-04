@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class RetroRequest(BaseModel):
-    smiles: str = Field(..., description="Target SMILES to retro-analyze")
+    smiles: str = Field(..., max_length=2000, description="Target SMILES to retro-analyze")
     max_depth: int = Field(5, ge=1, le=10, description="Max retrosynthetic steps")
     beam_width: int = Field(5, ge=1, le=10, description="Beam search width")
 

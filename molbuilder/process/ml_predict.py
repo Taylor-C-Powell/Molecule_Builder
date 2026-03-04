@@ -13,10 +13,10 @@ first and falls back to heuristics if it returns None.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import os
 
+from molbuilder.core.model_utils import verify_model_checksum
 from molbuilder.process.conditions import ReactionConditions, addition_rate_for_scale
 from molbuilder.process.ml_features import extract_features, ALL_FEATURE_NAMES
 
@@ -52,45 +52,6 @@ class ConditionPredictor:
         if os.path.isfile(path):
             self._load_model(path)
 
-    @staticmethod
-    def _verify_checksum(path: str) -> bool:
-        """Verify SHA-256 checksum of model file against sidecar .sha256 file.
-
-        Returns True if the checksum matches or no sidecar file exists
-        (allowing custom models without checksums). Returns False if the
-        sidecar exists but the hash does not match (possible tampering).
-        """
-        sha_path = path + ".sha256"
-        if not os.path.isfile(sha_path):
-            logger.debug("No checksum file at %s; skipping verification", sha_path)
-            return True
-
-        try:
-            with open(sha_path, "r") as f:
-                expected = f.read().strip().lower()
-        except OSError:
-            logger.warning("Could not read checksum file %s", sha_path)
-            return False
-
-        sha = hashlib.sha256()
-        try:
-            with open(path, "rb") as f:
-                for chunk in iter(lambda: f.read(65536), b""):
-                    sha.update(chunk)
-        except OSError:
-            logger.warning("Could not read model file %s for checksum", path)
-            return False
-
-        actual = sha.hexdigest().lower()
-        if actual != expected:
-            logger.error(
-                "Model checksum MISMATCH for %s: expected %s, got %s. "
-                "The model file may have been tampered with.",
-                path, expected, actual,
-            )
-            return False
-        return True
-
     def _load_model(self, path: str) -> None:
         """Load a serialized model dict from a joblib pickle file.
 
@@ -101,8 +62,11 @@ class ConditionPredictor:
         If scikit-learn/joblib is not installed, logs a warning and
         leaves ``self._model`` as None.
         """
-        # Verify integrity before deserializing
-        if not self._verify_checksum(path):
+        # Verify integrity before deserializing.
+        # Require sidecar for the bundled model (model_path is None);
+        # allow custom models without sidecar.
+        require_sidecar = self._model_path is None
+        if not verify_model_checksum(path, require_sidecar=require_sidecar):
             logger.error("Refusing to load model with failed checksum: %s", path)
             return
 

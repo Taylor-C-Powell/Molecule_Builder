@@ -1,5 +1,6 @@
 """Auth endpoints: register API key, exchange for JWT, user management."""
 
+import os
 import re
 
 from fastapi import APIRouter, Depends, Request
@@ -45,10 +46,12 @@ def _validate_email(email: str) -> str:
 
 
 def _get_client_ip(request: Request) -> str:
-    """Extract client IP, respecting X-Forwarded-For behind proxy."""
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    """Extract client IP, trusting X-Forwarded-For only behind known proxy."""
+    # Only trust X-Forwarded-For when deployed behind Railway's proxy
+    if os.environ.get("RAILWAY_ENVIRONMENT"):
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
 
 

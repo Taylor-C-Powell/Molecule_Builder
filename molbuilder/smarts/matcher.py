@@ -400,13 +400,14 @@ def find_matches(
     mapping: dict[int, int] = {}     # pattern_idx -> mol_idx
     used_mol: set[int] = set()       # mol atoms already mapped
 
+    # Pre-build bond lookup for O(1) access instead of linear scan
+    _bond_map: dict[tuple[int, int], SmartsBond] = {}
+    for b in pattern.bonds:
+        _bond_map[(b.atom_i, b.atom_j)] = b
+        _bond_map[(b.atom_j, b.atom_i)] = b
+
     def _get_bond_between(pi_a: int, pi_b: int) -> SmartsBond | None:
-        """Return the SmartsBond between pattern atoms pi_a and pi_b."""
-        for b in pattern.bonds:
-            if (b.atom_i == pi_a and b.atom_j == pi_b) or \
-               (b.atom_i == pi_b and b.atom_j == pi_a):
-                return b
-        return None
+        return _bond_map.get((pi_a, pi_b))
 
     def _backtrack(depth: int) -> None:
         """Recursively extend the mapping one pattern atom at a time."""
@@ -501,12 +502,14 @@ def has_match(mol: Molecule, pattern: SmartsPattern) -> bool:
     mapping: dict[int, int] = {}
     used_mol: set[int] = set()
 
+    # Pre-build bond lookup for O(1) access
+    _bond_map2: dict[tuple[int, int], SmartsBond] = {}
+    for b in pattern.bonds:
+        _bond_map2[(b.atom_i, b.atom_j)] = b
+        _bond_map2[(b.atom_j, b.atom_i)] = b
+
     def _get_bond_between(pi_a: int, pi_b: int) -> SmartsBond | None:
-        for b in pattern.bonds:
-            if (b.atom_i == pi_a and b.atom_j == pi_b) or \
-               (b.atom_i == pi_b and b.atom_j == pi_a):
-                return b
-        return None
+        return _bond_map2.get((pi_a, pi_b))
 
     def _backtrack(depth: int) -> bool:
         if depth == n_pattern:

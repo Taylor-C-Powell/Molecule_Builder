@@ -1,12 +1,12 @@
 """Feature extraction for ML-based retrosynthetic disconnection scoring.
 
-Extracts an 82-feature fixed-length vector for any disconnection, regardless
+Extracts a 90-feature fixed-length vector for any disconnection, regardless
 of precursor count.  Features cover:
   A. Target molecule descriptors (13)
   B. Precursor aggregates (10)
   C. Relationship features (8)
   D. Template features (19)
-  E. Target FG one-hot (28)
+  E. Target FG one-hot (36)
   F. Strategic flags (4)
 
 This module is pure Python (no scikit-learn dependency) and can be used for
@@ -74,7 +74,7 @@ def _safe_sa_score(mol: Molecule) -> float:
     """Compute SA score, returning 5.0 (midpoint) on failure."""
     try:
         result = sa_score(mol)
-        return result.score
+        return result.sa_score
     except Exception:
         return 5.0
 
@@ -140,7 +140,7 @@ _TEMPLATE_NUMERIC_NAMES = [
 ]
 _TEMPLATE_CATEGORY_NAMES = [f"tcat_{c.lower()}" for c in _CATEGORY_NAMES]
 
-# Block E: Target FG one-hot (28)
+# Block E: Target FG one-hot (36)
 _TARGET_FG_NAMES = [f"tfg_{n}" for n in _FG_NAMES]
 
 # Block F: Strategic flags (4)
@@ -172,7 +172,7 @@ def extract_retro_features(
     depth: int = 0,
     target_fgs: list[FunctionalGroup] | None = None,
 ) -> dict[str, float]:
-    """Extract 82-feature vector for a retrosynthetic disconnection.
+    """Extract 90-feature vector for a retrosynthetic disconnection.
 
     Parameters
     ----------
@@ -192,7 +192,7 @@ def extract_retro_features(
     Returns
     -------
     dict[str, float]
-        Feature dictionary with exactly 82 entries.
+        Feature dictionary with exactly 90 entries.
     """
     features: dict[str, float] = {}
 
@@ -335,7 +335,7 @@ def extract_retro_features(
     for cn in _CATEGORY_NAMES:
         features[f"tcat_{cn.lower()}"] = 1.0 if cn == cat_name else 0.0
 
-    # === Block E: Target FG one-hot (28) ===
+    # === Block E: Target FG one-hot (36) ===
     for fn in _FG_NAMES:
         features[f"tfg_{fn}"] = 1.0 if fn in fg_names else 0.0
 

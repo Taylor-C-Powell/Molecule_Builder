@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.services.database import DatabaseIntegrityError
 
@@ -113,8 +113,8 @@ def save_molecule(
 
 @router.get("/", response_model=LibraryListResponse)
 def list_molecules(
-    page: int = 1,
-    per_page: int = 20,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=100),
     tag: str | None = None,
     search: str | None = None,
     user: UserContext = Depends(check_rate_limit),

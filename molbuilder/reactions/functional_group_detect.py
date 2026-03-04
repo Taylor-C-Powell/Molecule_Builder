@@ -139,6 +139,28 @@ def _atoms_share_ring(mol: Molecule, i: int, j: int) -> bool:
     return False
 
 
+def _is_aromatic_atom(mol: Molecule, idx: int) -> bool:
+    """Return True if atom *idx* participates in aromatic bonds (order >= 1.5)
+    or is SP2-hybridized in a ring context."""
+    if mol.atoms[idx].hybridization == Hybridization.SP2:
+        # Check if it has at least one aromatic bond
+        for n in _neighbors(mol, idx):
+            bo = _bond_order(mol, idx, n)
+            if bo == 4.0 or bo == 1.5:
+                return True
+        # SP2 in a ring (e.g. aromatic SMILES parsed as order 1 with SP2)
+        for n in _neighbors(mol, idx):
+            if mol.atoms[n].hybridization == Hybridization.SP2:
+                if mol.is_in_ring(idx, n):
+                    return True
+    # Explicit aromatic bond order
+    for n in _neighbors(mol, idx):
+        bo = _bond_order(mol, idx, n)
+        if bo == 4.0:
+            return True
+    return False
+
+
 def _double_bonded_to(mol: Molecule, idx: int, elem: str) -> list[int]:
     """Return neighbour indices that are *elem* and double-bonded to *idx*."""
     result = []
@@ -209,6 +231,11 @@ def detect_functional_groups(mol: Molecule) -> list[FunctionalGroup]:
     groups.extend(_detect_boronic_acids(mol))
     groups.extend(_detect_phosphonates(mol))
     groups.extend(_detect_sulfonamides(mol))
+    groups.extend(_detect_phenols(mol))
+    groups.extend(_detect_aromatic_amines(mol))
+    groups.extend(_detect_azoles(mol))
+    groups.extend(_detect_hydrazines(mol))
+    groups.extend(_detect_michael_acceptors(mol))
 
     # Cache results on the molecule instance
     if hasattr(mol, '_fg_cache'):
@@ -225,8 +252,8 @@ def _detect_alcohols(mol: Molecule) -> list[FunctionalGroup]:
     """Alcohol: O bonded to C with an H (explicit or implicit).
 
     The O must be single-bonded to C and not part of a C=O or ester
-    linkage.  Works with both explicit H in the graph and implicit H
-    inferred from valence rules.
+    linkage.  Phenols (OH on aromatic C) are excluded here and detected
+    separately by ``_detect_phenols``.
     """
     found: list[FunctionalGroup] = []
     for idx, atom in enumerate(mol.atoms):
@@ -242,6 +269,9 @@ def _detect_alcohols(mol: Molecule) -> list[FunctionalGroup]:
 
         for c_idx in c_indices:
             if _bond_order(mol, idx, c_idx) != 1.0:
+                continue
+            # Skip phenols: C is aromatic (SP2 with aromatic bonds)
+            if _is_aromatic_atom(mol, c_idx):
                 continue
             # Check for H: explicit neighbour OR implicit from valence
             if "H" in elems:
@@ -824,4 +854,186 @@ def _detect_sulfonamides(mol: Molecule) -> list[FunctionalGroup]:
                 name="sulfonamide", smarts_like="[S](=O)(=O)[N]",
                 atoms=[idx] + dbl_o[:2] + sgl_n[:1], center=idx,
             ))
+    return found
+
+
+# =====================================================================
+#  New detectors -- Phase 3A audit remediation
+# =====================================================================
+
+
+def _detect_phenols(mol: Molecule) -> list[FunctionalGroup]:
+    """Phenol: OH group bonded to an aromatic carbon."""
+    found: list[FunctionalGroup] = []
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "O":
+            continue
+        nbrs = _neighbors(mol, idx)
+        elems = [_element(mol, n) for n in nbrs]
+        # Must have exactly one heavy neighbour that is C, single-bonded
+        c_indices = [nbrs[i] for i, e in enumerate(elems) if e == "C"]
+        if not c_indices:
+            continue
+        for c_idx in c_indices:
+            if _bond_order(mol, idx, c_idx) != 1.0:
+                continue
+            if not _is_aromatic_atom(mol, c_idx):
+                continue
+            # Needs H on the O (explicit or implicit)
+            if "H" in elems or _h_count(mol, idx) >= 1:
+                found.append(FunctionalGroup(
+                    name="phenol", smarts_like="c-[OH]",
+                    atoms=[c_idx, idx], center=idx,
+                ))
+                break
+    return found
+
+
+def _detect_aromatic_amines(mol: Molecule) -> list[FunctionalGroup]:
+    """Aromatic amine: N bonded directly to an aromatic C (not amide N)."""
+    found: list[FunctionalGroup] = []
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "N":
+            continue
+        # Skip amide N (bonded to carbonyl C)
+        is_amide = False
+        for c_idx in _single_bonded_to(mol, idx, "C"):
+            if _double_bonded_to(mol, c_idx, "O"):
+                is_amide = True
+                break
+        if is_amide:
+            continue
+        # Check for at least one aromatic C neighbour
+        for c_idx in _single_bonded_to(mol, idx, "C"):
+            if _is_aromatic_atom(mol, c_idx):
+                found.append(FunctionalGroup(
+                    name="aromatic_amine", smarts_like="c-[NH2]",
+                    atoms=[c_idx, idx], center=idx,
+                ))
+                break
+    return found
+
+
+def _detect_azoles(mol: Molecule) -> list[FunctionalGroup]:
+    """Detect azole heterocycles: imidazole, pyrazole, triazole.
+
+    Uses existing ring-finding infrastructure.  For 5-membered rings
+    containing 2+ nitrogen atoms, classifies by N count and adjacency.
+    """
+    found: list[FunctionalGroup] = []
+    n_atoms = len(mol.atoms)
+    seen_rings: set[tuple[int, ...]] = set()
+
+    for start in range(n_atoms):
+        if _element(mol, start) not in ("C", "N", "O", "S"):
+            continue
+        rings = _find_rings_of_size(mol, start, 5)
+        for ring in rings:
+            canon = _canonicalise_ring(ring)
+            if canon in seen_rings:
+                continue
+            seen_rings.add(canon)
+            # Count N atoms in this ring
+            n_indices = [i for i in ring if _element(mol, i) == "N"]
+            n_count = len(n_indices)
+            if n_count < 2:
+                continue
+            # Check ring is at least partially aromatic
+            if not _ring_is_aromatic(mol, ring):
+                continue
+            if n_count >= 3:
+                found.append(FunctionalGroup(
+                    name="triazole",
+                    smarts_like="c1nnnn1" if n_count > 3 else "c1nncn1",
+                    atoms=list(ring), center=n_indices[0],
+                ))
+            elif n_count == 2:
+                # Check adjacency of the two N atoms in the ring
+                idx_a, idx_b = n_indices[0], n_indices[1]
+                adjacent = _bond_order(mol, idx_a, idx_b) > 0
+                if adjacent:
+                    found.append(FunctionalGroup(
+                        name="pyrazole",
+                        smarts_like="c1cc[nH]n1",
+                        atoms=list(ring), center=idx_a,
+                    ))
+                else:
+                    found.append(FunctionalGroup(
+                        name="imidazole",
+                        smarts_like="c1cnc[nH]1",
+                        atoms=list(ring), center=idx_a,
+                    ))
+    return found
+
+
+def _detect_hydrazines(mol: Molecule) -> list[FunctionalGroup]:
+    """Detect hydrazine (N-N) and hydrazide (N-N-C=O) groups."""
+    found: list[FunctionalGroup] = []
+    seen: set[tuple[int, int]] = set()
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "N":
+            continue
+        for n in _single_bonded_to(mol, idx, "N"):
+            pair = (min(idx, n), max(idx, n))
+            if pair in seen:
+                continue
+            seen.add(pair)
+            # Check if either N is bonded to a carbonyl C (C=O)
+            is_hydrazide = False
+            for n_idx in (idx, n):
+                for c_idx in _single_bonded_to(mol, n_idx, "C"):
+                    if _double_bonded_to(mol, c_idx, "O"):
+                        is_hydrazide = True
+                        break
+                if is_hydrazide:
+                    break
+            if is_hydrazide:
+                found.append(FunctionalGroup(
+                    name="hydrazide",
+                    smarts_like="[N]-[N]-[C]=O",
+                    atoms=list(pair), center=idx,
+                ))
+            else:
+                found.append(FunctionalGroup(
+                    name="hydrazine",
+                    smarts_like="[N]-[N]",
+                    atoms=list(pair), center=idx,
+                ))
+    return found
+
+
+def _detect_michael_acceptors(mol: Molecule) -> list[FunctionalGroup]:
+    """Michael acceptor: alpha,beta-unsaturated carbonyl (C=C-C=O).
+
+    Detects a C=C double bond where one of the C atoms is also bonded
+    (single bond) to another C that has a C=O (carbonyl).
+    """
+    found: list[FunctionalGroup] = []
+    seen: set[tuple[int, int]] = set()
+    for idx, atom in enumerate(mol.atoms):
+        if atom.symbol != "C":
+            continue
+        # Find C=C bonds
+        for cc_n in _double_bonded_to(mol, idx, "C"):
+            pair = (min(idx, cc_n), max(idx, cc_n))
+            if pair in seen:
+                continue
+            # Check if either end of C=C is single-bonded to a carbonyl C
+            for end in (idx, cc_n):
+                other_end = cc_n if end == idx else idx
+                for c_nb in _single_bonded_to(mol, end, "C"):
+                    if c_nb == other_end:
+                        continue
+                    if _double_bonded_to(mol, c_nb, "O"):
+                        seen.add(pair)
+                        o_idx = _double_bonded_to(mol, c_nb, "O")[0]
+                        found.append(FunctionalGroup(
+                            name="michael_acceptor",
+                            smarts_like="[C]=[C]-[C]=O",
+                            atoms=[idx, cc_n, c_nb, o_idx],
+                            center=c_nb,
+                        ))
+                        break
+                if pair in seen:
+                    break
     return found

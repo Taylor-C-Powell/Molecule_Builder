@@ -240,7 +240,7 @@ def _is_integrity_error(exc: Exception) -> bool:
     return (
         "IntegrityError" in exc_type
         or "UniqueViolation" in exc_type
-        or "psycopg.errors" in exc_module and "IntegrityError" in exc_type
+        or ("psycopg.errors" in exc_module and "IntegrityError" in exc_type)
     )
 
 

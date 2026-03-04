@@ -136,34 +136,27 @@ def build_bounds(mol: Molecule) -> tuple[np.ndarray, np.ndarray]:
 
 def _triangle_smooth(lower: np.ndarray, upper: np.ndarray, n: int,
                      max_iters: int = 3) -> None:
-    """Apply triangle inequality smoothing in-place.
+    """Apply triangle inequality smoothing in-place using vectorized ops.
 
-    For each triple (i, j, k):
-        upper[i,k] <= upper[i,j] + upper[j,k]
-        lower[i,k] >= lower[i,j] - upper[j,k]
+    For each pivot k, tightens bounds via numpy broadcasting:
+        upper[i,j] <= upper[i,k] + upper[k,j]
+        lower[i,j] >= lower[i,k] - upper[k,j]
+        lower[i,j] >= lower[j,k] - upper[k,i]
     """
     for _ in range(max_iters):
-        changed = False
+        old_upper = upper.copy()
+        old_lower = lower.copy()
         for k in range(n):
-            for i in range(n):
-                if i == k:
-                    continue
-                for j in range(i + 1, n):
-                    if j == k:
-                        continue
-                    # Tighten upper bound
-                    u_new = upper[i, k] + upper[k, j]
-                    if u_new < upper[i, j]:
-                        upper[i, j] = upper[j, i] = u_new
-                        changed = True
-                    # Tighten lower bound
-                    l_new = lower[i, k] - upper[k, j]
-                    if l_new > lower[i, j]:
-                        lower[i, j] = lower[j, i] = l_new
-                        changed = True
-                    l_new2 = lower[j, k] - upper[k, i]
-                    if l_new2 > lower[i, j]:
-                        lower[i, j] = lower[j, i] = l_new2
-                        changed = True
-        if not changed:
+            # Upper bound: u[i,j] <= u[i,k] + u[k,j]
+            candidate = upper[:, k:k+1] + upper[k:k+1, :]
+            np.minimum(upper, candidate, out=upper)
+            # Lower bound: l[i,j] >= l[i,k] - u[k,j]
+            candidate_l1 = lower[:, k:k+1] - upper[k:k+1, :]
+            candidate_l2 = lower[k:k+1, :] - upper[:, k:k+1]
+            np.maximum(lower, candidate_l1, out=lower)
+            np.maximum(lower, candidate_l2, out=lower)
+        # Symmetrize
+        upper[:] = np.minimum(upper, upper.T)
+        lower[:] = np.maximum(lower, lower.T)
+        if np.array_equal(upper, old_upper) and np.array_equal(lower, old_lower):
             break

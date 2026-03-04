@@ -66,9 +66,9 @@ def _ethanol_features(**kwargs):
 class TestFeatureStructure:
     """Tests for feature vector shape and naming."""
 
-    def test_feature_count_is_82(self):
-        """ALL_RETRO_FEATURE_NAMES should have exactly 82 entries."""
-        assert len(ALL_RETRO_FEATURE_NAMES) == 82
+    def test_feature_count_is_90(self):
+        """ALL_RETRO_FEATURE_NAMES should have exactly 90 entries."""
+        assert len(ALL_RETRO_FEATURE_NAMES) == 90
 
     def test_feature_names_unique(self):
         """All feature names should be unique."""

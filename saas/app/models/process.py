@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class ProcessEvaluateRequest(BaseModel):
-    smiles: str = Field(..., description="Target SMILES")
+    smiles: str = Field(..., max_length=2000, description="Target SMILES")
     scale_kg: float = Field(1.0, gt=0, description="Production scale in kg")
     max_depth: int = Field(5, ge=1, le=10)
     beam_width: int = Field(5, ge=1, le=10)
@@ -120,7 +120,7 @@ class ProcessEvaluateResponse(BaseModel):
 # -----------------------------------------------------------------
 
 class PredictConditionsRequest(BaseModel):
-    smiles: str = Field(..., description="Substrate SMILES")
+    smiles: str = Field(..., max_length=2000, description="Substrate SMILES")
     reaction_name: str | None = Field(None, description="Optional reaction type hint")
     scale_kg: float = Field(1.0, gt=0, description="Production scale in kg")
     max_candidates: int = Field(5, ge=1, le=20, description="Max ranked results")

@@ -14,7 +14,7 @@ class BatchJobType(str, Enum):
 
 
 class BatchSubmitRequest(BaseModel):
-    smiles_list: list[str] = Field(..., min_length=1, description="List of SMILES strings to process")
+    smiles_list: list[str] = Field(..., min_length=1, max_length=10000, description="List of SMILES strings to process")
     job_type: BatchJobType = Field(..., description="Type of analysis to run")
     params: dict | None = Field(default=None, description="Optional parameters for the job type")
 

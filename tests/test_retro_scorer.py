@@ -128,7 +128,7 @@ class TestDisconnectionScorer:
         mock_model = _mock_model_dict()
         scorer = DisconnectionScorer.__new__(DisconnectionScorer)
         scorer._model = None
-        scorer._model_path = None
+        scorer._model_path = "/fake/model.pkl"  # custom path -> no sidecar required
 
         with patch("joblib.load", return_value=mock_model):
             scorer._load_model("/fake/model.pkl")

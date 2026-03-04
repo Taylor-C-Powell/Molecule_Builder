@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.config import Tier
 from app.dependencies import UserContext, check_rate_limit, check_expensive_rate_limit
@@ -81,8 +81,8 @@ def get_job_status(
 
 @router.get("/", response_model=BatchListResponse)
 def list_jobs(
-    page: int = 1,
-    per_page: int = 20,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=100),
     user: UserContext = Depends(check_rate_limit),
 ):
     db = get_job_db()

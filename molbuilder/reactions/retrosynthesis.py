@@ -20,6 +20,7 @@ format_tree(tree) -> str
 
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass, field
 
 from molbuilder.molecule.graph import Molecule
@@ -511,6 +512,7 @@ class RetrosynthesisTree:
 #  Purchasability checks
 # =====================================================================
 
+@functools.lru_cache(maxsize=2048)
 def is_purchasable(smiles: str) -> bool:
     """Return True if *smiles* matches a known purchasable material.
 
@@ -558,12 +560,13 @@ def _count_heavy_atoms(mol: Molecule) -> int:
     return sum(1 for a in mol.atoms if a.symbol != "H")
 
 
+@functools.lru_cache(maxsize=2048)
 def _heavy_atom_count_from_smiles(smiles: str) -> int:
     """Count heavy atoms by parsing SMILES (returns 0 on failure)."""
     try:
         mol = parse(smiles)
         return _count_heavy_atoms(mol)
-    except Exception:
+    except (ValueError, KeyError, IndexError):
         return 0
 
 
@@ -910,7 +913,7 @@ def _modify_fg_smiles(
                 return _replace_carbonyl_with_oh(target_smiles)
             if fg_name == "carboxylic_acid":
                 return _replace_carboxyl_with_carbonyl(target_smiles)
-    except Exception:
+    except (ValueError, KeyError, IndexError):
         pass
     return None
 
@@ -933,7 +936,7 @@ def _validate_smiles_transform(original: str, transformed: str) -> str | None:
         if _count_heavy_atoms(mol) < 1:
             return None
         return transformed
-    except Exception:
+    except (ValueError, KeyError, IndexError):
         return None
 
 
@@ -948,7 +951,7 @@ def _replace_oh_with_carbonyl(smiles: str, _mol: Molecule | None = None) -> str 
     if mol is None:
         try:
             mol = parse(smiles)
-        except Exception:
+        except (ValueError, KeyError, IndexError):
             return None
 
     for idx, atom in enumerate(mol.atoms):
@@ -991,7 +994,7 @@ def _replace_oh_with_carbonyl(smiles: str, _mol: Molecule | None = None) -> str 
             try:
                 result = to_smiles(sub)
                 return _validate_smiles_transform(smiles, result)
-            except Exception:
+            except (ValueError, KeyError, IndexError):
                 continue
     return None
 
@@ -1006,7 +1009,7 @@ def _replace_carbonyl_with_oh(smiles: str, _mol: Molecule | None = None) -> str 
     if mol is None:
         try:
             mol = parse(smiles)
-        except Exception:
+        except (ValueError, KeyError, IndexError):
             return None
 
     for idx, atom in enumerate(mol.atoms):
@@ -1040,7 +1043,7 @@ def _replace_carbonyl_with_oh(smiles: str, _mol: Molecule | None = None) -> str 
             try:
                 result = to_smiles(sub)
                 return _validate_smiles_transform(smiles, result)
-            except Exception:
+            except (ValueError, KeyError, IndexError):
                 continue
     return None
 
@@ -1055,7 +1058,7 @@ def _replace_carbonyl_with_carboxyl(smiles: str, _mol: Molecule | None = None) -
     if mol is None:
         try:
             mol = parse(smiles)
-        except Exception:
+        except (ValueError, KeyError, IndexError):
             return None
 
     for idx, atom in enumerate(mol.atoms):
@@ -1093,7 +1096,7 @@ def _replace_carbonyl_with_carboxyl(smiles: str, _mol: Molecule | None = None) -
             try:
                 result = to_smiles(sub)
                 return _validate_smiles_transform(smiles, result)
-            except Exception:
+            except (ValueError, KeyError, IndexError):
                 continue
     return None
 
@@ -1108,7 +1111,7 @@ def _replace_carboxyl_with_carbonyl(smiles: str, _mol: Molecule | None = None) -
     if mol is None:
         try:
             mol = parse(smiles)
-        except Exception:
+        except (ValueError, KeyError, IndexError):
             return None
 
     for idx, atom in enumerate(mol.atoms):
@@ -1154,7 +1157,7 @@ def _replace_carboxyl_with_carbonyl(smiles: str, _mol: Molecule | None = None) -
         try:
             result = to_smiles(sub)
             return _validate_smiles_transform(smiles, result)
-        except Exception:
+        except (ValueError, KeyError, IndexError):
             continue
     return None
 
@@ -1269,7 +1272,7 @@ def _fragment_to_smiles(mol: Molecule, atom_indices: set[int]) -> str:
     # We rely on the SMILES writer to handle implicit H.
     try:
         return to_smiles(sub)
-    except Exception:
+    except (ValueError, KeyError, IndexError):
         # Fallback: concatenate symbols
         return "".join(mol.atoms[i].symbol for i in heavy_indices[:6])
 
@@ -1368,7 +1371,7 @@ def _substitute_fg(
             validated = _validate_smiles_transform(target_smiles, result)
             if validated is not None:
                 return validated
-        except Exception:
+        except (ValueError, KeyError, IndexError):
             continue
 
     return None
@@ -1435,7 +1438,7 @@ def _methylation_retro(
                 demeth_smi = to_smiles(sub)
                 if demeth_smi and demeth_smi != target_smiles:
                     candidates.append(demeth_smi)
-            except Exception:
+            except (ValueError, KeyError, IndexError):
                 continue
 
     # Prefer purchasable candidates
@@ -1499,7 +1502,7 @@ def _add_across_double_bond(
     try:
         result = to_smiles(sub)
         return _validate_smiles_transform(target_smiles, result)
-    except Exception:
+    except (ValueError, KeyError, IndexError):
         return None
 
 
@@ -1591,7 +1594,7 @@ def _remove_addition(
     try:
         result = to_smiles(sub)
         return _validate_smiles_transform(target_smiles, result)
-    except Exception:
+    except (ValueError, KeyError, IndexError):
         return None
 
 
@@ -1714,7 +1717,7 @@ def _estimate_cost(smiles: str) -> float:
         mol = parse(smiles)
         n_heavy = _count_heavy_atoms(mol)
         return max(5.0, n_heavy * 10.0)
-    except Exception:
+    except (ValueError, KeyError, IndexError):
         return 50.0
 
 
@@ -1877,7 +1880,7 @@ def _safe_parse(smiles: str) -> Molecule | None:
     """Parse SMILES, returning None on failure."""
     try:
         return parse(smiles)
-    except Exception:
+    except (ValueError, KeyError, IndexError):
         return None
 
 

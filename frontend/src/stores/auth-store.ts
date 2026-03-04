@@ -20,7 +20,7 @@ const STORAGE_KEY = "molbuilder_auth";
 
 function loadPersistedState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
@@ -37,9 +37,9 @@ function loadPersistedState() {
 
 function persist(apiKey: string | null, email: string | null, tier: string | null) {
   if (apiKey) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ apiKey, email, tier }));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ apiKey, email, tier }));
   } else {
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
   }
 }
 
