@@ -5,6 +5,39 @@ All notable changes to MolBuilder will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-03-04
+
+### Added
+
+#### Core Library
+- **8 new FG detectors**: phenol, aromatic_amine, imidazole, triazole, pyrazole, hydrazine, hydrazide, michael_acceptor (total: 32)
+- **Shared model_utils.py**: `verify_model_checksum()` extracted for reuse by both ML loaders; `require_sidecar` param
+- ML feature expansion: condition model 55 -> 63 features (36 FG one-hot), retro scorer 82 -> 90 features (36 FG one-hot)
+- Retrained both ML models with corrected SA score data and expanded FG features
+
+#### SaaS API
+- HMAC secret enforcement: production startup fails without `AUDIT_HMAC_SECRET` and `API_KEY_HMAC_SECRET`
+- Input validation: SMILES max_length=2000, list max_length=10000, pagination bounded
+- LIKE wildcard escaping (`_escape_like()`) in library and team search
+- X-Forwarded-For only trusted behind RAILWAY_ENVIRONMENT proxy
+- Audit write failure returns 500 in production (21 CFR Part 11)
+- Retro worker pool: 2 -> 4
+
+#### Frontend
+- sessionStorage instead of localStorage for API key storage
+
+### Fixed
+- SA score bug in `retro_features.py` (used `result.score` instead of `result.sa_score`)
+- Operator precedence in `_is_integrity_error()` (database.py)
+- Alcohol detector now excludes phenols (detected separately)
+- ADMET cleanup: removed dead FG references
+- Narrowed exceptions in retrosynthesis transform helpers
+- Sanitized error response in billing webhook
+
+### Changed
+- Performance: vectorized triangle smoothing, lru_cache on is_purchasable/heavy_atom_count, pre-built bond map in SMARTS matcher
+- Core tests: 1,586 (41 files), SaaS tests: 222 (25 files), SDK tests: 65 (14 files)
+
 ## [1.2.1] - 2026-03-03
 
 ### Added

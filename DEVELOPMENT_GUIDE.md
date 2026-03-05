@@ -4,8 +4,8 @@ Authoritative reference for continuing development after context compactions.
 Read this file at the start of every new session or after context resets.
 
 **Current state:** All 10 phases (0-9) COMPLETE. All 3 sprints COMPLETE.
-1510 tests passing across 36 test files. ~19,900 source lines + ~10,000 test lines.
-24 FG detectors. 185 reaction templates. 69 GHS codes. 49 BDE entries. 118 covalent radii.
+1586 tests passing across 41 test files. ~19,900 source lines + ~10,000 test lines.
+32 FG detectors. 185 reaction templates. 69 GHS codes. 49 BDE entries. 118 covalent radii.
 
 **Sprint 1 completed fixes (P0 critical):**
 - P0-1: Dipole moment formula corrected in `bonding/covalent.py`
@@ -106,7 +106,7 @@ Molecule_Builder/
   synthesize.py               # Standalone synthesis planner script
   DEVELOPMENT_GUIDE.md        # THIS FILE
   legacy/                     # Original 13 flat files preserved
-  tests/                      # 1510 tests across 36 files
+  tests/                      # 1586 tests across 41 files
     __init__.py
     test_core.py, test_atomic.py, test_bonding.py, test_molecule.py
     test_smiles.py, test_io.py, test_reactions.py, test_process.py
@@ -121,8 +121,10 @@ Molecule_Builder/
     test_retro_graph_transforms.py, test_redox_transforms.py
     test_thermal_hazards.py, test_reagent_database.py
     test_fg_smarts_validation.py, test_pdf_report.py
+    test_solubility.py, test_admet.py, test_retro_features.py
+    test_retro_scorer.py, test_ml_predict.py
   molbuilder/
-    __init__.py               # __version__ = "1.2.0"
+    __init__.py               # __version__ = "1.2.2"
     __main__.py               # Entry point -> cli.menu.main()
     core/                     # Shared constants, elements, geometry, bond data
       constants.py            # Physical constants, coulombs_law()
@@ -172,7 +174,7 @@ Molecule_Builder/
       reaction_types.py       # ReactionCategory enum, ReactionTemplate dataclass
       reagent_data.py         # REAGENT_DB (171), SOLVENT_DB (32), pricing_tier field
       knowledge_base.py       # 185 reaction templates, lookup functions
-      functional_group_detect.py  # 24 FG detectors
+      functional_group_detect.py  # 32 FG detectors
       fg_smarts_validation.py # Cross-validates heuristic vs SMARTS FG detection
       retrosynthesis.py       # Beam search retrosynthesis engine
       retrocast_adapter.py    # tree_to_retrocast_routes(), export_retrocast_json()

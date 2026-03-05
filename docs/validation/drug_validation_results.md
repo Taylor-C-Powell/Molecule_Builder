@@ -75,7 +75,7 @@
 
 ## Methodology
 
-Each drug's canonical SMILES was parsed by MolBuilder's SMILES parser, then fed into the retrosynthetic analysis engine with `max_depth=5` and `beam_width=5`. The engine identifies functional groups, proposes disconnections using the reaction knowledge base (181 templates), and builds a retrosynthetic tree toward purchasable starting materials (250+ entries).
+Each drug's canonical SMILES was parsed by MolBuilder's SMILES parser, then fed into the retrosynthetic analysis engine with `max_depth=5` and `beam_width=5`. The engine identifies functional groups, proposes disconnections using the reaction knowledge base (185 templates), and builds a retrosynthetic tree toward purchasable starting materials (270+ entries).
 
 Complex macrocycles (azithromycin, doxycycline) are expected to be challenging and are evaluated on whether the analysis completes without errors rather than on route quality.
 

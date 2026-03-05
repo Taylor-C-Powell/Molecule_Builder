@@ -29,7 +29,7 @@ pip install molbuilder
 from molbuilder.smiles import parse
 mol = parse("CC(C)Cc1ccc(cc1)C(C)C(=O)O")  # ibuprofen
 
-# Detect functional groups (24 detectors + SMARTS cross-validation)
+# Detect functional groups (32 detectors + SMARTS cross-validation)
 from molbuilder.reactions import detect_functional_groups
 fgs = detect_functional_groups(mol)
 # [carboxylic_acid, aromatic_ring, alcohol, ...]
@@ -78,7 +78,7 @@ MolBuilder is not a replacement for RDKit's computational accuracy. It's a diffe
 | **Bonding** | Lewis structures, VSEPR geometry (12+ shapes), covalent bond analysis, dipole moments |
 | **Molecular modeling** | 3D coordinate generation (builtin DG+FF or RDKit backend), conformational analysis, Newman projections, R/S and E/Z stereochemistry |
 | **Cheminformatics** | SMILES parser/writer with chirality and stereochemistry, Lipinski Ro5, logP, TPSA, pKa prediction, synthetic accessibility scoring |
-| **Pattern matching** | SMARTS engine for substructure search, 24 FG detectors with SMARTS cross-validation |
+| **Pattern matching** | SMARTS engine for substructure search, 32 FG detectors with SMARTS cross-validation |
 | **Retrosynthesis** | 185 reaction templates across 14 categories, beam-search planner, 270+ purchasable starting materials, scored disconnections |
 | **Condition prediction** | Substrate-aware template matching, ORD-backed empirical conditions (180 reaction types), steric/electronic analysis, solvent scoring, yield adjustment |
 | **Process engineering** | Reactor selection, condition optimization, purification, GHS safety (69 hazard codes), thermal hazard detection, reagent-solvent incompatibility checks, cost estimation (171 priced reagents), scale-up analysis |
@@ -89,7 +89,7 @@ MolBuilder is not a replacement for RDKit's computational accuracy. It's a diffe
 
 ## SaaS API
 
-MolBuilder is also available as a hosted REST API with 15 router modules:
+MolBuilder is also available as a hosted REST API with 16 router modules:
 
 ```bash
 # Get an API key at molbuilder-api.up.railway.app
@@ -193,7 +193,7 @@ See [`examples/`](examples/) for self-contained demo scripts:
 from molbuilder.smiles import parse, to_smiles
 mol = parse("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
 
-# Functional groups (24 detectors)
+# Functional groups (32 detectors)
 from molbuilder.reactions import detect_functional_groups
 fgs = detect_functional_groups(mol)
 
@@ -247,7 +247,7 @@ pdf_bytes = generate_molecule_pdf(mol)
 | Elements (IUPAC 2021) | 118 |
 | Covalent radii | 118 |
 | Reaction templates | 185 (14 categories) |
-| FG detectors | 24 |
+| FG detectors | 32 |
 | Reagents (with pricing tiers) | 171 |
 | Solvents | 32 |
 | Purchasable starting materials | 270+ |
@@ -258,17 +258,17 @@ pdf_bytes = generate_molecule_pdf(mol)
 | Bond length entries | 27 |
 | Amino acids | 20 |
 | ORD reaction types | 180 |
-| SMARTS FG patterns | 24 |
+| SMARTS FG patterns | 32 |
 
 ## Testing
 
-1,749 tests across 3 test suites. CI matrix: Python 3.11 / 3.12 / 3.13.
+1,873 tests across 3 test suites. CI matrix: Python 3.11 / 3.12 / 3.13.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest tests/ -q          # 1,510 core library tests (36 files)
-cd saas && python -m pytest tests/  # 175 SaaS API tests (22 files)
-python -m pytest sdk/tests/         # 64 SDK tests (13 files)
+python -m pytest tests/ -q          # 1,586 core library tests (41 files)
+cd saas && python -m pytest tests/  # 222 SaaS API tests (25 files)
+python -m pytest sdk/tests/         # 65 SDK tests (14 files)
 ```
 
 Coverage gate: 80% minimum enforced in CI.
@@ -287,11 +287,9 @@ sdk/                Python SDK client (PyPI: molbuilder-client)
 
 ## Future directions
 
-- **Learned retrosynthesis**: Transformer/GNN expansion policy trained on USPTO, with MCTS search
-- **ADMET prediction**: hERG, CYP inhibition, Caco-2 permeability, metabolic stability
+- **Learned retrosynthesis**: ML disconnection scoring is live (GBR model); Transformer/GNN expansion policy trained on USPTO with MCTS search is planned
+- **Advanced ADMET**: Basic ADMET + solubility predictions are in the SaaS API; hERG, CYP inhibition, Caco-2 permeability, metabolic stability are planned
 - **ELN/LIMS integration**: Connectors for Benchling, Signals Notebook
-- **Solubility and crystallization**: Prediction models for process development
-- **Team management**: Organizations, shared libraries, per-seat billing
 - **SSO integration**: Auth0/Okta for enterprise deployments
 - **On-premise deployment**: Docker + Kubernetes packaging
 - **Patent landscape**: Google Patents API integration for FTO analysis
